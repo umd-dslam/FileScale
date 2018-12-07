@@ -8,10 +8,11 @@ Build an image from the Dockerfile and assign it a name.
 docker build -t eg_postgresql .
 ```
 
-Run the PostgreSQL server container (in the foreground):
+Run the PostgreSQL server container (in the background):
 
 ```bash
-docker run --rm -P --name pg_test eg_postgresql
+docker run -d -P --name pg_test eg_postgresql
+PORT=$(docker ps -f name=pg_test --format "{{.Ports}}" | sed -e 's/.*://' | awk -F'[->]' '{print $1}')
 ```
 
 
@@ -34,7 +35,7 @@ docker exec -it hadoop-dev bash
 2. Interact with Postgres via Hadoop container
 
 ```bash
-psql -h localhost -p 32771 -d docker -U docker
+psql -h localhost -p ${PORT} -d docker -U docker
 # password
 
 docker=# CREATE TABLE cities (name            varchar(80),location        point);
