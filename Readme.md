@@ -57,8 +57,7 @@ chown -R $USER /home/$USER/.m2
 cd hadoop-hdfs-project
 
 # Compile HDFS
-mvn comile -DskipTests 
-# mvn clean install -DskipTests
+mvn clean install -DskipTests
 # mvn package -Pdist -Pnative -Dtar -DskipTests
 ```
 
