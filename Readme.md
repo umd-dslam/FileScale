@@ -13,6 +13,14 @@
 USER=$(ls /home/)
 sudo chown -R $USER /home/$USER/.m2
 cd hadoop-hdfs-project
-mvn clean install -DskipTests
+
+# Compile HDFS
+mvn comile -DskipTests 
+# mvn clean install -DskipTests
 # mvn package -Pdist -Pnative -Dtar -DskipTests
 ```
+
+
+### References
+
+1. MVN: https://radio123.iteye.com/blog/1490335
