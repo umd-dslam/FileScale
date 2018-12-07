@@ -10,5 +10,9 @@
 ./start-build-env.sh
 
 # Build Hadoop in Docker
-USER=$(ls /home/) 
+USER=$(ls /home/)
+sudo chown -R $USER /home/$USER/.m2
+cd hadoop-hdfs-project
+mvn clean install -DskipTests
+# mvn package -Pdist -Pnative -Dtar -DskipTests
 ```
