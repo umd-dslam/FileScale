@@ -58,13 +58,14 @@ if [ "$(uname -s)" = "Linux" ]; then
   fi
 fi
 
+# build hadoop's dev environment
 docker build -t "hadoop-build-${USER_ID}" - <<UserSpecificDocker
 FROM hadoop-build
 RUN groupadd --non-unique -g ${GROUP_ID} ${USER_NAME}
 RUN useradd -g ${GROUP_ID} -u ${USER_ID} -k /root -m ${USER_NAME}
 RUN echo "${USER_NAME} ALL=NOPASSWD: ALL" > "/etc/sudoers.d/hadoop-build-${USER_ID}"
 ENV HOME /home/${USER_NAME}
-
+RUN sudo apt-get update && sudo apt-get install -y postgresql-client 
 UserSpecificDocker
 
 #If this env varible is empty, docker will be started
@@ -76,8 +77,10 @@ DOCKER_INTERACTIVE_RUN=${DOCKER_INTERACTIVE_RUN-"-i -t"}
 # system.  And this also is a significant speedup in subsequent
 # builds because the dependencies are downloaded only once.
 docker run --rm=true $DOCKER_INTERACTIVE_RUN \
+  -d --net=host \
   -v "${PWD}:/home/${USER_NAME}/hadoop${V_OPTS:-}" \
   -w "/home/${USER_NAME}/hadoop" \
   -v "${HOME}/.m2:/home/${USER_NAME}/.m2${V_OPTS:-}" \
   -u "${USER_NAME}" \
-  "hadoop-build-${USER_ID}" "$@"
+  --name hadoop-dev \
+  "hadoop-build-${USER_ID}"
