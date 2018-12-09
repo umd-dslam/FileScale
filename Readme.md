@@ -232,7 +232,16 @@ Table
 {
 	long id
 	byte[] name
-	PermissionStatus permissions
+	PermissionStatus permissions = {
+		String username;
+		String groupname;
+		FsPermission permission = {
+			FsAction useraction = null;  ==> String
+			FsAction groupaction = null; ==> String
+			FsAction otheraction = null; ==> String
+			Boolean stickyBit = false;
+		}
+	}
 	long modificationTime
 	long accessTime
 	LinkedElement next   ??
