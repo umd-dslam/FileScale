@@ -228,6 +228,27 @@ Minimal data-node simulator
 
 =====================
 
+Table
+{
+	long id
+	byte[] name
+	PermissionStatus permissions
+	long modificationTime
+	long accessTime
+	LinkedElement next   ??
+	Feature[] features   ??
+
+	# file attributes
+	BlockInfo[] blklist
+	short replication
+	long preferredBlockSize
+
+	# diretory attributes
+	List<INode>  children
+}
+
+=====================
+
 replace Postgres by Calvin
 ```
 
