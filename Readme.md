@@ -201,7 +201,29 @@ If INode Op in log, it will still build some in-memory FS. (Waste Memory)
 
 
 =====================
-Test
+Bechmark Track code
+
+
+clientProto.getFileInfo
+clientProto.rename
+clientProto.getBlockLocations
+
+clientProto.delete ==> FSNamesystem.delete ==> FSDirDeleteOp delete(FSDirectory)
+
+clientProto.create ==> FSNamesystem.startFile ==> .. ==> FSDirWriteFileOp(FSDirectory) ==> addFile ==> addINode
+
+clientProto.complete
+
+clientProto.mkdirs  ===> .. ==> FSDirMkdirOp.mkdirs {createSingleDirectory ...}
+
+clientProto.addBlock  ===> getAdditionalBlock ==> FSDirWriteFileOp.storeAllocatedBlock
+clientProto.refreshNodes
+
+Open file statistics: Measure how many open calls (getBlockLocations()) 
+the name-node can handle per second.
+
+
+Minimal data-node simulator
 
 
 =====================
