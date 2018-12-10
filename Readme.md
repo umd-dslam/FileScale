@@ -12,7 +12,7 @@ Run the PostgreSQL server container (in the background):
 
 ```bash
 docker run -d -p 5432:5432 --name pg_test eg_postgresql
-PORT=$(docker ps -f name=pg_test --format "{{.Ports}}" | sed -e 's/.*://' | awk -F'[->]' '{print $1}')
+# PORT=$(docker ps -f name=pg_test --format "{{.Ports}}" | sed -e 's/.*://' | awk -F'[->]' '{print $1}')
 ```
 
 
