@@ -65,7 +65,10 @@ RUN groupadd --non-unique -g ${GROUP_ID} ${USER_NAME}
 RUN useradd -g ${GROUP_ID} -u ${USER_ID} -k /root -m ${USER_NAME}
 RUN echo "${USER_NAME} ALL=NOPASSWD: ALL" > "/etc/sudoers.d/hadoop-build-${USER_ID}"
 ENV HOME /home/${USER_NAME}
-RUN sudo apt-get update && sudo apt-get install -y postgresql-client 
+RUN sudo apt-get update && sudo apt-get install -y postgresql-client wget
+RUN sudo mkdir -p $HOME/java 
+RUN sudo wget https://jdbc.postgresql.org/download/postgresql-42.2.5.jar -P $HOME/java
+ENV CLASSPATH $CLASSPATH:$HOME/java/postgresql-42.2.5.jar
 UserSpecificDocker
 
 #If this env varible is empty, docker will be started
