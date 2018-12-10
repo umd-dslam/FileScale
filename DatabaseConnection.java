@@ -18,8 +18,7 @@ public class DatabaseConnection {
             props.setProperty("user", username);
             props.setProperty("password", password);
             this.connection = DriverManager.getConnection(url, props);
-        } catch (Exception ex) {
-	    ex.printStackTrace();
+        } catch (ClassNotFoundException ex) {
             System.out.println("Database Connection Creation Failed : " + ex.getMessage());
         }
     }
@@ -34,7 +33,6 @@ public class DatabaseConnection {
         } else if (instance.getConnection().isClosed()) {
             instance = new DatabaseConnection();
         }
-
         return instance;
     }
 
@@ -42,8 +40,8 @@ public class DatabaseConnection {
         try {
 	        DatabaseConnection db = new DatabaseConnection();
         } catch (Exception e) {
-		    e.printStackTrace();
-	    }
+            e.printStackTrace();
+        }
     }
 }
     
