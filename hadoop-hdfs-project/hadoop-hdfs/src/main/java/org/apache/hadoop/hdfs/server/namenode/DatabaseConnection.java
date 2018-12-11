@@ -41,10 +41,10 @@ public class DatabaseConnection {
         return instance;
     }
 
-    public boolean checkInodeExistence(final int parentId, final String childName) {
+    public static boolean checkInodeExistence(final int parentId, final String childName) {
         boolean exist = false;
         try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
+            Connection conn = this.getInstance().getConnection();
             // check the existence of node in Postgres
             String sql =
             "SELECT CASE WHEN EXISTS (SELECT * FROM inodes WHERE parent = ? AND name = ?)"
@@ -66,12 +66,12 @@ public class DatabaseConnection {
         return exist;
     }
     
-    public void insertInode(final int childId, final String childName, final int parentId) {
+    public static void insertInode(final int childId, final String childName, final int parentId) {
         if (checkInodeExistence(this.getId(), node.getLocalName())) {
             return false;
         }
         try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
+            Connection conn = this.getInstance().getConnection();
             if (!exist) {
                 // add node into Postgres
                 String sql = "INSERT INTO inodes(id, name, parent) VALUES (?,?,?);";
