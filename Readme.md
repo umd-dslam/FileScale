@@ -59,6 +59,8 @@ cd hadoop-hdfs-project
 
 # Compile HDFS
 mvn clean install -DskipTests
+# Resume build
+mvn clean install -DskipTests -rf :hadoop-hdfs
 # mvn package -Pdist -Pnative -Dtar -DskipTests
 ```
 

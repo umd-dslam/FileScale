@@ -150,6 +150,8 @@ public class FSDirectory implements Closeable {
         .isdir(true)
         .build();
 
+  private static FSDirectory instance;
+        
   INodeDirectory rootDir;
   private final FSNamesystem namesystem;
   private volatile boolean skipQuotaCheck = false; //skip while consuming edits
@@ -209,6 +211,26 @@ public class FSDirectory implements Closeable {
   // A HashSet of principals of users for whom the external attribute provider
   // will be bypassed
   private HashSet<String> usersToBypassExtAttrProvider = null;
+
+  // FIXME(gangliao): singleton pattern for Database
+  // may cause problem for HDFS Federation
+  // https://hortonworks.com/blog/an-introduction-to-hdfs-federation/
+  public static FSDirectory getInstance(FSNamesystem ns, Configuration conf) {
+    if (instance == null) {
+      try {
+        instance = new FSDirectory(ns, conf);
+      } catch (IOException ex) {
+        System.out.println(ex.toString());
+      }
+    }
+    return instance;
+  }
+
+  // Preconditions ensure getInstance(ns, conf) will be invoked first in FSNameSystem 
+  public static FSDirectory getInstance() {
+    Preconditions.checkArgument(instance != null);
+    return instance;
+  }
 
   public void setINodeAttributeProvider(INodeAttributeProvider provider) {
     attributeProvider = provider;

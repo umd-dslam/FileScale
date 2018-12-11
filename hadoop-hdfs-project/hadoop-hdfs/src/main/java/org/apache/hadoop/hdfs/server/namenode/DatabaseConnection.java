@@ -68,7 +68,7 @@ public class DatabaseConnection {
         return exist;
     }
     
-    public static long getChild(final long parentId, final long childName) {
+    public static long getChild(final long parentId, final String childName) {
         long childId = -1;
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();

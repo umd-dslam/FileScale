@@ -413,6 +413,16 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return sf.saveChild2Snapshot(this, child, latestSnapshotId, snapshotCopy);
   }
 
+
+  public INode getChild(byte[] name) {
+      // gangliao: getChild from PostGres
+      long id = DatabaseConnection.getChild(this.getId(), DFSUtil.bytes2String(name));
+      if (id != -1) {
+        return FSDirectory.getInstance().getInode(id);
+      }
+      return null;
+  }
+
   /**
    * @param name the name of the child
    * @param snapshotId
