@@ -55,9 +55,10 @@ public class DatabaseConnection {
             pst.setLong(1, parentId);
             pst.setString(2, childName);
             ResultSet rs = pst.executeQuery();
-            rs.next();
-            if (rs.getBoolean(1) == true) {
-                exist = true;
+            while(rs.next()) {
+                if (rs.getBoolean(1) == true) {
+                    exist = true;
+                }
             }
             rs.close();
             pst.close();
@@ -67,7 +68,28 @@ public class DatabaseConnection {
         return exist;
     }
     
-    public static boolean addINode(final long childId, final String childName, final long parentId) {
+    public static long getChild(final long parentId, final long childName) {
+        long childId = -1;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            // check the existence of node in Postgres
+            String sql = "SELECT id FROM inodes WHERE parent = ? AND name = ?)";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, parentId);
+            pst.setString(2, childName);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                childId = rs.getLong(1);
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return childId;   
+    }
+
+    public static boolean addChild(final long childId, final String childName, final long parentId) {
         if (checkInodeExistence(parentId, childName)) {
             return false;
         }
