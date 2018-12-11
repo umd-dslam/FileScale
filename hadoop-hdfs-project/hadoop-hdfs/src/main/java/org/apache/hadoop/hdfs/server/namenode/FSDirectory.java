@@ -1300,6 +1300,10 @@ public class FSDirectory implements Closeable {
     updateCount(existing, pos, counts, checkQuota);
 
     boolean isRename = (inode.getParent() != null);
+
+    // gangliao: insert new inode into Postgres
+    DatabaseConnection.addINode(inode.getId(), inode.getLocalName(), parent.getId());
+
     final boolean added = parent.addChild(inode, true,
         existing.getLatestSnapshotId());
     if (!added) {

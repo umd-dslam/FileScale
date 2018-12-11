@@ -42,7 +42,7 @@ public class DatabaseConnection {
         return instance;
     }
 
-    public static boolean checkInodeExistence(final int parentId, final String childName) {
+    public static boolean checkInodeExistence(final long parentId, final String childName) {
         boolean exist = false;
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -52,7 +52,7 @@ public class DatabaseConnection {
             + " THEN CAST(1 AS BIT)"
             + " ELSE CAST(0 AS BIT) END";
             PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setInt(1, parentId);
+            pst.setLong(1, parentId);
             pst.setString(2, childName);
             ResultSet rs = pst.executeQuery();
             rs.next();
@@ -67,7 +67,7 @@ public class DatabaseConnection {
         return exist;
     }
     
-    public static boolean insertInode(final int childId, final String childName, final int parentId) {
+    public static boolean addINode(final long childId, final String childName, final long parentId) {
         if (checkInodeExistence(parentId, childName)) {
             return false;
         }
@@ -76,9 +76,9 @@ public class DatabaseConnection {
             // add node into Postgres
             String sql = "INSERT INTO inodes(id, name, parent) VALUES (?,?,?);";
             PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setInt(1, childId);
+            pst.setLong(1, childId);
             pst.setString(2, childName);
-            pst.setInt(3, parentId);
+            pst.setLong(3, parentId);
             pst.executeUpdate();
             pst.close();
         } catch (SQLException ex) {
