@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.Properties;
@@ -44,13 +45,13 @@ public class DatabaseConnection {
     public static boolean checkInodeExistence(final int parentId, final String childName) {
         boolean exist = false;
         try {
-            Connection conn = this.getInstance().getConnection();
+            Connection conn = DatabaseConnection.getInstance().getConnection();
             // check the existence of node in Postgres
             String sql =
             "SELECT CASE WHEN EXISTS (SELECT * FROM inodes WHERE parent = ? AND name = ?)"
             + " THEN CAST(1 AS BIT)"
             + " ELSE CAST(0 AS BIT) END";
-            Statement pst = conn.prepareStatement(sql);
+            PreparedStatement pst = conn.prepareStatement(sql);
             pst.setInt(1, parentId);
             pst.setString(2, childName);
             ResultSet rs = pst.executeQuery();
@@ -66,22 +67,20 @@ public class DatabaseConnection {
         return exist;
     }
     
-    public static void insertInode(final int childId, final String childName, final int parentId) {
-        if (checkInodeExistence(this.getId(), node.getLocalName())) {
+    public static boolean insertInode(final int childId, final String childName, final int parentId) {
+        if (checkInodeExistence(parentId, childName)) {
             return false;
         }
         try {
-            Connection conn = this.getInstance().getConnection();
-            if (!exist) {
-                // add node into Postgres
-                String sql = "INSERT INTO inodes(id, name, parent) VALUES (?,?,?);";
-                Statement pst = conn.prepareStatement(sql);
-                pst.setInt(1, node.getId());
-                pst.setString(2, node.getLocalName());
-                pst.setInt(3, this.getId());
-                pst.executeUpdate();
-                pst.close();
-            }
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            // add node into Postgres
+            String sql = "INSERT INTO inodes(id, name, parent) VALUES (?,?,?);";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setInt(1, childId);
+            pst.setString(2, childName);
+            pst.setInt(3, parentId);
+            pst.executeUpdate();
+            pst.close();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
