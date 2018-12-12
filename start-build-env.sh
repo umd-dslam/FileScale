@@ -69,6 +69,7 @@ RUN sudo apt-get update && sudo apt-get install -y postgresql-client wget
 RUN sudo mkdir -p $HOME/java 
 RUN sudo wget https://jdbc.postgresql.org/download/postgresql-42.2.5.jar -P $HOME/java
 ENV CLASSPATH $CLASSPATH:$HOME/java/postgresql-42.2.5.jar
+ENV JAVA_HOME $JAVA_HOME:/usr/lib/jvm/java-1.8.0-openjdk-amd64
 UserSpecificDocker
 
 #If this env varible is empty, docker will be started
