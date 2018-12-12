@@ -29,7 +29,7 @@ public class DatabaseConnection {
         }
     }
 
-    private void createINodesTable() {
+    private static void createINodesTable() {
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             // check the existence of node in Postgres
