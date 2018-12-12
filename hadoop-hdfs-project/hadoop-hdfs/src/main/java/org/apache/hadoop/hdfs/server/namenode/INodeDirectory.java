@@ -413,16 +413,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return sf.saveChild2Snapshot(this, child, latestSnapshotId, snapshotCopy);
   }
 
-
-  public INode getChild(byte[] name) {
-      // gangliao: getChild from PostGres
-      long id = DatabaseConnection.getChild(this.getId(), DFSUtil.bytes2String(name));
-      if (id != -1) {
-        return FSDirectory.getInstance().getInode(id);
-      }
-      return null;
-  }
-
   /**
    * @param name the name of the child
    * @param snapshotId
@@ -435,9 +425,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
     DirectoryWithSnapshotFeature sf;
     if (snapshotId == Snapshot.CURRENT_STATE_ID || 
         (sf = getDirectoryWithSnapshotFeature()) == null) {
-      ReadOnlyList<INode> c = getCurrentChildrenList();
-      final int i = ReadOnlyList.Util.binarySearch(c, name);
-      return i < 0 ? null : c.get(i);
+      // ReadOnlyList<INode> c = getCurrentChildrenList();
+      // final int i = ReadOnlyList.Util.binarySearch(c, name);
+      // return i < 0 ? null : c.get(i);
+      long id = DatabaseConnection.getChild(this.getId(), DFSUtil.bytes2String(name));
+      return id == -1 ? null : FSDirectory.getInstance().getInode(id);
     }
     
     return sf.getChild(this, name, snapshotId);
@@ -565,6 +557,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
       return sf.addChild(this, node, setModTime, latestSnapshotId);
     }
+
+    // ADD(gangliao): insert new inode into Postgres
+    DatabaseConnection.addChild(
+      node.getId(), node.getLocalName(), this.getId());
+
     addChild(node, low);
     if (setModTime) {
       // update modification time of the parent directory
@@ -578,6 +575,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (low >= 0) {
       return false;
     }
+
+    // ADD(gangliao): insert new inode into Postgres
+    DatabaseConnection.addChild(
+      node.getId(), node.getLocalName(), this.getId());
+
     addChild(node, low);
     return true;
   }
