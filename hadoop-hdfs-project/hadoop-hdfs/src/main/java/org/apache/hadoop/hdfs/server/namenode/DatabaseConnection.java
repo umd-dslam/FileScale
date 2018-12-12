@@ -29,6 +29,20 @@ public class DatabaseConnection {
         }
     }
 
+    private void createINodesTable() {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            // check the existence of node in Postgres
+            String sql =
+            "CREATE TABLE IF NOT EXISTS inodes(id int primary key, parent int, name text);";
+            Statement st = conn.createStatement();
+            st.execute(sql);
+            st.close();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }        
+    }
+
     public Connection getConnection() {
         return connection;
     }
@@ -36,8 +50,10 @@ public class DatabaseConnection {
     public static DatabaseConnection getInstance() throws SQLException {
         if (instance == null) {
             instance = new DatabaseConnection();
+            createINodesTable();
         } else if (instance.getConnection().isClosed()) {
             instance = new DatabaseConnection();
+            createINodesTable();
         }
         return instance;
     }
