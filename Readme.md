@@ -158,12 +158,16 @@ JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-amd64"
 sudo vim ./etc/hadoop/hadoop-env.sh
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
 
+service ssh restart
+
+kill $(ps aux | grep 'datanode' | awk '{print $2}')
 ./sbin/start-dfs.sh
 
 
 IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
-./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1000 -files 10000
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 1
 ```
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -op open -threads 1 -files 1
 
 ### TODO List
 
