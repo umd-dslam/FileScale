@@ -64,6 +64,107 @@ mvn clean install -DskipTests -rf :hadoop-hdfs
 # mvn package -Pdist -Pnative -Dtar -DskipTests
 ```
 
+### Benchmark
+
+
+
+1. add hostname as an **alias** of localhost in `/etc/hosts`
+
+```bash
+# set password
+$ sudo passwd gangl
+$ sudo passwd root
+
+$ cat /etc/hostname
+
+$ sudo vim /etc/hosts 
+127.0.0.1       localhost linuxkit-025000000001
+```
+
+2. change the `core_site.xml` and `hdfs_site.xml` in `$HADOOP_HOME/etc/`
+
+```bash
+# check ip
+/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'
+```
+
+```bash
+# mkdir name data
+mkdir -p $HOME/hadoop/tmp
+mkdir -p $HOME/hadoop/name
+mkdir -p $HOME/hadoop/data
+```
+
+```bash
+# core_site.xml
+	<configuration>
+	    <property>
+	        <name>fs.defaultFS</name>
+	        <value>hdfs://192.168.65.3:9000</value>
+	    </property>
+	    
+	    <property>
+	        <name>hadoop.tmp.dir</name>
+	        <value>/home/gangl/hadoop/tmp</value>
+	    </property>
+	</configuration>
+```
+
+```bash
+	<configuration>
+		<property>
+			<name>dfs.replication</name>
+			<value>1</value>
+		</property>
+
+		<property>
+			<name>dfs.namenode.name.dir</name>
+			<value>/home/gangl/hadoop/name</value>
+		</property>
+
+		<property>
+			<name>dfs.datanode.data.dir</name>
+			<value>/home/gangl/hadoop/data</value>
+		</property>
+		<property>
+		  <name>dfs.namenode.fs-limits.min-block-size</name>
+		  <value>10</value>
+		</property>
+		<property>
+	        <name>dfs.webhdfs.enabled</name>
+	        <value>true</value>
+	        <description>提供web访问hdfs的权限</description>
+	    </property>
+	</configuration>
+```
+
+3. ssh
+
+```bash
+ssh-keygen -t rsa -f ~/.ssh/id_dsa  
+cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys  
+chmod 0600 ~/.ssh/authorized_keys
+```
+
+4. start namenode
+
+```bash
+cd $HADOOP_HOME
+./bin/hdfs namenode -format
+# add JAVA_HOME to sudo vim /etc/environment
+sudo vim /etc/environment
+JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-amd64"
+
+sudo vim ./etc/hadoop/hadoop-env.sh
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+./sbin/start-dfs.sh
+
+
+IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1000 -files 10000
+```
+
 ### TODO List
 
 - [x] Build HDFS
