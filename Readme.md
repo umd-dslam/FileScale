@@ -150,6 +150,11 @@ chmod 0600 ~/.ssh/authorized_keys
 
 ```bash
 cd $HADOOP_HOME
+
+# add env variables into hadoop-env.sh
+export HADOOP_ROOT_LOGGER=INFO,console
+export HADOOP_CLASSPATH="/home/gangl/java/postgresql-42.2.5.jar:"
+
 ./bin/hdfs namenode -format
 # add JAVA_HOME to sudo vim /etc/environment
 sudo vim /etc/environment
