@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import com.google.common.base.Preconditions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -24,23 +25,24 @@ public class DatabaseConnection {
             props.setProperty("user", username);
             props.setProperty("password", password);
             this.connection = DriverManager.getConnection(url, props);
-        } catch (ClassNotFoundException ex) {
-            System.out.println("Database Connection Creation Failed : " + ex.getMessage());
+        } catch (Exception ex) {
+            System.err.println("Database Connection Creation Failed : " + ex.getMessage());
+            ex.printStackTrace();
+            System.exit(0);
         }
-    }
 
-    private static void createINodesTable() {
+        Preconditions.checkArgument(connection != null);
+
         try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
             // check the existence of node in Postgres
             String sql =
             "CREATE TABLE IF NOT EXISTS inodes(id int primary key, parent int, name text);";
-            Statement st = conn.createStatement();
+            Statement st = connection.createStatement();
             st.execute(sql);
             st.close();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
-        }        
+        }
     }
 
     public Connection getConnection() {
@@ -50,10 +52,8 @@ public class DatabaseConnection {
     public static DatabaseConnection getInstance() throws SQLException {
         if (instance == null) {
             instance = new DatabaseConnection();
-            createINodesTable();
         } else if (instance.getConnection().isClosed()) {
             instance = new DatabaseConnection();
-            createINodesTable();
         }
         return instance;
     }
@@ -89,7 +89,7 @@ public class DatabaseConnection {
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             // check the existence of node in Postgres
-            String sql = "SELECT id FROM inodes WHERE parent = ? AND name = ?)";
+            String sql = "SELECT id FROM inodes WHERE parent = ? AND name = ?;";
             PreparedStatement pst = conn.prepareStatement(sql);
             pst.setLong(1, parentId);
             pst.setString(2, childName);
