@@ -36,7 +36,8 @@ public class DatabaseConnection {
         try {
             // check the existence of node in Postgres
             String sql =
-            "CREATE TABLE IF NOT EXISTS inodes(id int primary key, parent int, name text);";
+            "DROP TABLE IF EXISTS inodes;" +
+            "CREATE TABLE inodes(id int primary key, parent int, name text);";
             Statement st = connection.createStatement();
             st.execute(sql);
             st.close();
