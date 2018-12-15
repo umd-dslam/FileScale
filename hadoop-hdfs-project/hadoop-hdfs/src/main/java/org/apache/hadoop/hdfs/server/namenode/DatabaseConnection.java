@@ -10,20 +10,27 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.Properties;
 
-public class DatabaseConnection {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+public class DatabaseConnection {
+    
     private static DatabaseConnection instance;
     private Connection connection;
-    private String url = "jdbc:postgresql://localhost:5432/docker";
+    private String url = "jdbc:postgresql://192.168.65.3:5432/docker";
     private String username = "docker";
     private String password = "docker";
+
+    static final Logger LOG = LoggerFactory.getLogger(DatabaseConnection.class);
 
     private DatabaseConnection() throws SQLException {
         try {
             Class.forName("org.postgresql.Driver");
+
             Properties props = new Properties();
             props.setProperty("user", username);
             props.setProperty("password", password);
+
             this.connection = DriverManager.getConnection(url, props);
         } catch (Exception ex) {
             System.err.println("Database Connection Creation Failed : " + ex.getMessage());
@@ -34,12 +41,15 @@ public class DatabaseConnection {
         Preconditions.checkArgument(connection != null);
 
         try {
-            // check the existence of node in Postgres
+            // create inode table in Postgres
             String sql =
             "DROP TABLE IF EXISTS inodes;" +
             "CREATE TABLE inodes(id int primary key, parent int, name text);";
             Statement st = connection.createStatement();
             st.execute(sql);
+
+            LOG.info("DatabaseConnection: [OK] Create inodes Table in Postgres.");
+
             st.close();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
@@ -103,11 +113,15 @@ public class DatabaseConnection {
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
+
+        LOG.info("getChild: (" + childId + "," + parentId + "," + childName + ")");
+
         return childId;   
     }
 
     public static boolean addChild(final long childId, final String childName, final long parentId) {
         if (checkInodeExistence(parentId, childName)) {
+            LOG.info("addChild: [EXIST] (" + parentId + "," + childName + ")");
             return false;
         }
         try {
@@ -119,49 +133,11 @@ public class DatabaseConnection {
             pst.setString(2, childName);
             pst.setLong(3, parentId);
             pst.executeUpdate();
+            LOG.info("addChild: [OK] INSERT (" + childId + "," + parentId + "," + childName + ")");
             pst.close();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
         return true;
-    }
-
-    public static void main(String [] args) {
-        try {
-            DatabaseConnection db = new DatabaseConnection();
-            String tableName = "dir";
-            Statement st = db.getConnection().createStatement();
-
-            // Create a table
-            String sqlCreate = "drop table if exists " + tableName + ";"
-                + "create table if not exists " + tableName
-                + "(id int primary key, parent int, name text)";
-            st.execute(sqlCreate);
-
-            // Insert into table
-            st.executeUpdate("insert into " + tableName + " values "
-                + "(1, NULL, 'hadoop'),"
-                + "(2, 1, 'hdfs'),"
-                + "(3, 2, 'src'),"
-                + "(4, 2, 'test'),"
-                + "(5, 3, 'fs.java'),"
-                + "(6, 4, 'fs.java')");
-
-            // Select from table
-            ResultSet rs = st.executeQuery("SELECT * FROM " + tableName);
-            ResultSetMetaData rsmd = rs.getMetaData();
-            int columnsNumber = rsmd.getColumnCount();
-            while (rs.next()) {
-                for (int i = 1; i <= columnsNumber; i++) {
-                    System.out.format("%6.6s ", rs.getString(i));
-                }
-                System.out.println("");
-            }
-            rs.close();
-
-            st.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }
