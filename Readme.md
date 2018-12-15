@@ -160,7 +160,7 @@ export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
 
 service ssh restart
 
-kill $(ps aux | grep 'datanode' | awk '{print $2}')
+kill $(jps | grep '[NameNode,DataNode]' | awk '{print $1}')
 ./sbin/start-dfs.sh
 
 
