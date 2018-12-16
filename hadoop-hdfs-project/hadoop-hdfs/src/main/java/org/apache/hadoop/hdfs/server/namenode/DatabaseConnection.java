@@ -69,6 +69,57 @@ public class DatabaseConnection {
         return instance;
     }
 
+    public static boolean checkInodeExistence(final long parentId, final String childName) {
+        boolean exist = false;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            // check the existence of node in Postgres
+            String sql =
+            "SELECT CASE WHEN EXISTS (SELECT * FROM inodes WHERE parent = ? AND name = ?)"
+            + " THEN CAST(1 AS BIT)"
+            + " ELSE CAST(0 AS BIT) END";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, parentId);
+            pst.setString(2, childName);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                if (rs.getBoolean(1) == true) {
+                    exist = true;
+                }
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return exist;
+    }
+
+    public static boolean checkInodeExistence(final long childId) {
+        boolean exist = false;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            // check the existence of node in Postgres
+            String sql =
+            "SELECT CASE WHEN EXISTS (SELECT * FROM inodes WHERE id = ?)"
+            + " THEN CAST(1 AS BIT)"
+            + " ELSE CAST(0 AS BIT) END";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, childId);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                if (rs.getBoolean(1) == true) {
+                    exist = true;
+                }
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return exist;
+    }
+
     public static long getChild(final long parentId, final String childName) {
         long childId = -1;
         try {
@@ -94,24 +145,36 @@ public class DatabaseConnection {
     }
 
     public static boolean addChild(final long childId, final String childName, final long parentId) {
-        if (getChild(parentId, childName) != -1) {
+        // return false if the child with this name already exists 
+        if (checkInodeExistence(parentId, childName)) {
             LOG.info("addChild: [EXIST] (" + parentId + "," + childName + ")");
             return false;
         }
+
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
-            // add node into Postgres
-            String sql = "INSERT INTO inodes(id, name, parent) VALUES (?,?,?);";
+
+            String sql;
+            if (checkInodeExistence(childId)) {
+                // rename inode
+                sql = "UPDATE inodes SET parent = ?, name = ? WHERE id = ?;";
+                LOG.info("addChild: [OK] UPDATE (" + childId + "," + parentId + "," + childName + ")");
+            } else {
+                // insert inode
+                sql = "INSERT INTO inodes(parent, name, id) VALUES (?,?,?);";
+                LOG.info("addChild: [OK] INSERT (" + childId + "," + parentId + "," + childName + ")");
+            }
+
             PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setLong(1, childId);
+            pst.setLong(1, parentId);
             pst.setString(2, childName);
-            pst.setLong(3, parentId);
+            pst.setLong(3, childId);
             pst.executeUpdate();
-            LOG.info("addChild: [OK] INSERT (" + childId + "," + parentId + "," + childName + ")");
             pst.close();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
+
         return true;
     }
 }

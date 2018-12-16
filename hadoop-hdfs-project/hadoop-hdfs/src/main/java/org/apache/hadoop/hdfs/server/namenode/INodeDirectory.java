@@ -558,7 +558,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return sf.addChild(this, node, setModTime, latestSnapshotId);
     }
 
-    // ADD(gangliao): insert new inode into Postgres
+    // ADD(gangliao): two options
+    // Insert new inode or Rename old inode in Postgres
     DatabaseConnection.addChild(
       node.getId(), node.getLocalName(), this.getId());
 
