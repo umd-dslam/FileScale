@@ -170,9 +170,8 @@ kill $(jps | grep '[NameNode,DataNode]' | awk '{print $1}')
 
 
 IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
-./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 1
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 1 -keepResults -logLevel INFO
 ```
-./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -op open -threads 1 -files 1
 
 ### TODO List
 
@@ -197,9 +196,15 @@ IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
 [INFO] ------------------------------------------------------------------------
 ````
 
-- [ ] Analyse INode, INodeFile, and INodeDirectory classes
+- [x] create
 
-- [ ] Replace them by DB Table
+- [ ] open
+
+- [ ] rename
+
+- [x] Analyse INode, INodeFile, and INodeDirectory classes
+
+- [x] Replace them by DB Table
 
 - [ ] Avoid update INode Operations into FSEditLog
 

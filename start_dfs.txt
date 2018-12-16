@@ -1,0 +1,15 @@
+rm -rf ~/hadoop/data/*
+rm -rf ~/hadoop/name/*
+rm -rf ~/hadoop/tmp/*
+rm -rf logs/*
+
+kill $(jps | grep '[NameNode,DataNode]' | awk '{print $1}')
+./bin/hdfs namenode -format
+./sbin/start-dfs.sh
+
+# open
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 1 -keepResults -logLevel INFO
+
+
+# create
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op create -threads 1 -files 100 -keepResults -logLevel INFO
