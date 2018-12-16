@@ -510,6 +510,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
       return sf.removeChild(this, child, latestSnapshotId);
     }
+    
+    // ADD(gangliao): Remove inode from Postgres
+    DatabaseConnection.removeChild(node.getId());
+
     return removeChild(child);
   }
   

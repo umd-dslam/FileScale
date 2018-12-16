@@ -1,6 +1,3 @@
-package org.apache.hadoop.hdfs.server.namenode;
-
-import com.google.common.base.Preconditions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -10,49 +7,34 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class DatabaseConnectionTest {
 
-public class DatabaseConnection {
-    
-    private static DatabaseConnection instance;
+    private static DatabaseConnectionTest instance;
     private Connection connection;
     private String url = "jdbc:postgresql://192.168.65.3:5432/docker";
     private String username = "docker";
     private String password = "docker";
 
-    static final Logger LOG = LoggerFactory.getLogger(DatabaseConnection.class);
-
-    private DatabaseConnection() throws SQLException {
+    private DatabaseConnectionTest() throws SQLException {
         try {
             Class.forName("org.postgresql.Driver");
-
             Properties props = new Properties();
             props.setProperty("user", username);
             props.setProperty("password", password);
-
             this.connection = DriverManager.getConnection(url, props);
-        } catch (Exception ex) {
-            System.err.println("Database Connection Creation Failed : " + ex.getMessage());
-            ex.printStackTrace();
-            System.exit(0);
+        } catch (ClassNotFoundException ex) {
+            System.out.println("Database Connection Creation Failed : " + ex.getMessage());
         }
-
-        Preconditions.checkArgument(connection != null);
-
         try {
-            // create inode table in Postgres
+            Connection conn = this.connection; 
+            // check the existence of node in Postgres
             String sql =
-                "DROP TABLE IF EXISTS inodes;" +
-                "CREATE TABLE inodes(id int primary key, parent int, name text);";
-            Statement st = connection.createStatement();
+            "CREATE TABLE IF NOT EXISTS inodes(id int primary key, parent int, name text);";
+            Statement st = conn.createStatement();
             st.execute(sql);
-
-            LOG.info("DatabaseConnection: [OK] Create inodes Table in Postgres.");
-
             st.close();
         } catch (SQLException ex) {
-            System.err.println(ex.getMessage());
+            System.out.println(ex.getMessage());
         }
     }
 
@@ -60,11 +42,11 @@ public class DatabaseConnection {
         return connection;
     }
 
-    public static DatabaseConnection getInstance() throws SQLException {
+    public static DatabaseConnectionTest getInstance() throws SQLException {
         if (instance == null) {
-            instance = new DatabaseConnection();
+            instance = new DatabaseConnectionTest();
         } else if (instance.getConnection().isClosed()) {
-            instance = new DatabaseConnection();
+            instance = new DatabaseConnectionTest();
         }
         return instance;
     }
@@ -75,11 +57,9 @@ public class DatabaseConnection {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             // check the existence of node in Postgres
             String sql =
-                "SELECT CASE WHEN EXISTS (" +
-                "   SELECT * FROM inodes WHERE parent = ? AND name = ?" +
-                ") " +
-                "THEN CAST(1 AS BIT) " +
-                "ELSE CAST(0 AS BIT) END";
+            "SELECT CASE WHEN EXISTS (SELECT * FROM inodes WHERE parent = ? AND name = ?)"
+            + " THEN CAST(1 AS BIT)"
+            + " ELSE CAST(0 AS BIT) END";
             PreparedStatement pst = conn.prepareStatement(sql);
             pst.setLong(1, parentId);
             pst.setString(2, childName);
@@ -92,7 +72,7 @@ public class DatabaseConnection {
             rs.close();
             pst.close();
         } catch (SQLException ex) {
-            System.err.println(ex.getMessage());
+            System.out.println(ex.getMessage());
         }
         return exist;
     }
@@ -103,11 +83,9 @@ public class DatabaseConnection {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             // check the existence of node in Postgres
             String sql =
-                "SELECT CASE WHEN EXISTS (" +
-                "   SELECT * FROM inodes WHERE id = ?" +
-                ") " +
-                "THEN CAST(1 AS BIT) " +
-                "ELSE CAST(0 AS BIT) END";
+            "SELECT CASE WHEN EXISTS (SELECT * FROM inodes WHERE id = ?)"
+            + " THEN CAST(1 AS BIT)"
+            + " ELSE CAST(0 AS BIT) END";
             PreparedStatement pst = conn.prepareStatement(sql);
             pst.setLong(1, childId);
             ResultSet rs = pst.executeQuery();
@@ -119,7 +97,7 @@ public class DatabaseConnection {
             rs.close();
             pst.close();
         } catch (SQLException ex) {
-            System.err.println(ex.getMessage());
+            System.out.println(ex.getMessage());
         }
         return exist;
     }
@@ -166,15 +144,12 @@ public class DatabaseConnection {
             System.out.println(ex.getMessage());
         }
 
-        LOG.info("getChild: (" + childId + "," + parentId + "," + childName + ")");
-
         return childId;   
     }
 
     public static boolean addChild(final long childId, final String childName, final long parentId) {
         // return false if the child with this name already exists 
         if (checkInodeExistence(parentId, childName)) {
-            LOG.info("addChild: [EXIST] (" + parentId + "," + childName + ")");
             return false;
         }
 
@@ -185,11 +160,9 @@ public class DatabaseConnection {
             if (checkInodeExistence(childId)) {
                 // rename inode
                 sql = "UPDATE inodes SET parent = ?, name = ? WHERE id = ?;";
-                LOG.info("addChild: [OK] UPDATE (" + childId + "," + parentId + "," + childName + ")");
             } else {
                 // insert inode
                 sql = "INSERT INTO inodes(parent, name, id) VALUES (?,?,?);";
-                LOG.info("addChild: [OK] INSERT (" + childId + "," + parentId + "," + childName + ")");
             }
 
             PreparedStatement pst = conn.prepareStatement(sql);
@@ -204,4 +177,39 @@ public class DatabaseConnection {
 
         return true;
     }
+
+    public static void main(String [] args) {
+        try {
+            DatabaseConnectionTest db = DatabaseConnectionTest.getInstance();
+            String tableName = "inodes";
+            Statement st = db.getConnection().createStatement();
+
+            // Insert into table
+            st.executeUpdate("insert into " + tableName + " values "
+                + "(1, NULL, 'hadoop'),"
+                + "(2, 1, 'hdfs'),"
+                + "(3, 2, 'src'),"
+                + "(4, 2, 'test'),"
+                + "(5, 3, 'fs.java'),"
+                + "(6, 4, 'fs.java')");
+
+            // Select from table
+            // ResultSet rs = st.executeQuery("SELECT * FROM " + tableName);
+            // ResultSetMetaData rsmd = rs.getMetaData();
+            // int columnsNumber = rsmd.getColumnCount();
+            // while (rs.next()) {
+            //     for (int i = 1; i <= columnsNumber; i++) {
+            //         System.out.format("%6.6s ", rs.getString(i));
+            //     }
+            //     System.out.println("");
+            // }
+            // rs.close();
+            st.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        DatabaseConnectionTest.removeChild(2);
+    }
 }
+    
