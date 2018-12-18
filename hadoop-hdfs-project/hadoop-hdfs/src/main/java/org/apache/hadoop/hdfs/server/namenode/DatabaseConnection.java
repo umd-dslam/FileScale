@@ -44,7 +44,7 @@ public class DatabaseConnection {
             // create inode table in Postgres
             String sql =
                 "DROP TABLE IF EXISTS inodes;" +
-                "CREATE TABLE inodes(id int primary key, parent int, name text);";
+                "CREATE TABLE inodes(id int primary key, parent int, name text, accessTime bigint);";
             Statement st = connection.createStatement();
             st.execute(sql);
 
@@ -145,6 +145,41 @@ public class DatabaseConnection {
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
         }
+    }
+
+    public static void setAccessTime(final long id, final long accessTime) {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql =
+                "UPDATE inodes SET accessTime = ? WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, accessTime);
+            pst.setLong(2, id);
+            pst.executeUpdate();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+
+    public static long getAccessTime(final long id) {
+        long accessTime = -1;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql = "SELECT accessTime FROM inodes WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, id);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                accessTime = rs.getLong(1);
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+
+        return accessTime;
     }
 
     public static long getChild(final long parentId, final String childName) {

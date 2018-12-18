@@ -114,8 +114,6 @@ public abstract class INodeWithAdditionalFields extends INode
   private long permission = 0L;
   /** The last modification time*/
   private long modificationTime = 0L;
-  /** The last access time*/
-  private long accessTime = 0L;
 
   /** For implementing {@link LinkedElement}. */
   private LinkedElement next = null;
@@ -130,7 +128,8 @@ public abstract class INodeWithAdditionalFields extends INode
     this.name = name;
     this.permission = permission;
     this.modificationTime = modificationTime;
-    this.accessTime = accessTime;
+   
+    this.setAccessTime(accessTime);
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
@@ -143,7 +142,9 @@ public abstract class INodeWithAdditionalFields extends INode
   INodeWithAdditionalFields(INodeWithAdditionalFields other) {
     this(other.getParentReference() != null ? other.getParentReference()
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
-        other.permission, other.modificationTime, other.accessTime);
+        other.permission, other.modificationTime,
+        // TODO(gangliao): performance optimization
+        DatabaseConnection.getAccessTime(other.getId()));
   }
 
   @Override
@@ -282,7 +283,9 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getAccessTime();
     }
-    return accessTime;
+
+    // ADD(gangliao): get INode's access time in Postgres
+    return DatabaseConnection.getAccessTime(this.getId());
   }
 
   /**
@@ -290,7 +293,8 @@ public abstract class INodeWithAdditionalFields extends INode
    */
   @Override
   public final void setAccessTime(long accessTime) {
-    this.accessTime = accessTime;
+    // ADD(gangliao): set INode's access time in Postgres
+    DatabaseConnection.setAccessTime(this.getId(), accessTime);
   }
 
   protected void addFeature(Feature f) {

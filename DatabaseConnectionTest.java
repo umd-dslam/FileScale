@@ -29,7 +29,8 @@ public class DatabaseConnectionTest {
             Connection conn = this.connection; 
             // check the existence of node in Postgres
             String sql =
-            "CREATE TABLE IF NOT EXISTS inodes(id int primary key, parent int, name text);";
+            "DROP TABLE IF EXISTS inodes;" +
+            "CREATE TABLE inodes(id int primary key, parent int, name text, accessTime bigint);";
             Statement st = conn.createStatement();
             st.execute(sql);
             st.close();
@@ -109,10 +110,10 @@ public class DatabaseConnectionTest {
             String sql =
                 "DELETE FROM inodes WHERE id IN (" +
                 "   WITH RECURSIVE cte AS (" +
-                "       SELECT id, parent, name, 1 AS lev FROM inodes d WHERE id = ?" +
+                "       SELECT id, parent FROM inodes d WHERE id = ?" +
                 "   UNION ALL" +
-                "       SELECT d.id, d.parent, d.name, lev + 1 FROM cte" +
-                "       JOIN dir d ON cte.id = d.parent" +
+                "       SELECT d.id, d.parent FROM cte" +
+                "       JOIN inodes d ON cte.id = d.parent" +
                 "   )" +
                 "   SELECT id FROM cte" +
                 ");";
@@ -123,6 +124,41 @@ public class DatabaseConnectionTest {
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
         }
+    }
+
+    public static void setAccessTime(final long id, final long accessTime) {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql =
+                "UPDATE inodes SET accessTime = ? WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, accessTime);
+            pst.setLong(2, id);
+            pst.executeUpdate();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+
+    public static long getAccessTime(final long id) {
+        long accessTime = -1;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql = "SELECT accessTime FROM inodes WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, id);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                accessTime = rs.getLong(1);
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+
+        return accessTime;
     }
 
     public static long getChild(final long parentId, final String childName) {
@@ -186,12 +222,12 @@ public class DatabaseConnectionTest {
 
             // Insert into table
             st.executeUpdate("insert into " + tableName + " values "
-                + "(1, NULL, 'hadoop'),"
-                + "(2, 1, 'hdfs'),"
-                + "(3, 2, 'src'),"
-                + "(4, 2, 'test'),"
-                + "(5, 3, 'fs.java'),"
-                + "(6, 4, 'fs.java')");
+                + "(1, NULL, 'hadoop', 2019),"
+                + "(2, 1, 'hdfs', 2019),"
+                + "(3, 2, 'src', 2019),"
+                + "(4, 2, 'test', 2019),"
+                + "(5, 3, 'fs.java', 2019),"
+                + "(6, 4, 'fs.java', 2019)");
 
             // Select from table
             // ResultSet rs = st.executeQuery("SELECT * FROM " + tableName);
@@ -209,7 +245,8 @@ public class DatabaseConnectionTest {
             e.printStackTrace();
         }
 
-        DatabaseConnectionTest.removeChild(2);
+        DatabaseConnectionTest.setAccessTime(2, 2080);
+        System.out.println(DatabaseConnectionTest.getAccessTime(2));
     }
 }
     
