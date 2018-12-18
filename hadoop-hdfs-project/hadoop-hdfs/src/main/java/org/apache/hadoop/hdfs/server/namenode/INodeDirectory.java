@@ -78,7 +78,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
       long mtime) {
     super(id, name, permissions, mtime, 0L);
   }
-  
+  public INodeDirectory(long id, PermissionStatus permissions) {
+    super(id, permissions);
+  }
+
   /**
    * Copy constructor
    * @param other The INodeDirectory to be copied

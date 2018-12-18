@@ -132,12 +132,22 @@ public abstract class INodeWithAdditionalFields extends INode
     this.setAccessTime(accessTime);
   }
 
+  private INodeWithAdditionalFields(INode parent, long id, long permission) {
+    super(parent);
+    this.id = id;
+    this.permission = permission;
+  }
+
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
       long modificationTime, long accessTime) {
     this(null, id, name, PermissionStatusFormat.toLong(permissions),
         modificationTime, accessTime);
   }
-  
+
+  INodeWithAdditionalFields(long id,  PermissionStatus permissions) {
+    this(null, id,  PermissionStatusFormat.toLong(permissions));
+  }
+
   /** @param other Other node to be copied */
   INodeWithAdditionalFields(INodeWithAdditionalFields other) {
     this(other.getParentReference() != null ? other.getParentReference()
