@@ -131,10 +131,10 @@ public class DatabaseConnection {
             String sql =
                 "DELETE FROM inodes WHERE id IN (" +
                 "   WITH RECURSIVE cte AS (" +
-                "       SELECT id, parent, name, 1 AS lev FROM inodes d WHERE id = ?" +
+                "       SELECT id, parent FROM inodes d WHERE id = ?" +
                 "   UNION ALL" +
-                "       SELECT d.id, d.parent, d.name, lev + 1 FROM cte" +
-                "       JOIN dir d ON cte.id = d.parent" +
+                "       SELECT d.id, d.parent FROM cte" +
+                "       JOIN inodes d ON cte.id = d.parent" +
                 "   )" +
                 "   SELECT id FROM cte" +
                 ");";
