@@ -274,6 +274,22 @@ public class INodeFile extends INodeWithAdditionalFields
     }
     setBlocks(blklist);
   }
+
+  INodeFile(long id, PermissionStatus permissions,
+      BlockInfo[] blklist, Short replication, Byte ecPolicyID,
+      byte storagePolicyID, BlockType blockType) {
+    super(id, permissions);
+    final long layoutRedundancy = HeaderFormat.getBlockLayoutRedundancy(
+        blockType, replication, ecPolicyID);
+    header = HeaderFormat.toLong(DatabaseConnection.getPreferredBlockSize(id), layoutRedundancy,
+        storagePolicyID);
+    if (blklist != null && blklist.length > 0) {
+      for (BlockInfo b : blklist) {
+        Preconditions.checkArgument(b.getBlockType() == blockType);
+      }
+    }
+    setBlocks(blklist);
+  }
   
   public INodeFile(INodeFile that) {
     super(that);
