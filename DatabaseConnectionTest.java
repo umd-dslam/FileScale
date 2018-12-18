@@ -29,8 +29,10 @@ public class DatabaseConnectionTest {
             Connection conn = this.connection; 
             // check the existence of node in Postgres
             String sql =
-            "DROP TABLE IF EXISTS inodes;" +
-            "CREATE TABLE inodes(id int primary key, parent int, name text, accessTime bigint);";
+                "CREATE TABLE inodes(" +
+                "   id int primary key, parent int, name text," +
+                "   accessTime bigint, modificationTime bigint" +
+                ");";
             Statement st = conn.createStatement();
             st.execute(sql);
             st.close();
@@ -161,6 +163,41 @@ public class DatabaseConnectionTest {
         return accessTime;
     }
 
+    public static void setModificationTime(final long id, final long modificationTime) {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql =
+                "UPDATE inodes SET modificationTime = ? WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, modificationTime);
+            pst.setLong(2, id);
+            pst.executeUpdate();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+
+    public static long getModificationTime(final long id) {
+        long modificationTime = -1;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql = "SELECT modificationTime FROM inodes WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, id);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                modificationTime = rs.getLong(1);
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+
+        return modificationTime;
+    }
+
     public static long getChild(final long parentId, final String childName) {
         long childId = -1;
         try {
@@ -222,12 +259,12 @@ public class DatabaseConnectionTest {
 
             // Insert into table
             st.executeUpdate("insert into " + tableName + " values "
-                + "(1, NULL, 'hadoop', 2019),"
-                + "(2, 1, 'hdfs', 2019),"
-                + "(3, 2, 'src', 2019),"
-                + "(4, 2, 'test', 2019),"
-                + "(5, 3, 'fs.java', 2019),"
-                + "(6, 4, 'fs.java', 2019)");
+                + "(1, NULL, 'hadoop', 2019, 2020),"
+                + "(2, 1, 'hdfs', 2019, 2020),"
+                + "(3, 2, 'src', 2019, 2020),"
+                + "(4, 2, 'test', 2019, 2020),"
+                + "(5, 3, 'fs.java', 2019, 2020),"
+                + "(6, 4, 'fs.java', 2019, 2020)");
 
             // Select from table
             // ResultSet rs = st.executeQuery("SELECT * FROM " + tableName);
@@ -245,8 +282,8 @@ public class DatabaseConnectionTest {
             e.printStackTrace();
         }
 
-        DatabaseConnectionTest.setAccessTime(2, 2080);
-        System.out.println(DatabaseConnectionTest.getAccessTime(2));
+        DatabaseConnectionTest.setModificationTime(2, 2077);
+        System.out.println(DatabaseConnectionTest.getModificationTime(2));
     }
 }
     

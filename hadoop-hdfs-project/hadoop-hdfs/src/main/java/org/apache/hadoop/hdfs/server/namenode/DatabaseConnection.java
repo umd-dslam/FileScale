@@ -44,7 +44,10 @@ public class DatabaseConnection {
             // create inode table in Postgres
             String sql =
                 "DROP TABLE IF EXISTS inodes;" +
-                "CREATE TABLE inodes(id int primary key, parent int, name text, accessTime bigint);";
+                "CREATE TABLE inodes(" +
+                "   id int primary key, parent int, name text," +
+                "   accessTime bigint, modificationTime bigint" +
+                ");";
             Statement st = connection.createStatement();
             st.execute(sql);
 
@@ -180,6 +183,41 @@ public class DatabaseConnection {
         }
 
         return accessTime;
+    }
+
+    public static void setModificationTime(final long id, final long modificationTime) {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql =
+                "UPDATE inodes SET modificationTime = ? WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, modificationTime);
+            pst.setLong(2, id);
+            pst.executeUpdate();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+
+    public static long getModificationTime(final long id) {
+        long modificationTime = -1;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql = "SELECT modificationTime FROM inodes WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, id);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                modificationTime = rs.getLong(1);
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+
+        return modificationTime;
     }
 
     public static long getChild(final long parentId, final String childName) {

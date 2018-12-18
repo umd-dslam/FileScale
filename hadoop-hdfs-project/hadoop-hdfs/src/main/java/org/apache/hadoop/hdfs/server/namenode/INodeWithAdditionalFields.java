@@ -112,8 +112,6 @@ public abstract class INodeWithAdditionalFields extends INode
    * should not modify it.
    */
   private long permission = 0L;
-  /** The last modification time*/
-  private long modificationTime = 0L;
 
   /** For implementing {@link LinkedElement}. */
   private LinkedElement next = null;
@@ -127,8 +125,7 @@ public abstract class INodeWithAdditionalFields extends INode
     this.id = id;
     this.name = name;
     this.permission = permission;
-    this.modificationTime = modificationTime;
-   
+    this.setModificationTime(modificationTime);  
     this.setAccessTime(accessTime);
   }
 
@@ -152,9 +149,10 @@ public abstract class INodeWithAdditionalFields extends INode
   INodeWithAdditionalFields(INodeWithAdditionalFields other) {
     this(other.getParentReference() != null ? other.getParentReference()
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
-        other.permission, other.modificationTime,
-        // TODO(gangliao): performance optimization
-        DatabaseConnection.getAccessTime(other.getId()));
+          other.permission,
+          // TODO(gangliao): performance optimization
+          DatabaseConnection.getModificationTime(other.getId()),
+          DatabaseConnection.getAccessTime(other.getId()));
   }
 
   @Override
@@ -265,7 +263,8 @@ public abstract class INodeWithAdditionalFields extends INode
       return getSnapshotINode(snapshotId).getModificationTime();
     }
 
-    return this.modificationTime;
+    // ADD(gangliao): get INode's access time in Postgres
+    return DatabaseConnection.getModificationTime(this.getId());
   }
 
 
@@ -280,12 +279,14 @@ public abstract class INodeWithAdditionalFields extends INode
   }
 
   final void cloneModificationTime(INodeWithAdditionalFields that) {
-    this.modificationTime = that.modificationTime;
+    long mtime = DatabaseConnection.getModificationTime(that.getId());
+    DatabaseConnection.setModificationTime(this.getId(), mtime);
   }
 
   @Override
   public final void setModificationTime(long modificationTime) {
-    this.modificationTime = modificationTime;
+    // ADD(gangliao): set INode's modification time in Postgres
+    DatabaseConnection.setModificationTime(this.getId(), modificationTime);
   }
 
   @Override
