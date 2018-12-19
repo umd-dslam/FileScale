@@ -141,6 +141,7 @@ public abstract class INodeWithAdditionalFields extends INode
         modificationTime, accessTime);
   }
 
+  // Note: only used by the loader of image file
   INodeWithAdditionalFields(long id,  PermissionStatus permissions) {
     this(null, id,  PermissionStatusFormat.toLong(permissions));
   }
@@ -272,7 +273,7 @@ public abstract class INodeWithAdditionalFields extends INode
   @Override
   public final INode updateModificationTime(long mtime, int latestSnapshotId) {
     Preconditions.checkState(isDirectory());
-    if (mtime <= modificationTime) {
+    if (mtime <= DatabaseConnection.getModificationTime(this.getId())) {
       return this;
     }
     return setModificationTime(mtime, latestSnapshotId);

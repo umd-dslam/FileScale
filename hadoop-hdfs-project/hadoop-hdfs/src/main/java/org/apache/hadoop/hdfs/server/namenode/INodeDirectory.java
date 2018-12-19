@@ -78,6 +78,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
       long mtime) {
     super(id, name, permissions, mtime, 0L);
   }
+
+  // Note: only used by the loader of image file
   public INodeDirectory(long id, PermissionStatus permissions) {
     super(id, permissions);
   }

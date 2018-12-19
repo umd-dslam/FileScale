@@ -46,7 +46,8 @@ public class DatabaseConnection {
                 "DROP TABLE IF EXISTS inodes;" +
                 "CREATE TABLE inodes(" +
                 "   id int primary key, parent int, name text," +
-                "   accessTime bigint, modificationTime bigint" +
+                "   accessTime bigint, modificationTime bigint," +
+                "   header bigint" +
                 ");";
             Statement st = connection.createStatement();
             st.execute(sql);
@@ -218,6 +219,41 @@ public class DatabaseConnection {
         }
 
         return modificationTime;
+    }
+
+    public static void setHeader(final long id, final long header) {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql =
+                "UPDATE inodes SET header = ? WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, header);
+            pst.setLong(2, id);
+            pst.executeUpdate();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+
+    public static long getHeader(final long id) {
+        long header = -1;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql = "SELECT header FROM inodes WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, id);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                header = rs.getLong(1);
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+
+        return header;
     }
 
     public static long getChild(final long parentId, final String childName) {
