@@ -111,7 +111,7 @@ public abstract class INodeWithAdditionalFields extends INode
    * and {@link #updatePermissionStatus(PermissionStatusFormat, long)}
    * should not modify it.
    */
-  private long permission = 0L;
+  // private long permission = 0L;
 
   /** For implementing {@link LinkedElement}. */
   private LinkedElement next = null;
@@ -124,15 +124,15 @@ public abstract class INodeWithAdditionalFields extends INode
     super(parent);
     this.id = id;
     this.name = name;
-    this.permission = permission;
+    this.setPermission(permission);
     this.setModificationTime(modificationTime);  
     this.setAccessTime(accessTime);
   }
 
-  private INodeWithAdditionalFields(INode parent, long id, long permission) {
+  private INodeWithAdditionalFields(INode parent, long id, byte[] name) {
     super(parent);
     this.id = id;
-    this.permission = permission;
+    this.name = name;
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
@@ -142,16 +142,16 @@ public abstract class INodeWithAdditionalFields extends INode
   }
 
   // Note: only used by the loader of image file
-  INodeWithAdditionalFields(long id,  PermissionStatus permissions) {
-    this(null, id,  PermissionStatusFormat.toLong(permissions));
+  INodeWithAdditionalFields(long id, byte[] name) {
+    this(null, id, name);
   }
 
   /** @param other Other node to be copied */
   INodeWithAdditionalFields(INodeWithAdditionalFields other) {
     this(other.getParentReference() != null ? other.getParentReference()
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
-          other.permission,
           // TODO(gangliao): performance optimization
+          DatabaseConnection.getPermission(other.getId()),
           DatabaseConnection.getModificationTime(other.getId()),
           DatabaseConnection.getAccessTime(other.getId()));
   }
@@ -184,7 +184,8 @@ public abstract class INodeWithAdditionalFields extends INode
 
   /** Clone the {@link PermissionStatus}. */
   final void clonePermissionStatus(INodeWithAdditionalFields that) {
-    this.permission = that.permission;
+    long permission = DatabaseConnection.getPermission(that.getId());
+    DatabaseConnection.setPermission(this.getId(), permission);
   }
 
   @Override
@@ -193,8 +194,14 @@ public abstract class INodeWithAdditionalFields extends INode
         getFsPermission(snapshotId));
   }
 
+  private final void setPermission(long permission) {
+    DatabaseConnection.setPermission(this.getId(), permission);
+  }
+
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
-    this.permission = f.BITS.combine(n, permission);
+    long permission = DatabaseConnection.getPermission(this.getId()); 
+    permission = f.BITS.combine(n, permission);
+    DatabaseConnection.setPermission(this.getId(), permission);
   }
 
   @Override
@@ -202,7 +209,8 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getUserName();
     }
-    return PermissionStatusFormat.getUser(permission);
+    return PermissionStatusFormat.getUser(
+      DatabaseConnection.getPermission(this.getId()));
   }
 
   @Override
@@ -216,7 +224,8 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getGroupName();
     }
-    return PermissionStatusFormat.getGroup(permission);
+    return PermissionStatusFormat.getGroup(
+      DatabaseConnection.getPermission(this.getId()));
   }
 
   @Override
@@ -236,7 +245,8 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public final short getFsPermissionShort() {
-    return PermissionStatusFormat.getMode(permission);
+    return PermissionStatusFormat.getMode(
+      DatabaseConnection.getPermission(this.getId()));
   }
   @Override
   void setPermission(FsPermission permission) {
@@ -246,7 +256,7 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public long getPermissionLong() {
-    return permission;
+    return DatabaseConnection.getPermission(this.getId());
   }
 
   @Override

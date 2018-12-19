@@ -277,9 +277,8 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   // Note: used only by the loader of image file
-  INodeFile(long id, PermissionStatus permissions,
-      BlockInfo[] blklist, BlockType blockType) {
-    super(id, permissions);
+  INodeFile(long id, byte[] name, BlockInfo[] blklist, BlockType blockType) {
+    super(id, name);
     if (blklist != null && blklist.length > 0) {
       for (BlockInfo b : blklist) {
         Preconditions.checkArgument(b.getBlockType() == blockType);

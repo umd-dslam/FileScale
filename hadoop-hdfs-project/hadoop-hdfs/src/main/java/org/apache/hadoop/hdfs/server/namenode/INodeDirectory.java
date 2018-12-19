@@ -80,8 +80,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   // Note: only used by the loader of image file
-  public INodeDirectory(long id, PermissionStatus permissions) {
-    super(id, permissions);
+  public INodeDirectory(long id, byte[] name) {
+    super(id, name);
   }
 
   /**
