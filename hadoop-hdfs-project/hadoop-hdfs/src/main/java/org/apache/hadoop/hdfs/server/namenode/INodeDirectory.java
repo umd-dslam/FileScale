@@ -588,6 +588,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
     DatabaseConnection.addChild(
       node.getId(), node.getLocalName(), this.getId());
 
+    node.setParent(this.getId());
+
     addChild(node, low);
     return true;
   }
