@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.LongBitFormat;
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.util.LightWeightGSet.LinkedElement;
 
 import com.google.common.base.Preconditions;
@@ -124,9 +125,11 @@ public abstract class INodeWithAdditionalFields extends INode
     super(parent);
     this.id = id;
     this.name = name;
-    this.setPermission(permission);
-    this.setModificationTime(modificationTime);  
-    this.setAccessTime(accessTime);
+    String strName = null;
+    if (name != null  && name.length > 0) {
+      strName = DFSUtil.bytes2String(name);
+    }
+    DatabaseConnection.insertInode(id, strName, accessTime, modificationTime, permission);
   }
 
   private INodeWithAdditionalFields(INode parent, long id, byte[] name) {

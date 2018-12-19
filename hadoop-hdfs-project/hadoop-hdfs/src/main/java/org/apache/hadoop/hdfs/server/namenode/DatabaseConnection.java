@@ -132,29 +132,6 @@ public class DatabaseConnection {
         return exist;
     }
 
-    public static void removeChild(final long childId) {
-        try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
-            // delete file/directory recusively
-            String sql =
-                "DELETE FROM inodes WHERE id IN (" +
-                "   WITH RECURSIVE cte AS (" +
-                "       SELECT id, parent FROM inodes d WHERE id = ?" +
-                "   UNION ALL" +
-                "       SELECT d.id, d.parent FROM cte" +
-                "       JOIN inodes d ON cte.id = d.parent" +
-                "   )" +
-                "   SELECT id FROM cte" +
-                ");";
-            PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setLong(1, childId);
-            pst.executeUpdate();
-            pst.close();
-        } catch (SQLException ex) {
-            System.err.println(ex.getMessage());
-        }
-    }
-
     private static <T> void setAttribute(final long id, final String attrName,
         final T attrValue) {
         try {
@@ -204,6 +181,38 @@ public class DatabaseConnection {
         }
 
         return result;
+    }
+
+    public static void insertInode(final long id, final String name,
+        final long accessTime, final long modificationTime, final long permission) {
+		if (checkInodeExistence(id)) {
+			return;
+		}
+		try {
+			Connection conn = DatabaseConnection.getInstance().getConnection();
+
+			String sql =
+				"INSERT INTO inodes(" +
+				"	id, name, accessTime, modificationTime, permission" +
+				") VALUES (?, ?, ?, ?, ?);";
+
+			PreparedStatement pst = conn.prepareStatement(sql);
+			
+			pst.setLong(1, id);
+			if (name == null) {
+				pst.setNull(2, java.sql.Types.VARCHAR);
+			} else {
+				pst.setString(2, name);
+			}
+			pst.setLong(3, accessTime);
+			pst.setLong(4, modificationTime);
+			pst.setLong(5, permission);
+
+			pst.executeUpdate();
+			pst.close();
+		} catch (SQLException ex) {
+			System.err.println(ex.getMessage());
+		}	
     }
 
     public static void setAccessTime(final long id, final long accessTime) {
@@ -268,6 +277,29 @@ public class DatabaseConnection {
         LOG.info("getChild: (" + childId + "," + parentId + "," + childName + ")");
 
         return childId;   
+    }
+
+    public static void removeChild(final long childId) {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            // delete file/directory recusively
+            String sql =
+                "DELETE FROM inodes WHERE id IN (" +
+                "   WITH RECURSIVE cte AS (" +
+                "       SELECT id, parent FROM inodes d WHERE id = ?" +
+                "   UNION ALL" +
+                "       SELECT d.id, d.parent FROM cte" +
+                "       JOIN inodes d ON cte.id = d.parent" +
+                "   )" +
+                "   SELECT id FROM cte" +
+                ");";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, childId);
+            pst.executeUpdate();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
     }
 
     public static List<Long> getChildrenList(final long parentId){
