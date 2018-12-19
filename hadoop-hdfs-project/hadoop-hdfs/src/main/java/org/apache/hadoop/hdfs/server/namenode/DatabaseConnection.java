@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Types;
 import java.sql.ResultSetMetaData;
 import java.util.Properties;
 import java.util.List;
@@ -47,7 +48,11 @@ public class DatabaseConnection {
             // create inode table in Postgres
             String sql =
                 "DROP TABLE IF EXISTS inodes;" +
-                "CREATE TABLE inodes(id int primary key, parent int, name text);";
+                "CREATE TABLE inodes(" +
+                "   id int primary key, parent int, name text," +
+                "   accessTime bigint, modificationTime bigint," +
+                "   header bigint, permission bigint" +
+                ");";
             Statement st = connection.createStatement();
             st.execute(sql);
 
@@ -72,7 +77,7 @@ public class DatabaseConnection {
         return instance;
     }
 
-    public static boolean checkInodeExistence(final long parentId, final String childName) {
+    private static boolean checkInodeExistence(final long parentId, final String childName) {
         boolean exist = false;
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -100,7 +105,7 @@ public class DatabaseConnection {
         return exist;
     }
 
-    public static boolean checkInodeExistence(final long childId) {
+    private static boolean checkInodeExistence(final long childId) {
         boolean exist = false;
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -148,6 +153,97 @@ public class DatabaseConnection {
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
         }
+    }
+
+    private static <T> void setAttribute(final long id, final String attrName,
+        final T attrValue) {
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            
+            String sql = "UPDATE inodes SET " + attrName + " = ? WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            
+            if (attrValue instanceof String) {
+                pst.setString(1, attrValue.toString()); 
+            } else if (attrValue instanceof Integer || attrValue instanceof Long) {
+                pst.setLong(1, ((Long)attrValue).longValue());
+            } else {
+                System.err.println("Only support string and long types for now.");
+                System.exit(0);
+            }
+            pst.setLong(2, id);
+
+            pst.executeUpdate();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+
+    private static <T> T getAttribute(final long id, final String attrName) {
+        T result = null;
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            String sql = "SELECT " + attrName + " FROM inodes WHERE id = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, id);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                ResultSetMetaData rsmd = rs.getMetaData();
+                if (rsmd.getColumnType(1) == Types.BIGINT
+                ||  rsmd.getColumnType(1) == Types.INTEGER) {
+                    result = (T)Long.valueOf(rs.getLong(1));
+                } else if (rsmd.getColumnType(1) == Types.VARCHAR) {
+                    result = (T)rs.getString(1); 
+                }
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+        }
+
+        return result;
+    }
+
+    public static void setAccessTime(final long id, final long accessTime) {
+        setAttribute(id, "accessTime", accessTime);
+    }
+
+    public static void setModificationTime(final long id, final long modificationTime) {
+        setAttribute(id, "modificationTime", modificationTime);
+    }
+
+    public static void setPermission(final long id, final long permission) {
+        setAttribute(id, "permission", permission);
+    }
+
+    public static void setHeader(final long id, final long header) {
+        setAttribute(id, "header", header);
+    }
+
+    public static void setParent(final long id, final long parent) {
+        setAttribute(id, "parent", parent);
+    }
+
+    public static long getAccessTime(final long id) {
+        return getAttribute(id, "accessTime");
+    }
+
+    public static long getModificationTime(final long id) {
+        return getAttribute(id, "modificationTime");
+    }
+
+    public static long getHeader(final long id) {
+        return getAttribute(id, "header");
+    }
+
+    public static long getPermission(final long id) {
+        return getAttribute(id, "permission"); 
+    }
+
+    public static long getParent(final long id) {
+        return getAttribute(id, "parent");
     }
 
     public static long getChild(final long parentId, final String childName) {

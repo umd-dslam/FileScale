@@ -111,11 +111,7 @@ public abstract class INodeWithAdditionalFields extends INode
    * and {@link #updatePermissionStatus(PermissionStatusFormat, long)}
    * should not modify it.
    */
-  private long permission = 0L;
-  /** The last modification time*/
-  private long modificationTime = 0L;
-  /** The last access time*/
-  private long accessTime = 0L;
+  // private long permission = 0L;
 
   /** For implementing {@link LinkedElement}. */
   private LinkedElement next = null;
@@ -128,15 +124,15 @@ public abstract class INodeWithAdditionalFields extends INode
     super(parent);
     this.id = id;
     this.name = name;
-    this.permission = permission;
-    this.modificationTime = modificationTime;
-    this.accessTime = accessTime;
+    this.setPermission(permission);
+    this.setModificationTime(modificationTime);  
+    this.setAccessTime(accessTime);
   }
 
-  private INodeWithAdditionalFields(INode parent, long id, long permission) {
+  private INodeWithAdditionalFields(INode parent, long id, byte[] name) {
     super(parent);
     this.id = id;
-    this.permission = permission;
+    this.name = name;
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
@@ -145,15 +141,19 @@ public abstract class INodeWithAdditionalFields extends INode
         modificationTime, accessTime);
   }
 
-  INodeWithAdditionalFields(long id,  PermissionStatus permissions) {
-    this(null, id,  PermissionStatusFormat.toLong(permissions));
+  // Note: only used by the loader of image file
+  INodeWithAdditionalFields(long id, byte[] name) {
+    this(null, id, name);
   }
 
   /** @param other Other node to be copied */
   INodeWithAdditionalFields(INodeWithAdditionalFields other) {
     this(other.getParentReference() != null ? other.getParentReference()
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
-        other.permission, other.modificationTime, other.accessTime);
+          // TODO(gangliao): performance optimization
+          DatabaseConnection.getPermission(other.getId()),
+          DatabaseConnection.getModificationTime(other.getId()),
+          DatabaseConnection.getAccessTime(other.getId()));
   }
 
   @Override
@@ -184,7 +184,8 @@ public abstract class INodeWithAdditionalFields extends INode
 
   /** Clone the {@link PermissionStatus}. */
   final void clonePermissionStatus(INodeWithAdditionalFields that) {
-    this.permission = that.permission;
+    long permission = DatabaseConnection.getPermission(that.getId());
+    DatabaseConnection.setPermission(this.getId(), permission);
   }
 
   @Override
@@ -193,8 +194,14 @@ public abstract class INodeWithAdditionalFields extends INode
         getFsPermission(snapshotId));
   }
 
+  private final void setPermission(long permission) {
+    DatabaseConnection.setPermission(this.getId(), permission);
+  }
+
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
-    this.permission = f.BITS.combine(n, permission);
+    long permission = DatabaseConnection.getPermission(this.getId()); 
+    permission = f.BITS.combine(n, permission);
+    DatabaseConnection.setPermission(this.getId(), permission);
   }
 
   @Override
@@ -202,7 +209,8 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getUserName();
     }
-    return PermissionStatusFormat.getUser(permission);
+    return PermissionStatusFormat.getUser(
+      DatabaseConnection.getPermission(this.getId()));
   }
 
   @Override
@@ -216,7 +224,8 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getGroupName();
     }
-    return PermissionStatusFormat.getGroup(permission);
+    return PermissionStatusFormat.getGroup(
+      DatabaseConnection.getPermission(this.getId()));
   }
 
   @Override
@@ -236,7 +245,8 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public final short getFsPermissionShort() {
-    return PermissionStatusFormat.getMode(permission);
+    return PermissionStatusFormat.getMode(
+      DatabaseConnection.getPermission(this.getId()));
   }
   @Override
   void setPermission(FsPermission permission) {
@@ -246,7 +256,7 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public long getPermissionLong() {
-    return permission;
+    return DatabaseConnection.getPermission(this.getId());
   }
 
   @Override
@@ -264,7 +274,8 @@ public abstract class INodeWithAdditionalFields extends INode
       return getSnapshotINode(snapshotId).getModificationTime();
     }
 
-    return this.modificationTime;
+    // ADD(gangliao): get INode's access time in Postgres
+    return DatabaseConnection.getModificationTime(this.getId());
   }
 
 
@@ -272,19 +283,21 @@ public abstract class INodeWithAdditionalFields extends INode
   @Override
   public final INode updateModificationTime(long mtime, int latestSnapshotId) {
     Preconditions.checkState(isDirectory());
-    if (mtime <= modificationTime) {
+    if (mtime <= DatabaseConnection.getModificationTime(this.getId())) {
       return this;
     }
     return setModificationTime(mtime, latestSnapshotId);
   }
 
   final void cloneModificationTime(INodeWithAdditionalFields that) {
-    this.modificationTime = that.modificationTime;
+    long mtime = DatabaseConnection.getModificationTime(that.getId());
+    DatabaseConnection.setModificationTime(this.getId(), mtime);
   }
 
   @Override
   public final void setModificationTime(long modificationTime) {
-    this.modificationTime = modificationTime;
+    // ADD(gangliao): set INode's modification time in Postgres
+    DatabaseConnection.setModificationTime(this.getId(), modificationTime);
   }
 
   @Override
@@ -292,7 +305,9 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getAccessTime();
     }
-    return accessTime;
+
+    // ADD(gangliao): get INode's access time in Postgres
+    return DatabaseConnection.getAccessTime(this.getId());
   }
 
   /**
@@ -300,7 +315,8 @@ public abstract class INodeWithAdditionalFields extends INode
    */
   @Override
   public final void setAccessTime(long accessTime) {
-    this.accessTime = accessTime;
+    // ADD(gangliao): set INode's access time in Postgres
+    DatabaseConnection.setAccessTime(this.getId(), accessTime);
   }
 
   protected void addFeature(Feature f) {
