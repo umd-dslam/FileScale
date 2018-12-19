@@ -9,6 +9,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.Properties;
+import java.util.List;
+import java.util.ArrayList;
+import org.apache.hadoop.hdfs.util.ReadOnlyList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -171,6 +174,31 @@ public class DatabaseConnection {
         return childId;   
     }
 
+    public static List<Long> getChildrenList(final long parentId){
+
+        List<Long> childIds = new ArrayList<>(INodeDirectory.DEFAULT_FILES_PER_DIRECTORY);
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            // check the existence of node in Postgres
+            String sql = "SELECT id FROM inodes WHERE parent = ?;";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setLong(1, parentId);
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                long id = rs.getLong(1);
+                childIds.add(id);
+            }
+            rs.close();
+            pst.close();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+
+        LOG.info("getChild: (" + childIds + "," + parentId + ")");
+
+        return childIds;
+    }
+
     public static boolean addChild(final long childId, final String childName, final long parentId) {
         // return false if the child with this name already exists 
         if (checkInodeExistence(parentId, childName)) {
@@ -204,4 +232,5 @@ public class DatabaseConnection {
 
         return true;
     }
+
 }
