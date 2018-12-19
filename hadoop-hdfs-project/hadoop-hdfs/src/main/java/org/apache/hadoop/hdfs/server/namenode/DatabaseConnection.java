@@ -219,6 +219,10 @@ public class DatabaseConnection {
         setAttribute(id, "header", header);
     }
 
+    public static void setParent(final long id, final long parent) {
+        setAttribute(id, "parent", parent);
+    }
+
     public static long getAccessTime(final long id) {
         return getAttribute(id, "accessTime");
     }
@@ -233,6 +237,10 @@ public class DatabaseConnection {
 
     public static long getPermission(final long id) {
         return getAttribute(id, "permission"); 
+    }
+
+    public static long getParent(final long id) {
+        return getAttribute(id, "parent");
     }
 
     public static long getChild(final long parentId, final String childName) {
