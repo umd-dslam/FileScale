@@ -651,6 +651,10 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     this.parent = parent;
   }
 
+  public final void setParent(long parentId) {
+    DatabaseConnection.setParent(getId(), parentId);
+  }
+
   /** Set container. */
   public final void setParentReference(INodeReference parent) {
     this.parent = parent;
