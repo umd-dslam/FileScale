@@ -188,7 +188,8 @@ public class DatabaseConnection {
     }
 
     public static void insertInode(final long id, final String name,
-        final long accessTime, final long modificationTime, final long permission) {
+		final long accessTime, final long modificationTime,
+		final long permission, final long header) {
 		if (checkInodeExistence(id)) {
 			return;
 		}
@@ -197,8 +198,8 @@ public class DatabaseConnection {
 
 			String sql =
 				"INSERT INTO inodes(" +
-				"	id, name, accessTime, modificationTime, permission" +
-				") VALUES (?, ?, ?, ?, ?);";
+				"	id, name, accessTime, modificationTime, permission, header" +
+				") VALUES (?, ?, ?, ?, ?, ?);";
 
 			PreparedStatement pst = conn.prepareStatement(sql);
 			
@@ -211,12 +212,13 @@ public class DatabaseConnection {
 			pst.setLong(3, accessTime);
 			pst.setLong(4, modificationTime);
 			pst.setLong(5, permission);
+			pst.setLong(6, header);
 
 			pst.executeUpdate();
 			pst.close();
 		} catch (SQLException ex) {
 			System.err.println(ex.getMessage());
-		}	
+		}
     }
 
     public static void setAccessTime(final long id, final long accessTime) {
@@ -237,7 +239,11 @@ public class DatabaseConnection {
 
     public static void setParent(final long id, final long parent) {
         setAttribute(id, "parent", parent);
-    }
+	}
+	
+    public static void setName(final long id, final String name) {
+        setAttribute(id, "name", name);
+	}	
 
     public static long getAccessTime(final long id) {
         return getAttribute(id, "accessTime");
@@ -257,6 +263,10 @@ public class DatabaseConnection {
 
     public static long getParent(final long id) {
         return getAttribute(id, "parent");
+	}
+	
+	public static String getName(final long id) {
+        return getAttribute(id, "name");
     }
 
     public static long getChild(final long parentId, final String childName) {

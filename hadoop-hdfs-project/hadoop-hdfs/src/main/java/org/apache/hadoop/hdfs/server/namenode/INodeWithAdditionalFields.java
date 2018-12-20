@@ -129,7 +129,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if (name != null  && name.length > 0) {
       strName = DFSUtil.bytes2String(name);
     }
-    DatabaseConnection.insertInode(id, strName, accessTime, modificationTime, permission);
+    DatabaseConnection.insertInode(id, strName, accessTime, modificationTime, permission, 0L);
   }
 
   private INodeWithAdditionalFields(INode parent, long id, byte[] name) {
@@ -182,6 +182,11 @@ public abstract class INodeWithAdditionalFields extends INode
   
   @Override
   public final void setLocalName(byte[] name) {
+    if (name != null) {
+      DatabaseConnection.setName(this.getId(), DFSUtil.bytes2String(name));
+    } else {
+      DatabaseConnection.setName(this.getId(), null);
+    }
     this.name = name;
   }
 
