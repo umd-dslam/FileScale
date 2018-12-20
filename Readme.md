@@ -212,6 +212,18 @@ IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
 
 - [ ] [NNThroughputBenchmark](http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Benchmarking.html)
 
+- [ ] Simplify protobuf
+
+- [ ] Simplify readLog
+
+- [ ] Delte updataBlockSMap - FSIamgeFormatPBINode.java
+
+- [ ] Remove write locks
+
+- [ ] Remove copy constructor of INodeFile/INodeDirectory when loading underconstructing
+
+- [ ] Simplify insert logic (use sql return value to check duplicated values)
+
 - [ ] Report
 
 
