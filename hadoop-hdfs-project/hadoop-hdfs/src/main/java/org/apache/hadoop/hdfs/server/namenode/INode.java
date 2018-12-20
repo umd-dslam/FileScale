@@ -62,7 +62,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   //private INode parent = null;
 
   INode(INode parent) {
-    DatabaseConnection.setParent(getId(), parent == null ? null : parent.getId());
+    DatabaseConnection.setParent(getId(), parent == null ? DatabaseConnection.LONG_NULL : parent.getId());
     //this.parent = parent;
   }
 

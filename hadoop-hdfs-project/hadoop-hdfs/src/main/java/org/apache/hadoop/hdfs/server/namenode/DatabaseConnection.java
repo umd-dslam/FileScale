@@ -22,7 +22,7 @@ public class DatabaseConnection {
     public final static long LONG_NULL = 0L;
     private static DatabaseConnection instance;
     private Connection connection;
-    private String url = "jdbc:postgresql://192.168.65.3:5432/docker";
+    private String url = "jdbc:postgresql://localhost:5432/docker";
     private String username = "docker";
     private String password = "docker";
 
