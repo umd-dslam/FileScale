@@ -802,22 +802,22 @@ public class FSEditLog implements LogsPurgeable {
   public void logOpenFile(String path, INodeFile newNode, boolean overwrite,
       boolean toLogRpcIds) {
     Preconditions.checkArgument(newNode.isUnderConstruction());
-    //PermissionStatus permissions = newNode.getPermissionStatus();
+    PermissionStatus permissions = newNode.getPermissionStatus();
     AddOp op = AddOp.getInstance(cache.get())
       .setInodeId(newNode.getId())
       .setPath(path)
-      //.setReplication(newNode.getFileReplication())
-      //.setModificationTime(newNode.getModificationTime())
-      //.setAccessTime(newNode.getAccessTime())
-      //.setBlockSize(newNode.getPreferredBlockSize())
+      .setReplication(newNode.getFileReplication())
+      .setModificationTime(newNode.getModificationTime())
+      .setAccessTime(newNode.getAccessTime())
+      .setBlockSize(newNode.getPreferredBlockSize())
       .setBlocks(newNode.getBlocks())
-      //.setPermissionStatus(permissions)
+      .setPermissionStatus(permissions)
       .setClientName(newNode.getFileUnderConstructionFeature().getClientName())
       .setClientMachine(
           newNode.getFileUnderConstructionFeature().getClientMachine())
-      .setOverwrite(overwrite);
-      //.setStoragePolicyId(newNode.getLocalStoragePolicyID())
-      //.setErasureCodingPolicyId(newNode.getErasureCodingPolicyID());
+      .setOverwrite(overwrite)
+      .setStoragePolicyId(newNode.getLocalStoragePolicyID())
+      .setErasureCodingPolicyId(newNode.getErasureCodingPolicyID());
 
     AclFeature f = newNode.getAclFeature();
     if (f != null) {
@@ -839,12 +839,12 @@ public class FSEditLog implements LogsPurgeable {
   public void logCloseFile(String path, INodeFile newNode) {
     CloseOp op = CloseOp.getInstance(cache.get())
       .setPath(path)
-      //.setReplication(newNode.getFileReplication())
-      //.setModificationTime(newNode.getModificationTime())
-      //.setAccessTime(newNode.getAccessTime())
-      //.setBlockSize(newNode.getPreferredBlockSize())
-      .setBlocks(newNode.getBlocks());
-      //.setPermissionStatus(newNode.getPermissionStatus());
+      .setReplication(newNode.getFileReplication())
+      .setModificationTime(newNode.getModificationTime())
+      .setAccessTime(newNode.getAccessTime())
+      .setBlockSize(newNode.getPreferredBlockSize())
+      .setBlocks(newNode.getBlocks())
+      .setPermissionStatus(newNode.getPermissionStatus());
     
     logEdit(op);
   }
@@ -873,12 +873,12 @@ public class FSEditLog implements LogsPurgeable {
    * Add create directory record to edit log
    */
   public void logMkDir(String path, INode newNode) {
-    //PermissionStatus permissions = newNode.getPermissionStatus();
+    PermissionStatus permissions = newNode.getPermissionStatus();
     MkdirOp op = MkdirOp.getInstance(cache.get())
       .setInodeId(newNode.getId())
-      .setPath(path);
-      //.setTimestamp(newNode.getModificationTime())
-      //.setPermissionStatus(permissions);
+      .setPath(path)
+      .setTimestamp(newNode.getModificationTime())
+      .setPermissionStatus(permissions);
 
     AclFeature f = newNode.getAclFeature();
     if (f != null) {
@@ -1050,14 +1050,11 @@ public class FSEditLog implements LogsPurgeable {
    * Add access time record to edit log
    */
   void logTimes(String src, long mtime, long atime) {
-    return;
-    /*
     TimesOp op = TimesOp.getInstance(cache.get())
       .setPath(src)
       .setModificationTime(mtime)
       .setAccessTime(atime);
     logEdit(op);
-    */
   }
 
   /** 

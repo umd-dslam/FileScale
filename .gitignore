@@ -61,5 +61,3 @@ output.xml
 report.html
 
 hadoop-hdds/docs/public
-
-hadoop-calvin-util/*
