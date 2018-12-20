@@ -30,6 +30,7 @@ public class DatabaseConnectionTest {
             Connection conn = this.connection; 
             // check the existence of node in Postgres
             String sql =
+                "DROP TABLE IF EXISTS inodes;" +
                 "CREATE TABLE inodes(" +
                 "   id int primary key, parent int, name text," +
                 "   accessTime bigint, modificationTime bigint," +
@@ -258,6 +259,38 @@ public class DatabaseConnectionTest {
         return true;
     }
 
+    public static void insertInode(final long id, final String name,
+        final long accessTime, final long modificationTime, final long permission) {
+		if (checkInodeExistence(id)) {
+			return;
+		}
+		try {
+			Connection conn = DatabaseConnectionTest.getInstance().getConnection();
+
+			String sql =
+				"INSERT INTO inodes(" +
+				"	id, name, accessTime, modificationTime, permission" +
+				") VALUES (?, ?, ?, ?, ?);";
+
+			PreparedStatement pst = conn.prepareStatement(sql);
+			
+			pst.setLong(1, id);
+			if (name == null) {
+				pst.setNull(2, java.sql.Types.VARCHAR);
+			} else {
+				pst.setString(2, name);
+			}
+			pst.setLong(3, accessTime);
+			pst.setLong(4, modificationTime);
+			pst.setLong(5, permission);
+
+			pst.executeUpdate();
+			pst.close();
+		} catch (SQLException ex) {
+			System.err.println(ex.getMessage());
+		}	
+    }
+
     public static void main(String [] args) {
         try {
             DatabaseConnectionTest db = DatabaseConnectionTest.getInstance();
@@ -297,6 +330,10 @@ public class DatabaseConnectionTest {
 
         DatabaseConnectionTest.setHeader(2, 1121);
         System.out.println(DatabaseConnectionTest.getHeader(2));
+
+        DatabaseConnectionTest.insertInode(100, null, 22, 22, 22);
+        DatabaseConnectionTest.insertInode(101, "haha", 22, 22, 22);
+        DatabaseConnectionTest.insertInode(101, "meme", 22, 22, 22);
     }
 }
     
