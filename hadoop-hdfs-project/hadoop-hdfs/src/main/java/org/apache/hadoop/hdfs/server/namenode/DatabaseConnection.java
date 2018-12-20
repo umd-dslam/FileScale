@@ -141,7 +141,11 @@ public class DatabaseConnection {
             PreparedStatement pst = conn.prepareStatement(sql);
             
             if (attrValue instanceof String) {
-                pst.setString(1, attrValue.toString()); 
+				if (attrValue.toString() == null) {
+					pst.setNull(1, java.sql.Types.VARCHAR);
+				} else {
+					pst.setString(1, attrValue.toString()); 
+				}
             } else if (attrValue instanceof Integer || attrValue instanceof Long) {
                 pst.setLong(1, ((Long)attrValue).longValue());
             } else {
