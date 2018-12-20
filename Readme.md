@@ -212,6 +212,8 @@ IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
 
 - [ ] [NNThroughputBenchmark](http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Benchmarking.html)
 
+- [ ] Implement another version of resolvePath
+
 - [ ] Simplify protobuf
 
 - [ ] Simplify readLog

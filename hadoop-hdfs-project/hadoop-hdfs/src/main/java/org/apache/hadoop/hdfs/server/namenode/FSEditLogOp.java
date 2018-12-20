@@ -548,12 +548,12 @@ public abstract class FSEditLogOp {
     public void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
       FSImageSerialization.writeString(path, out);
-      FSImageSerialization.writeShort(replication, out);
-      FSImageSerialization.writeLong(mtime, out);
-      FSImageSerialization.writeLong(atime, out);
-      FSImageSerialization.writeLong(blockSize, out);
+      //FSImageSerialization.writeShort(replication, out);
+      //FSImageSerialization.writeLong(mtime, out);
+      //FSImageSerialization.writeLong(atime, out);
+      //FSImageSerialization.writeLong(blockSize, out);
       new ArrayWritable(Block.class, blocks).write(out);
-      permissions.write(out);
+      //permissions.write(out);
 
       if (this.opCode == OP_ADD) {
         AclEditLogUtil.write(aclEntries, out);
@@ -563,8 +563,8 @@ public abstract class FSEditLogOp {
         FSImageSerialization.writeString(clientName,out);
         FSImageSerialization.writeString(clientMachine,out);
         FSImageSerialization.writeBoolean(overwrite, out);
-        FSImageSerialization.writeByte(storagePolicyId, out);
-        FSImageSerialization.writeByte(erasureCodingPolicyId, out);
+        //FSImageSerialization.writeByte(storagePolicyId, out);
+        //FSImageSerialization.writeByte(erasureCodingPolicyId, out);
         // write clientId and callId
         writeRpcIds(rpcClientId, rpcCallId, out);
       }
@@ -1649,9 +1649,9 @@ public abstract class FSEditLogOp {
     void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
       FSImageSerialization.writeString(path, out);
-      FSImageSerialization.writeLong(timestamp, out); // mtime
-      FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
-      permissions.write(out);
+      //FSImageSerialization.writeLong(timestamp, out); // mtime
+      //FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
+      //permissions.write(out);
       AclEditLogUtil.write(aclEntries, out);
       XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
       b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
@@ -2417,9 +2417,9 @@ public abstract class FSEditLogOp {
     @Override
     public 
     void writeFields(DataOutputStream out) throws IOException {
-      FSImageSerialization.writeString(path, out);
-      FSImageSerialization.writeLong(mtime, out);
-      FSImageSerialization.writeLong(atime, out);
+      //FSImageSerialization.writeString(path, out);
+      //FSImageSerialization.writeLong(mtime, out);
+      //FSImageSerialization.writeLong(atime, out);
     }
 
     @Override

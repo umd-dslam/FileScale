@@ -18,10 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DatabaseConnection {
-    
+
+    public final static long LONG_NULL = 0L;
     private static DatabaseConnection instance;
     private Connection connection;
-    private String url = "jdbc:postgresql://192.168.65.3:5432/docker";
+    private String url = "jdbc:postgresql://localhost:5432/docker";
     private String username = "docker";
     private String password = "docker";
 
@@ -77,7 +78,7 @@ public class DatabaseConnection {
         return instance;
     }
 
-    private static boolean checkInodeExistence(final long parentId, final String childName) {
+    public static boolean checkInodeExistence(final long parentId, final String childName) {
         boolean exist = false;
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -296,28 +297,33 @@ public class DatabaseConnection {
         return childId;   
     }
 
-    public static void removeChild(final long childId) {
+    public static boolean removeChild(final long childId, final long parentId) {
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             // delete file/directory recusively
             String sql =
-                "DELETE FROM inodes WHERE id IN (" +
-                "   WITH RECURSIVE cte AS (" +
-                "       SELECT id, parent FROM inodes d WHERE id = ?" +
-                "   UNION ALL" +
-                "       SELECT d.id, d.parent FROM cte" +
-                "       JOIN inodes d ON cte.id = d.parent" +
-                "   )" +
-                "   SELECT id FROM cte" +
-                ");";
+				"DELETE FROM inodes WHERE id IN (" +
+				"   WITH RECURSIVE cte AS (" +
+				"       SELECT id, parent FROM inodes d WHERE id = ? and parent = ?" +
+				"   UNION ALL" +
+				"       SELECT d.id, d.parent FROM cte" +
+				"       JOIN inodes d ON cte.id = d.parent" +
+				"   )" +
+				"   SELECT id FROM cte" +
+				");";
             PreparedStatement pst = conn.prepareStatement(sql);
             pst.setLong(1, childId);
-            pst.executeUpdate();
+            pst.setLong(2, parentId);
+            int res = pst.executeUpdate();
             pst.close();
+            return res != 0;
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
 		}
+		
 		LOG.info("removeChild: " + childId);
+		
+		return false;
     }
 
     public static List<Long> getChildrenList(final long parentId){
