@@ -158,7 +158,8 @@ public class DatabaseConnection {
             pst.close();
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
-        }
+		}
+		LOG.info(attrName + " [UPDATE]: (" + id + "," + attrValue + ")");
     }
 
     private static <T> T getAttribute(final long id, final String attrName) {
@@ -183,6 +184,8 @@ public class DatabaseConnection {
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
         }
+
+		LOG.info(attrName + " [GET]: (" + id + "," + result + ")");
 
         return result;
     }
@@ -313,7 +316,8 @@ public class DatabaseConnection {
             pst.close();
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
-        }
+		}
+		LOG.info("removeChild: " + childId);
     }
 
     public static List<Long> getChildrenList(final long parentId){
