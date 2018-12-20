@@ -1525,12 +1525,20 @@ public class NNThroughputBenchmark implements Tool {
             DFSTestUtil.getRefreshUserMappingsProtocolProxy(config, nnUri);
         getBlockPoolId(dfs);
       }
+      
+      long beforeUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+      
       // run each benchmark
       for(OperationStatsBase op : ops) {
         LOG.info("Starting benchmark: " + op.getOpName());
         op.benchmark();
         op.cleanUp();
       }
+
+      long afterUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+      long actualMemUsed = afterUsedMem - beforeUsedMem;
+      LOG.info("Memory Used: " + actualMemUsed); 
+
       // print statistics
       for(OperationStatsBase op : ops) {
         LOG.info("");
