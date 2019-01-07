@@ -126,7 +126,7 @@ public abstract class INodeWithAdditionalFields extends INode
     this.id = id;
     this.name = name;
     String strName = null;
-    if (name != null  && name.length > 0) {
+    if (name != null && name.length > 0) {
       strName = DFSUtil.bytes2String(name);
     }
     DatabaseConnection.insertInode(id, strName, accessTime, modificationTime, permission, 0L);
@@ -135,6 +135,10 @@ public abstract class INodeWithAdditionalFields extends INode
   private INodeWithAdditionalFields(INode parent, long id, byte[] name) {
     super(parent);
     this.id = id;
+
+    // String strName = DatabaseConnection.getName(id);
+    // this.name = (strName != null ? DFSUtil.string2Bytes(strName) : null);
+
     this.name = name;
   }
 
@@ -177,6 +181,8 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public final byte[] getLocalNameBytes() {
+    // String strName = DatabaseConnection.getName(this.getId());
+    // return strName != null ? DFSUtil.string2Bytes(strName) : null;
     return name;
   }
   

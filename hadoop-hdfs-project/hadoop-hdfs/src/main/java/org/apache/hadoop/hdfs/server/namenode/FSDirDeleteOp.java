@@ -265,6 +265,9 @@ class FSDirDeleteOp {
       targetNode.cleanSubtree(reclaimContext, CURRENT_STATE_ID, latestSnapshot);
     }
 
+    // ADD(gangliao): Remove inode from Postgres
+    DatabaseConnection.removeChild(targetNode.getId());
+
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "
           + iip.getPath() + " is removed");
