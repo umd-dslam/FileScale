@@ -1528,7 +1528,11 @@ public class NNThroughputBenchmark implements Tool {
       // run each benchmark
       for(OperationStatsBase op : ops) {
         LOG.info("Starting benchmark: " + op.getOpName());
+        long beforeUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         op.benchmark();
+        long afterUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        long actualMemUsed = afterUsedMem - beforeUsedMem;
+        LOG.info("Memory Used: " + actualMemUsed); 
         op.cleanUp();
       }
       // print statistics
