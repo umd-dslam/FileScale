@@ -59,10 +59,10 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   public static final Logger LOG = LoggerFactory.getLogger(INode.class);
 
   /** parent is either an {@link INodeDirectory} or an {@link INodeReference}.*/
-  private INode parent = null;
 
   INode(INode parent) {
-    this.parent = parent;
+    DatabaseConnection.setParent(this.getId(), parent == null
+      ? DatabaseConnection.LONG_NULL : parent.getId());
   }
 
   /** Get inode id */
@@ -232,6 +232,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     }
     // if parent is a reference node, parent must be a renamed node. We can 
     // stop the check at the reference node.
+    INode parent = getParentINode();
     if (parent != null && parent.isReference()) {
       return true;
     }
@@ -471,6 +472,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    * Check and add namespace/storagespace/storagetype consumed to itself and the ancestors.
    */
   public void addSpaceConsumed(QuotaCounts counts) {
+    INode parent = getParentINode();
     if (parent != null) {
       parent.addSpaceConsumed(counts);
     }
@@ -632,10 +634,18 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return toString() + "(" + getObjectString() + "), " + getParentString();
   }
 
+  /** @return the parent inode from inodemap */
+  private final INode getParentINode() {
+    long id = DatabaseConnection.getParent(this.getId());
+    return id == DatabaseConnection.LONG_NULL ? null : FSDirectory.getInstance().getInode(id);
+  }
+
+
   /** @return the parent directory */
   public final INodeDirectory getParent() {
+    INode parent = getParentINode();
     return parent == null? null
-        : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
+            : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
   }
 
   /**
@@ -643,21 +653,22 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    *         otherwise, return null.
    */
   public INodeReference getParentReference() {
+    INode parent = getParentINode();
     return parent == null || !parent.isReference()? null: (INodeReference)parent;
   }
 
   /** Set parent directory */
   public final void setParent(INodeDirectory parent) {
-    this.parent = parent;
+    DatabaseConnection.setParent(this.getId(), parent.getId());
   }
 
   public final void setParent(long parentId) {
-    DatabaseConnection.setParent(getId(), parentId);
+    DatabaseConnection.setParent(this.getId(), parentId);
   }
 
   /** Set container. */
   public final void setParentReference(INodeReference parent) {
-    this.parent = parent;
+    DatabaseConnection.setParent(this.getId(), parent.getId());
   }
 
   /** Clear references to other objects. */

@@ -71,8 +71,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   static final byte[] ROOT_NAME = DFSUtil.string2Bytes("");
 
-  private List<INode> children = null;
-  
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime) {
@@ -95,8 +93,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public INodeDirectory(INodeDirectory other, boolean adopt,
       Feature... featuresToCopy) {
     super(other);
-    this.children = other.children;
-    if (adopt && this.children != null) {
+    final ReadOnlyList<INode> children = other.getCurrentChildrenList();
+    if (adopt && children != null) {
       for (INode child : children) {
         child.setParent(this);
       }
@@ -204,9 +202,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return q;
   }
 
-  int searchChildren(byte[] name) {
-    return children == null? -1: Collections.binarySearch(children, name);
-  }
+  // int searchChildren(byte[] name) {
+  //   return children == null? -1: Collections.binarySearch(children, name);
+  // }
   
   public DirectoryWithSnapshotFeature addSnapshotFeature(
       DirectoryDiffList diffs) {
@@ -336,6 +334,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
    */
   public void replaceChild(INode oldChild, final INode newChild,
       final INodeMap inodeMap) {
+    /*
     Preconditions.checkNotNull(children);
     final int i = searchChildren(newChild.getLocalNameBytes());
     Preconditions.checkState(i >= 0);
@@ -351,6 +350,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
       withCount.removeReference(oldChild.asReference());
     }
     children.set(i, newChild);
+    */
+    DatabaseConnection.setParent(newChild.getId(), DatabaseConnection.LONG_NULL);
+    DatabaseConnection.setParent(newChild.getId(), getId());
     
     // replace the instance in the created list of the diff list
     DirectoryWithSnapshotFeature sf = this.getDirectoryWithSnapshotFeature();
@@ -361,7 +363,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     // update the inodeMap
     if (inodeMap != null) {
       inodeMap.put(newChild);
-    }    
+    }
   }
 
   INodeReference.WithName replaceChild4ReferenceWithName(INode oldChild,
@@ -482,6 +484,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
   
   private ReadOnlyList<INode> getCurrentChildrenList() {
+    List<Long> childrenIds = DatabaseConnection.getChildrenList(getId());
+    List<INode> children = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
+    for(long id : childrenIds){
+      INode child = FSDirectory.getInstance().getInode(id);
+      if(child != null) {
+        children.add(child);
+      }
+    }
     return children == null ? ReadOnlyList.Util.<INode> emptyList()
         : ReadOnlyList.Util.asReadOnlyList(children);
   }
@@ -515,7 +525,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
       return sf.removeChild(this, child, latestSnapshotId);
     }
-
+    
     return removeChild(child);
   }
   
@@ -528,13 +538,13 @@ public class INodeDirectory extends INodeWithAdditionalFields
    * @return true if the child is removed; false if the child is not found.
    */
   public boolean removeChild(final INode child) {
-    final int i = searchChildren(child.getLocalNameBytes());
-    if (i < 0) {
-      return false;
-    }
+    // final int i = searchChildren(child.getLocalNameBytes());
+    // if (i < 0) {
+    //   return false;
+    // }
 
-    final INode removed = children.remove(i);
-    Preconditions.checkState(removed == child);
+    // final INode removed = children.remove(i);
+    // Preconditions.checkState(removed == childId);
     return true;
   }
 
@@ -550,8 +560,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
    */
   public boolean addChild(INode node, final boolean setModTime,
       final int latestSnapshotId) {
-    final int low = searchChildren(node.getLocalNameBytes());
-    if (low >= 0) {
+    if (DatabaseConnection.checkInodeExistence(getId(), node.getLocalName())) {
       return false;
     }
 
@@ -564,12 +573,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return sf.addChild(this, node, setModTime, latestSnapshotId);
     }
 
-    // ADD(gangliao): two options
-    // Insert new inode or Rename old inode in Postgres
-    DatabaseConnection.addChild(
-      node.getId(), node.getLocalName(), this.getId());
-
-    addChild(node, low);
+    addChild(node);
     if (setModTime) {
       // update modification time of the parent directory
       updateModificationTime(node.getModificationTime(), latestSnapshotId);
@@ -578,18 +582,16 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public boolean addChild(INode node) {
-    final int low = searchChildren(node.getLocalNameBytes());
-    if (low >= 0) {
+    // ADD(gangliao): insert new inode into Postgres
+    if(!DatabaseConnection.addChild(
+      node.getId(), node.getLocalName(), this.getId())){
       return false;
     }
 
-    // ADD(gangliao): insert new inode into Postgres
-    DatabaseConnection.addChild(
-      node.getId(), node.getLocalName(), this.getId());
+    if (node.getGroupName() == null) {
+      node.setGroup(getGroupName());
+    }
 
-    node.setParent(this.getId());
-
-    addChild(node, low);
     return true;
   }
 
@@ -597,6 +599,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
    * Add the node to the children list at the given insertion point.
    * The basic add method which actually calls children.add(..).
    */
+  /*
   private void addChild(final INode node, final int insertionPoint) {
     if (children == null) {
       children = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
@@ -608,6 +611,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       node.setGroup(getGroupName());
     }
   }
+  */
 
   @Override
   public QuotaCounts computeQuotaUsage(BlockStoragePolicySuite bsps,
@@ -645,8 +649,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
   private QuotaCounts computeDirectoryQuotaUsage(BlockStoragePolicySuite bsps,
       byte blockStoragePolicyId, QuotaCounts counts, boolean useCache,
       int lastSnapshotId) {
-    if (children != null) {
-      for (INode child : children) {
+
+    List<Long> children = DatabaseConnection.getChildrenList(getId());
+    if (!children.isEmpty()) {
+      for (long childId : children) {
+        INode child = FSDirectory.getInstance().getInode(childId);
         final byte childPolicyId = child.getStoragePolicyIDForQuota(
             blockStoragePolicyId);
         counts.add(child.computeQuotaUsage(bsps, childPolicyId, useCache,
@@ -790,7 +797,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   /** Set the children list to null. */
   public void clearChildren() {
-    this.children = null;
+    // this.children = null;
   }
 
   @Override
