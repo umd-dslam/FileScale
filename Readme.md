@@ -64,9 +64,18 @@ mvn clean install -DskipTests -rf :hadoop-hdfs
 # mvn package -Pdist -Pnative -Dtar -DskipTests
 ```
 
+### Simplify Compiling Process
+
+```bash
+cd hadoop/hadoop-hdfs-project/hadoop-hdfs/
+mvn clean package -Pdist -DskipTests
+
+cp  hadoop-hdfs/target/hadoop-hdfs-3.3.0-SNAPSHOT.jar ../hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/share/hadoop/hdfs/
+
+cp  hadoop-hdfs/target/hadoop-hdfs-3.3.0-SNAPSHOT-tests.jar ../hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/share/hadoop/hdfs/
+```
+
 ### Benchmark
-
-
 
 1. add hostname as an **alias** of localhost in `/etc/hosts`
 
@@ -173,226 +182,36 @@ IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
 ./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 1 -keepResults -logLevel INFO
 ```
 
-### TODO List
-
-- [x] Build HDFS
+### Restart
 
 ```bash
-[INFO] Reactor Summary:
-[INFO]
-[INFO] Apache Hadoop HDFS Client .......................... SUCCESS [ 16.388 s]
-[INFO] Apache Hadoop HDFS ................................. SUCCESS [ 13.884 s]
-[INFO] Apache Hadoop HDFS Native Client ................... SUCCESS [  3.907 s]
-[INFO] Apache Hadoop HttpFS ............................... SUCCESS [ 10.136 s]
-[INFO] Apache Hadoop HDFS-NFS ............................. SUCCESS [  2.790 s]
-[INFO] Apache Hadoop HDFS-RBF ............................. SUCCESS [  3.966 s]
-[INFO] Apache Hadoop HDFS Project ......................... SUCCESS [  0.444 s]
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time: 55.759 s
-[INFO] Finished at: 2018-12-07T04:54:09+00:00
-[INFO] Final Memory: 50M/648M
-[INFO] ------------------------------------------------------------------------
-````
+cd $HADOOP_HOME
+rm -rf ~/hadoop/data/*
+rm -rf ~/hadoop/name/*
+rm -rf ~/hadoop/tmp/*
+rm -rf logs/*
 
-- [x] create
+kill $(jps | grep '[NameNode,DataNode]' | awk '{print $1}')
 
-- [ ] open
 
-- [ ] rename
+./bin/hdfs namenode -format
+./sbin/start-dfs.sh
 
-- [x] Analyse INode, INodeFile, and INodeDirectory classes
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 100000 -keepResults -logLevel INFO
 
-- [x] Replace them by DB Table
 
-- [ ] Avoid update INode Operations into FSEditLog
+# open  *
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 100 -files 100 -keepResults -logLevel INFO
 
-- [x] Integrate PostgreSQL
+# create *
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op create -threads 1 -files 2 -keepResults -logLevel INFO
 
-- [ ] [NNThroughputBenchmark](http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Benchmarking.html)
+# delete *
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op delete -threads 1 -files 10 -keepResults -logLevel INFO
 
-- [ ] Implement another version of resolvePath
-
-- [ ] Simplify protobuf
-
-- [ ] Simplify readLog
-
-- [ ] Delte updataBlockSMap - FSIamgeFormatPBINode.java
-
-- [ ] Remove write locks
-
-- [ ] Remove copy constructor of INodeFile/INodeDirectory when loading underconstructing
-
-- [ ] Simplify insert logic (use sql return value to check duplicated values)
-
-- [ ] Report
-
-
-### Data Structure
-
-```bash
-Filesystem 
-
-========================
-in memory:
-
-INode: INodeDirectory and INodeFile
-
-INode {
-	id;
-	name;
-	fullPathName;    *****
-	parent;  *****
-
-	userName;
-	groupName;
-	fsPermission;
-	aclFeature;
-	modificationTime;
-	accessTime;
-	XattrFeature;
-	....
-
-
-	isFile();
-	isDirectory();
-	isSymlink();
-	isRoot();
-	...
-}
-
-
-INodeDirectory {
-children
-}
-
-addChild()
-removeChild()
-
-
-INodeFile {
-	// header 64bits
-	// 4: storage strategy
-	// 12: backup coefficient
-	// 48: block size info
-	// HeaderFormat handles header
-	header
-	BlockInfo[] blocks
-
-	class HeaderFormat {
-	....
-	}
-}
-
-BlockInfo {
-	// inherit from Block class
-	// block <-> file  INodeFile
-	// block <-> datanode 
-}
-
-
-Problem: Snapshot ???
-
-==========================
-in disk:
-
-replace FSImage and FSEditLog's  INode Section ==> postgres
-
-Adv: No need to sync in-memory data structure (INode) into disk
-
-But FSImage file includes many different meta info:
-
-> NameSystem Section
-> **INode Section**
-> SnapshotSection
-> SecretManager Section
-> StringTable Section
-> ...
-
-If we can replace all of them, that will be great! but sounds impossible for now.
-
-Focus on (intercepting INode Operations)
-
-in memory FS-----------------
-   |                        |
-   |                        |
-   |                        |
-Inode Operation          Snapshot, NameSystem, SecretManager, StringTable, ...
-   |                        |
-   |                        |
-   |                        |
-Postgres: Yes          FSimage and FSEditLog: Yes
-
-
-
-1. Still need to understand FSEditLog and Stop writing INode Operations into log
-**very important**
-If INode Op in log, it will still build some in-memory FS. (Waste Memory)
-
-
-=====================
-Bechmark Track code
-
-
-clientProto.getFileInfo
-clientProto.rename
-clientProto.getBlockLocations
-
-clientProto.delete ==> FSNamesystem.delete ==> FSDirDeleteOp delete(FSDirectory)
-
-clientProto.create ==> FSNamesystem.startFile ==> .. ==> FSDirWriteFileOp(FSDirectory) ==> addFile ==> addINode
-
-clientProto.complete
-
-clientProto.mkdirs  ===> .. ==> FSDirMkdirOp.mkdirs {createSingleDirectory ...}
-
-clientProto.addBlock  ===> getAdditionalBlock ==> FSDirWriteFileOp.storeAllocatedBlock
-clientProto.refreshNodes
-
-Open file statistics: Measure how many open calls (getBlockLocations()) 
-the name-node can handle per second.
-
-
-Minimal data-node simulator
-
-
-=====================
-
-Table
-{
-	long id
-	byte[] name
-	PermissionStatus permissions = {
-		String username;
-		String groupname;
-		FsPermission permission = {
-			FsAction useraction = null;  ==> String
-			FsAction groupaction = null; ==> String
-			FsAction otheraction = null; ==> String
-			Boolean stickyBit = false;
-		}
-	}
-	long modificationTime
-	long accessTime
-	LinkedElement next   ??
-	Feature[] features   ??
-
-	# file attributes
-	BlockInfo[] blklist
-	short replication
-	long preferredBlockSize
-
-	# diretory attributes
-	List<INode>  children
-}
-
-=====================
-
-replace Postgres by Calvin
+# mkdirs *
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op mkdirs -threads 1 -dirs 10 -keepResults -logLevel INFO
 ```
-
-
 
 
 ### References
