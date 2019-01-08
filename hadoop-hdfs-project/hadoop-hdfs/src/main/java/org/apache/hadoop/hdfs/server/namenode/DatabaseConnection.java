@@ -297,14 +297,14 @@ public class DatabaseConnection {
     return childId;
   }
 
-  public static boolean removeChild(final long childId, final long parentId) {
+  public static void removeChild(final long childId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       // delete file/directory recusively
       String sql =
           "DELETE FROM inodes WHERE id IN ("
               + "   WITH RECURSIVE cte AS ("
-              + "       SELECT id, parent FROM inodes d WHERE id = ? and parent = ?"
+              + "       SELECT id, parent FROM inodes d WHERE id = ?"
               + "   UNION ALL"
               + "       SELECT d.id, d.parent FROM cte"
               + "       JOIN inodes d ON cte.id = d.parent"
@@ -313,15 +313,12 @@ public class DatabaseConnection {
               + ");";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
-      pst.setLong(2, parentId);
-      int res = pst.executeUpdate();
+      pst.executeUpdate();
       pst.close();
-      LOG.info("removeChild: " + childId);
-      return res != 0;
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
-      return false;
     }
+    LOG.info("removeChild: " + childId);
   }
 
   public static List<Long> getChildrenList(final long parentId) {
