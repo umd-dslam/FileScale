@@ -72,7 +72,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    * Check whether this is the root inode.
    */
   final boolean isRoot() {
-    return getLocalNameBytes().length == 0;
+    return getLocalNameBytes() == null;
   }
 
   /** Get the {@link PermissionStatus} */
