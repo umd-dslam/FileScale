@@ -64,17 +64,6 @@ mvn clean install -DskipTests -rf :hadoop-hdfs
 # mvn package -Pdist -Pnative -Dtar -DskipTests
 ```
 
-### Simplify Compiling Process
-
-```bash
-cd hadoop/hadoop-hdfs-project/hadoop-hdfs/
-mvn clean package -Pdist -DskipTests
-
-cp  hadoop-hdfs/target/hadoop-hdfs-3.3.0-SNAPSHOT.jar ../hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/share/hadoop/hdfs/
-
-cp  hadoop-hdfs/target/hadoop-hdfs-3.3.0-SNAPSHOT-tests.jar ../hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/share/hadoop/hdfs/
-```
-
 ### Benchmark
 
 1. add hostname as an **alias** of localhost in `/etc/hosts`
@@ -180,6 +169,18 @@ kill $(jps | grep '[NameNode,DataNode]' | awk '{print $1}')
 
 IP=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
 ./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 1 -keepResults -logLevel INFO
+```
+
+### Simplify Compiling Process
+
+```bash
+cd ~/hadoop/hadoop-hdfs-project/hadoop-hdfs/
+mvn package -Pdist -DskipTests
+
+cd ..
+cp  hadoop-hdfs/target/hadoop-hdfs-3.3.0-SNAPSHOT.jar ../hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/share/hadoop/hdfs/
+
+cp  hadoop-hdfs/target/hadoop-hdfs-3.3.0-SNAPSHOT-tests.jar ../hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/share/hadoop/hdfs/
 ```
 
 ### Restart
