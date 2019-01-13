@@ -341,7 +341,7 @@ public class DatabaseConnection {
       System.out.println(ex.getMessage());
     }
 
-    LOG.info("getChild: (" + childIds + "," + parentId + ")");
+    LOG.info("getChildrenList: (" + childIds + "," + parentId + ")");
 
     return childIds;
   }
