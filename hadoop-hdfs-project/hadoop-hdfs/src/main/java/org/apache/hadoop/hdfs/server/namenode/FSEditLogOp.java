@@ -547,7 +547,7 @@ public abstract class FSEditLogOp {
     @Override
     public void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
-      // FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeString(path, out);
       // FSImageSerialization.writeShort(replication, out);
       // FSImageSerialization.writeLong(mtime, out);
       // FSImageSerialization.writeLong(atime, out);
@@ -1648,7 +1648,7 @@ public abstract class FSEditLogOp {
     public 
     void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
-      // FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeString(path, out);
       // FSImageSerialization.writeLong(timestamp, out); // mtime
       // FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
       // permissions.write(out);
@@ -2417,7 +2417,7 @@ public abstract class FSEditLogOp {
     @Override
     public 
     void writeFields(DataOutputStream out) throws IOException {
-      // FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeString(path, out);
       // FSImageSerialization.writeLong(mtime, out);
       // FSImageSerialization.writeLong(atime, out);
     }
