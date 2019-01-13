@@ -214,6 +214,9 @@ kill $(jps | grep '[NameNode,DataNode]' | awk '{print $1}')
 ./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op mkdirs -threads 1 -dirs 10 -keepResults -logLevel INFO
 ```
 
+### Demo
+
+https://youtu.be/MZdPWhe3Bjs
 
 ### References
 
