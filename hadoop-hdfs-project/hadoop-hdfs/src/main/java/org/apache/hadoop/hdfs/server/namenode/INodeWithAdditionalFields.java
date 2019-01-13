@@ -105,7 +105,7 @@ public abstract class INodeWithAdditionalFields extends INode
    *  clientProtocol are changed; The decoding at the client
    *  side should change accordingly.
    */
-  private byte[] name = null;
+  // private byte[] name = null;
   /** 
    * Permission encoded using {@link PermissionStatusFormat}.
    * Codes other than {@link #clonePermissionStatus(INodeWithAdditionalFields)}
@@ -124,22 +124,12 @@ public abstract class INodeWithAdditionalFields extends INode
       long permission, long modificationTime, long accessTime) {
     super(parent);
     this.id = id;
-    this.name = name;
+
     String strName = null;
     if (name != null && name.length > 0) {
       strName = DFSUtil.bytes2String(name);
     }
     DatabaseConnection.insertInode(id, strName, accessTime, modificationTime, permission, 0L);
-  }
-
-  private INodeWithAdditionalFields(INode parent, long id, byte[] name) {
-    super(parent);
-    this.id = id;
-
-    // String strName = DatabaseConnection.getName(id);
-    // this.name = (strName != null ? DFSUtil.string2Bytes(strName) : null);
-
-    this.name = name;
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
@@ -148,9 +138,17 @@ public abstract class INodeWithAdditionalFields extends INode
         modificationTime, accessTime);
   }
 
+  private INodeWithAdditionalFields(INode parent, long id) {
+    super(parent);
+    this.id = id;
+
+    // String strName = DatabaseConnection.getName(id);
+    // this.name = (strName != null ? DFSUtil.string2Bytes(strName) : null);
+  }
+
   // Note: only used by the loader of image file
-  INodeWithAdditionalFields(long id, byte[] name) {
-    this(null, id, name);
+  INodeWithAdditionalFields(long id) {
+    this(null, id);
   }
 
   /** @param other Other node to be copied */
@@ -181,9 +179,8 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public final byte[] getLocalNameBytes() {
-    // String strName = DatabaseConnection.getName(this.getId());
-    // return strName != null ? DFSUtil.string2Bytes(strName) : null;
-    return name;
+    String strName = DatabaseConnection.getName(getId());
+    return strName != null ? DFSUtil.string2Bytes(strName) : null;
   }
   
   @Override
@@ -193,7 +190,6 @@ public abstract class INodeWithAdditionalFields extends INode
     } else {
       DatabaseConnection.setName(this.getId(), null);
     }
-    this.name = name;
   }
 
   /** Clone the {@link PermissionStatus}. */
