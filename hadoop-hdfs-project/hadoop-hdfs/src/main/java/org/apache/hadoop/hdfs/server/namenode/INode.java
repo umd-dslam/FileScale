@@ -659,7 +659,8 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   /** Set parent directory */
   public final void setParent(INodeDirectory parent) {
-    DatabaseConnection.setParent(this.getId(), parent.getId());
+    DatabaseConnection.setParent(this.getId(), parent == null
+      ? DatabaseConnection.LONG_NULL : parent.getId());
   }
 
   public final void setParent(long parentId) {
@@ -668,7 +669,8 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   /** Set container. */
   public final void setParentReference(INodeReference parent) {
-    DatabaseConnection.setParent(this.getId(), parent.getId());
+    DatabaseConnection.setParent(this.getId(), parent == null
+      ? DatabaseConnection.LONG_NULL : parent.getId());
   }
 
   /** Clear references to other objects. */
