@@ -1137,7 +1137,7 @@ public class FSDirectory implements Closeable {
     cacheName(child);
     writeLock();
     try {
-      return addLastINode(existing, child, modes, true);
+      return addLastINode(existing, child, child.getLocalName(), modes, true);
     } finally {
       writeUnlock();
     }
@@ -1286,7 +1286,7 @@ public class FSDirectory implements Closeable {
    * @return an INodesInPath instance containing the new INode
    */
   @VisibleForTesting
-  public INodesInPath addLastINode(INodesInPath existing, INode inode,
+  public INodesInPath addLastINode(INodesInPath existing, INode inode, String name,
       FsPermission modes, boolean checkQuota) throws QuotaExceededException {
     assert existing.getLastINode() != null &&
         existing.getLastINode().isDirectory();
@@ -1323,7 +1323,7 @@ public class FSDirectory implements Closeable {
 
     boolean isRename = (inode.getParent() != null);
 
-    final boolean added = parent.addChild(inode, true,
+    final boolean added = parent.addChild(inode, name, true,
         existing.getLatestSnapshotId());
     if (!added) {
       updateCountNoQuotaCheck(existing, pos, counts.negation());
@@ -1337,10 +1337,10 @@ public class FSDirectory implements Closeable {
     return INodesInPath.append(existing, inode, inode.getLocalNameBytes());
   }
 
-  INodesInPath addLastINodeNoQuotaCheck(INodesInPath existing, INode i) {
+  INodesInPath addLastINodeNoQuotaCheck(INodesInPath existing, INode i, String name) {
     try {
       // All callers do not have create modes to pass.
-      return addLastINode(existing, i, null, false);
+      return addLastINode(existing, i, name, null, false);
     } catch (QuotaExceededException e) {
       NameNode.LOG.warn("FSDirectory.addChildNoQuotaCheck - unexpected", e);
     }
@@ -1589,6 +1589,8 @@ public class FSDirectory implements Closeable {
 
   /** Check if a given inode name is reserved */
   public static boolean isReservedName(INode inode) {
+    if (inode.getLocalNameBytes() == null)
+      return false;
     return CHECK_RESERVED_FILE_NAMES
             && Arrays.equals(inode.getLocalNameBytes(), DOT_RESERVED);
   }

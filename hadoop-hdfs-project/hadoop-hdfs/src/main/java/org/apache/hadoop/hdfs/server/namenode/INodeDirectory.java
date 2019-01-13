@@ -78,8 +78,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   // Note: only used by the loader of image file
-  public INodeDirectory(long id, byte[] name) {
-    super(id, name);
+  public INodeDirectory(long id) {
+    super(id);
   }
 
   /**
@@ -592,6 +592,35 @@ public class INodeDirectory extends INodeWithAdditionalFields
       node.setGroup(getGroupName());
     }
 
+    return true;
+  }
+
+
+  // for rename inode
+  public boolean addChild(INode node, final String name,
+      final boolean setModTime, final int latestSnapshotId) {
+
+    if (isInLatestSnapshot(latestSnapshotId)) {
+      // create snapshot feature if necessary
+      DirectoryWithSnapshotFeature sf = this.getDirectoryWithSnapshotFeature();
+      if (sf == null) {
+        sf = this.addSnapshotFeature(null);
+      }
+      return sf.addChild(this, node, setModTime, latestSnapshotId);
+    }
+
+    if(!DatabaseConnection.addChild(node.getId(), name, this.getId())) {
+      return false;
+    }
+
+    if (node.getGroupName() == null) {
+      node.setGroup(getGroupName());
+    }
+
+    if (setModTime) {
+      // update modification time of the parent directory
+      updateModificationTime(node.getModificationTime(), latestSnapshotId);
+    }
     return true;
   }
 

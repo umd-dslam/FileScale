@@ -212,7 +212,7 @@ class FSDirMkdirOp {
         timestamp);
 
     INodesInPath iip =
-        fsd.addLastINode(parent, dir, permission.getPermission(), true);
+        fsd.addLastINode(parent, dir, DFSUtil.bytes2String(name), permission.getPermission(), true);
     if (iip != null && aclEntries != null) {
       AclStorage.updateINodeAcl(dir, aclEntries, Snapshot.CURRENT_STATE_ID);
     }
