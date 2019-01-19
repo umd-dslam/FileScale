@@ -50,8 +50,8 @@ public class DatabaseConnection {
               + "CREATE TABLE inodes("
               + "   id int primary key, parent int, name text,"
               + "   accessTime bigint, modificationTime bigint,"
-              + "   header bigint, permission bigint"
-              + ");";
+              + "   header bigint, permission bigint, blockIds bigint[]"
+              + ");"
       Statement st = connection.createStatement();
       st.execute(sql);
 
