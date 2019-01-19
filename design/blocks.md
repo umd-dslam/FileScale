@@ -14,11 +14,42 @@ class Block {
 }
 
 class BlockInfo extends Block {
-    BlockCollection bc; // HDFS file's inode reference
-    Object[] triplets;  // block is stored in which datanode
+private short replication;
+private volatile long bcId;
+DatanodeStorageInfo[] storages;
+BlockUnderConstructionFeature uc;
 }
 ```
 
+```bash
+## map: file <-> data blocks
+| InodeId | {blockId} |
+```
+
+
+```bash
+## map: data blocks <-> data node
+
+table block + blockInfo
+----------------
+| blockId | numBytes | generationStamp | replication | bcId | {storageID}
+
+table DatanodeStorageInfo
+----------------
+storageID | storageType | State | capacity | dfsUsed | nonDfsUsed | remaining | blockPoolUsed | blockReportCount | heartbeatedSinceFailover | blockContentsStale | FoldedTreeSet<BlockInfo> blocks | datanodeUuid |
+
+table DatanodeDescriptor
+----------------
+| ipAddr | ipAddrBytes | hostName | hostNameBytes | peerHostName | xferPort | infoPort | infoSecurePort | ipcPort | xferAddr  | datanodeUuid | datanodeUuidBytes | capacity | dfsUsed |  nonDfsUsed | remaining | blockPoolUsed | cacheCapacity| cacheUsed | lastUpdate | lastUpdateMonotonic | xceiverCount | location | softwareVersion | List<String> dependentHostNames | upgradeDomain | numBlocks | adminState | maintenanceExpireTimeInMS | lastBlockReportTime | lastBlockReportMonotonic | lastCachingDirectiveSentTimeMs | isAlive | needKeyUpdate | forceRegistration | bandwidth | lastBlocksScheduledRollTime | disallowed | pendingReplicationWithoutTargets | heartbeatedSinceRegistration
+
+EnumCounters??
+CachedBlocksList ??
+
+
+table VolumeFailureSummary
+-----------------
+| datanodeUuid | String[] failedStorageLocations | volumeFailures | lastVolumeFailureDate | estimatedCapacityLostTotal
+```
 
 
 ```java
@@ -65,7 +96,7 @@ BlockManager.processReport() -> processFirstBlockReport() -> addStoredBlocklmmed
                                                           -> markBlockAsCorrupt()
 
 ### page 222
-DatabnodeDescriptor
+DatanodeDescriptor
 
 ### 224
 DatanodeStoragelnfo
