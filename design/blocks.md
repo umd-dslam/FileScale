@@ -23,8 +23,11 @@ BlockUnderConstructionFeature uc;
 
 ```bash
 ## map: file <-> data blocks
-| InodeId | {blockId} |
+| InodeId | ... | {blockId} |
 ```
+
+http://www.postgresqltutorial.com/postgresql-array/
+https://blog.2ndquadrant.com/using-java-arrays-to-insert-retrieve-update-postgresql-arrays/
 
 
 ```bash

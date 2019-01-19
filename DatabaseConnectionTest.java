@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Types;
+import java.sql.Array;
 import java.util.Properties;
 
 public class DatabaseConnectionTest {
@@ -34,7 +35,8 @@ public class DatabaseConnectionTest {
                 "CREATE TABLE inodes(" +
                 "   id int primary key, parent int, name text," +
                 "   accessTime bigint, modificationTime bigint," +
-                "   header bigint, permission bigint" +
+                "   header bigint, permission bigint," +
+                "   blockIds bigint[]" +
                 ");";
             Statement st = conn.createStatement();
             st.execute(sql);
@@ -334,6 +336,24 @@ public class DatabaseConnectionTest {
         DatabaseConnectionTest.insertInode(100, null, 22, 22, 22);
         DatabaseConnectionTest.insertInode(101, "haha", 22, 22, 22);
         DatabaseConnectionTest.insertInode(101, "meme", 22, 22, 22);
+
+
+        Long[] blockIds = new Long[]{11L, 22L, 33L};
+        /**
+         * Convert long[] to java.sql.Array using JDBC API
+         */
+       try {
+            Connection conn = DatabaseConnectionTest.getInstance().getConnection();
+            Array Ids = conn.createArrayOf("BIGINT", blockIds);
+            String sql = "UPDATE inodes SET blockIds = ? WHERE id = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setArray(1, Ids);
+            pstmt.setLong(2, 100);
+            pstmt.executeUpdate();
+            pstmt.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
     
