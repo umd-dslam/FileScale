@@ -66,3 +66,6 @@ hadoop-calvin-util/*
 name/*
 data/*
 tmp/*
+
+bench/*.class
+bench/*.jar
