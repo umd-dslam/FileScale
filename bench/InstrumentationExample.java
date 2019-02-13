@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class InstrumentationExample {
 
@@ -30,6 +31,9 @@ public class InstrumentationExample {
 		String[] b2 = {"1", "2"};
 		String[] b3 = new String[100];
 
+		String s0 = "";
+		String s1 = "hello";
+
 		List<Person> al0 = new ArrayList<>(0);
 		List<Person> al1 = new ArrayList<>(1);
 		al1.add(new Person());
@@ -38,7 +42,7 @@ public class InstrumentationExample {
 		al2.add(new Person());
 		List<Person> al3 = new ArrayList<>(100);
 		for (int i = 0; i < 100; i++) {
-			al3.add(new Person());
+		    al3.add(new Person());
 		}
 	
 		printObjectSize(p);
@@ -57,5 +61,8 @@ public class InstrumentationExample {
 		printObjectSize(al1);
 		printObjectSize(al2);
 		printObjectSize(al3);
+
+		printObjectSize(s0);
+		printObjectSize(s1);
     }
 }
