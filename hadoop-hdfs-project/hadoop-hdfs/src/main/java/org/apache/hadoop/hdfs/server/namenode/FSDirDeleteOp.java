@@ -266,7 +266,7 @@ class FSDirDeleteOp {
     }
 
     // ADD(gangliao): Remove inode from Postgres
-    DatabaseConnection.removeChild(targetNode.getId());
+    DatabaseINode.removeChild(targetNode.getId());
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "

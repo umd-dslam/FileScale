@@ -16,8 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DatabaseConnection {
-
-  public static final long LONG_NULL = 0L;
   private static DatabaseConnection instance;
   private Connection connection;
   private String url = "jdbc:postgresql://localhost:5432/docker";

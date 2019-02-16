@@ -61,8 +61,8 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   /** parent is either an {@link INodeDirectory} or an {@link INodeReference}.*/
 
   INode(INode parent) {
-    DatabaseConnection.setParent(this.getId(), parent == null
-      ? DatabaseConnection.LONG_NULL : parent.getId());
+    DatabaseINode.setParent(this.getId(), parent == null
+      ? DatabaseINode.LONG_NULL : parent.getId());
   }
 
   /** Get inode id */
@@ -636,8 +636,8 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   /** @return the parent inode from inodemap */
   private final INode getParentINode() {
-    long id = DatabaseConnection.getParent(this.getId());
-    return id == DatabaseConnection.LONG_NULL ? null : FSDirectory.getInstance().getInode(id);
+    long id = DatabaseINode.getParent(this.getId());
+    return id == DatabaseINode.LONG_NULL ? null : FSDirectory.getInstance().getInode(id);
   }
 
 
@@ -659,18 +659,18 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   /** Set parent directory */
   public final void setParent(INodeDirectory parent) {
-    DatabaseConnection.setParent(this.getId(), parent == null
-      ? DatabaseConnection.LONG_NULL : parent.getId());
+    DatabaseINode.setParent(this.getId(), parent == null
+      ? DatabaseINode.LONG_NULL : parent.getId());
   }
 
   public final void setParent(long parentId) {
-    DatabaseConnection.setParent(this.getId(), parentId);
+    DatabaseINode.setParent(this.getId(), parentId);
   }
 
   /** Set container. */
   public final void setParentReference(INodeReference parent) {
-    DatabaseConnection.setParent(this.getId(), parent == null
-      ? DatabaseConnection.LONG_NULL : parent.getId());
+    DatabaseINode.setParent(this.getId(), parent == null
+      ? DatabaseINode.LONG_NULL : parent.getId());
   }
 
   /** Clear references to other objects. */

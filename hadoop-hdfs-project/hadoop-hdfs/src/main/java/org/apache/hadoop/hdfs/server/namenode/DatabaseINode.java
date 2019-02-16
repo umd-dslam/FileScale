@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DatabaseINode {
+  public static final long LONG_NULL = 0L;
   public static boolean checkInodeExistence(final long parentId, final String childName) {
     boolean exist = false;
     try {

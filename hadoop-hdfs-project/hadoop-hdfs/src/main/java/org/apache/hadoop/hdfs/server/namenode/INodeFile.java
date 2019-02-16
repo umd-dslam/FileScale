@@ -264,7 +264,7 @@ public class INodeFile extends INodeWithAdditionalFields
     
     // ADD(gangliao): set inode's header into Postgres
     long header = HeaderFormat.toLong(preferredBlockSize, layoutRedundancy, storagePolicyID);
-    DatabaseConnection.setHeader(id, header);
+    DatabaseINode.setHeader(id, header);
     
     if (blklist != null && blklist.length > 0) {
       for (BlockInfo b : blklist) {
@@ -290,8 +290,8 @@ public class INodeFile extends INodeWithAdditionalFields
     this.features = that.features;
 
     // ADD(gangliao): copy inode's header from Postgres
-    long header = DatabaseConnection.getHeader(that.getId());
-    DatabaseConnection.setHeader(this.getId(), header);
+    long header = DatabaseINode.getHeader(that.getId());
+    DatabaseINode.setHeader(this.getId(), header);
 
     setBlocks(that.blocks);
   }
@@ -525,7 +525,7 @@ public class INodeFile extends INodeWithAdditionalFields
       return getSnapshotINode(snapshot).getFileReplication();
     }
     return HeaderFormat.getReplication(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   /**
@@ -563,7 +563,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   /** Set the replication factor of this file. */
   private void setFileReplication(short replication) {
-    long header = DatabaseConnection.getHeader(this.getId());
+    long header = DatabaseINode.getHeader(this.getId());
 
     long layoutRedundancy =
         HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.retrieve(header);
@@ -572,7 +572,7 @@ public class INodeFile extends INodeWithAdditionalFields
     header = HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.
         combine(layoutRedundancy, header);
 
-    DatabaseConnection.setHeader(this.getId(), header);
+    DatabaseINode.setHeader(this.getId(), header);
   }
 
   /** Set the replication factor of this file. */
@@ -587,13 +587,13 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override
   public long getPreferredBlockSize() {
     return HeaderFormat.getPreferredBlockSize(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   @Override
   public byte getLocalStoragePolicyID() {
     return HeaderFormat.getStoragePolicyID(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   @Override
@@ -623,10 +623,10 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   private void setStoragePolicyID(byte storagePolicyId) {
-    long header = DatabaseConnection.getHeader(this.getId());
+    long header = DatabaseINode.getHeader(this.getId());
     header = HeaderFormat.STORAGE_POLICY_ID.BITS.combine(storagePolicyId,
         header);
-    DatabaseConnection.setHeader(this.getId(), header);
+    DatabaseINode.setHeader(this.getId(), header);
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,
@@ -643,7 +643,7 @@ public class INodeFile extends INodeWithAdditionalFields
   public byte getErasureCodingPolicyID() {
     if (isStriped()) {
       return HeaderFormat.getECPolicyID(
-        DatabaseConnection.getHeader(this.getId()));
+        DatabaseINode.getHeader(this.getId()));
     }
     return REPLICATION_POLICY_ID;
   }
@@ -655,7 +655,7 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override
   public boolean isStriped() {
     return HeaderFormat.isStriped(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   /**
@@ -665,12 +665,12 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override
   public BlockType getBlockType() {
     return HeaderFormat.getBlockType(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   @Override // INodeFileAttributes
   public long getHeaderLong() {
-    return DatabaseConnection.getHeader(this.getId());
+    return DatabaseINode.getHeader(this.getId());
   }
 
   /** @return the blocks of the file. */

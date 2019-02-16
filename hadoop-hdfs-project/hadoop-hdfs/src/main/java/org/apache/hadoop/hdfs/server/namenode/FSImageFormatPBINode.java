@@ -218,7 +218,7 @@ public final class FSImageFormatPBINode {
 
         // TODO(gangliao): clean code
         // long id = dir.getInode(e.getParent()).getId();
-        // for (long childId : DatabaseConnection.getChildrenList(id)){
+        // for (long childId : DatabaseINode.getChildrenList(id)){
         //   INode child = dir.getInode(childId);
         //   addToParent(id, child);
         // }
@@ -309,7 +309,7 @@ public final class FSImageFormatPBINode {
       BlockType blockType = PBHelperClient.convert(f.getBlockType());
       LoaderContext state = parent.getLoaderContext();
 
-      // long header = DatabaseConnection.getHeader(n.getId());
+      // long header = DatabaseINode.getHeader(n.getId());
       // Byte ecPolicyID = INodeFile.HeaderFormat.getECPolicyID(header);
       // boolean isStriped = ecPolicyID != ErasureCodeConstants.REPLICATION_POLICY_ID;
       // if(!isStriped){
