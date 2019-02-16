@@ -248,8 +248,6 @@ public class INodeFile extends INodeWithAdditionalFields
 
   }
 
-  private BlockInfo[] blocks;
-
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
             long atime, BlockInfo[] blklist, short replication,
             long preferredBlockSize) {

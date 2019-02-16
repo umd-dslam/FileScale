@@ -89,10 +89,6 @@ public class Block implements Writable, Comparable<Block> {
     return m.matches() ? Long.parseLong(m.group(1)) : 0;
   }
 
-  private long blockId;
-  private long numBytes;
-  private long generationStamp;
-
   public Block() {this(0, 0, 0);}
 
   public Block(final long blkid, final long len, final long generationStamp) {
@@ -115,9 +111,7 @@ public class Block implements Writable, Comparable<Block> {
   }
 
   public void set(long blkid, long len, long genStamp) {
-    this.blockId = blkid;
-    this.numBytes = len;
-    this.generationStamp = genStamp;
+    DatabaseConnection.insertBlock(blkid, len, genStamp); 
   }
   /**
    */
