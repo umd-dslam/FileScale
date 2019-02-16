@@ -58,7 +58,7 @@ public class DatabaseConnection {
               + ");"
               + "DROP TABLE IF EXISTS datablocks;"
               + "CREATE TABLE datablocks("
-              + "   id bigint primary key, numBytes bigint, generationStamp bigint,"
+              + "   blockId bigint primary key, numBytes bigint, generationStamp bigint,"
               + "   replication int, bcId bigint"
               + ");";
       Statement st = connection.createStatement();

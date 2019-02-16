@@ -89,6 +89,8 @@ public class Block implements Writable, Comparable<Block> {
     return m.matches() ? Long.parseLong(m.group(1)) : 0;
   }
 
+  private long blockId;
+
   public Block() {this(0, 0, 0);}
 
   public Block(final long blkid, final long len, final long generationStamp) {
@@ -111,16 +113,18 @@ public class Block implements Writable, Comparable<Block> {
   }
 
   public void set(long blkid, long len, long genStamp) {
-    DatabaseConnection.insertBlock(blkid, len, genStamp); 
+    blockId = blkid;
+    DatabaseDatablock.insertBlock(blkid, len, genStamp); 
   }
   /**
    */
   public long getBlockId() {
-    return blockId;
+    return this.blockId;
   }
 
   public void setBlockId(long bid) {
-    blockId = bid;
+    DatabaseDatablock.setBlockId(this.blockId, bid);
+    this.blockId = bid;
   }
 
   /**
@@ -133,18 +137,18 @@ public class Block implements Writable, Comparable<Block> {
   /**
    */
   public long getNumBytes() {
-    return numBytes;
+    return DatabaseDatablock.getNumBytes(blockId);
   }
   public void setNumBytes(long len) {
-    this.numBytes = len;
+    DatabaseDatablock.setNumBytes(len);
   }
 
   public long getGenerationStamp() {
-    return generationStamp;
+    return DatabaseDatablock.getGenerationStamp(blockId);
   }
 
   public void setGenerationStamp(long stamp) {
-    generationStamp = stamp;
+    DatabaseDatablock.setGenerationStamp(blockId, stamp);
   }
 
   /**
@@ -158,7 +162,7 @@ public class Block implements Writable, Comparable<Block> {
     StringBuilder sb = new StringBuilder();
     sb.append(BLOCK_FILE_PREFIX).
        append(b.blockId).append("_").
-       append(b.generationStamp);
+       append(b.getGenerationStamp(b.blockId));
     return sb.toString();
   }
 
@@ -191,30 +195,35 @@ public class Block implements Writable, Comparable<Block> {
   }
 
   final void writeHelper(DataOutput out) throws IOException {
-    out.writeLong(blockId);
-    out.writeLong(numBytes);
-    out.writeLong(generationStamp);
+    out.writeLong(this.blockId);
+    out.writeLong(DatabaseDatablock.getNumBytes(this.blockId));
+    out.writeLong(DatabaseDatablock.getGenerationStamp(this.blockId));
   }
 
   final void readHelper(DataInput in) throws IOException {
-    this.blockId = in.readLong();
-    this.numBytes = in.readLong();
-    this.generationStamp = in.readLong();
-    if (numBytes < 0) {
-      throw new IOException("Unexpected block size: " + numBytes);
+    long bid = in.readLong();
+    long num = in.readLong();
+    DatabaseDatablock.setBlockId(this.blockId, bid);
+    this.blockId = bid;
+    DatabaseDatablock.setNumBytes(this.blockId, num);
+    DatabaseDatablock.setGenerationStamp(this.blockId, in.readLong());
+    if (num < 0) {
+      throw new IOException("Unexpected block size: " + num);
     }
   }
 
   // write only the identifier part of the block
   public void writeId(DataOutput out) throws IOException {
-    out.writeLong(blockId);
-    out.writeLong(generationStamp);
+    out.writeLong(this.blockId);
+    out.writeLong(DatabaseDatablock.getGenerationStamp(this.blockId));
   }
 
   // Read only the identifier part of the block
   public void readId(DataInput in) throws IOException {
-    this.blockId = in.readLong();
-    this.generationStamp = in.readLong();
+    long bid = in.readLong();
+    DatabaseDatablock.setBlockId(this.blockId, bid);
+    this.blockId = bid;
+    DatabaseDatablock.setGenerationStamp(this.blockId, in.readLong());
   }
 
   @Override // Comparable
@@ -237,7 +246,7 @@ public class Block implements Writable, Comparable<Block> {
     // only one null
     return !(a == null || b == null) &&
         a.blockId == b.blockId &&
-        a.generationStamp == b.generationStamp;
+        a.getGenerationStamp(a.blockId) == b.getGenerationStamp(b.blockId);
   }
 
   @Override // Object

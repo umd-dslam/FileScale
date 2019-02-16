@@ -72,11 +72,11 @@ public class DatabaseINode {
   }
 
   private static <T> void setAttribute(
-      final long id, final String attrName, final T attrValue, final String table) {
+      final long id, final String attrName, final T attrValue) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
 
-      String sql = "UPDATE " + table + " SET " + attrName + " = ? WHERE id = ?;";
+      String sql = "UPDATE inodes SET " + attrName + " = ? WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
 
       if (attrValue instanceof String) {
@@ -167,27 +167,27 @@ public class DatabaseINode {
   }
 
   public static void setAccessTime(final long id, final long accessTime) {
-    setAttribute(id, "accessTime", accessTime, "inodes");
+    setAttribute(id, "accessTime", accessTime);
   }
 
   public static void setModificationTime(final long id, final long modificationTime) {
-    setAttribute(id, "modificationTime", modificationTime, "inodes");
+    setAttribute(id, "modificationTime", modificationTime);
   }
 
   public static void setPermission(final long id, final long permission) {
-    setAttribute(id, "permission", permission, "inodes");
+    setAttribute(id, "permission", permission);
   }
 
   public static void setHeader(final long id, final long header) {
-    setAttribute(id, "header", header, "inodes");
+    setAttribute(id, "header", header);
   }
 
   public static void setParent(final long id, final long parent) {
-    setAttribute(id, "parent", parent, "inodes");
+    setAttribute(id, "parent", parent);
   }
 
   public static void setName(final long id, final String name) {
-    setAttribute(id, "name", name, "inodes");
+    setAttribute(id, "name", name);
   }
 
   public static long getAccessTime(final long id) {
