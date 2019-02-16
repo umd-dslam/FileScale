@@ -50,8 +50,17 @@ public class DatabaseConnection {
               + "CREATE TABLE inodes("
               + "   id int primary key, parent int, name text,"
               + "   accessTime bigint, modificationTime bigint,"
-              + "   header bigint, permission bigint, blockIds bigint[]"
-              + ");"
+              + "   header bigint, permission bigint"
+              + ");" +
+          "DROP TABLE IF EXISTS inode2block;" 
+              + "CREATE TABLE inode2block("
+              + "   id int primary key, blockId bigint"
+              + ");" +
+          "DROP TABLE IF EXISTS datablocks;"
+              + "CREATE TABLE datablocks("
+              + "   blockId bigint primary key, numBytes bigint, generationStamp bigint,"
+              + "   replication int, bcId bigint"
+              + ");";
       Statement st = connection.createStatement();
       st.execute(sql);
 
