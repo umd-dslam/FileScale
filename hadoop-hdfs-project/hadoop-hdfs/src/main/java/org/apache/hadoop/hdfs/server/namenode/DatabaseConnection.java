@@ -52,7 +52,7 @@ public class DatabaseConnection {
               + ");"
               + "DROP TABLE IF EXISTS inode2block;"
               + "CREATE TABLE inode2block("
-              + "   id int primary key, blockId bigint"
+              + "   id int primary key, blockId bigint, index int"
               + ");"
               + "DROP TABLE IF EXISTS datablocks;"
               + "CREATE TABLE datablocks("

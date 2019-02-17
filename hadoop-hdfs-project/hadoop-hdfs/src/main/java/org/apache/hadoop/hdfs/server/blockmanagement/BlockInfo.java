@@ -44,16 +44,6 @@ public abstract class BlockInfo extends Block
 
   public static final BlockInfo[] EMPTY_ARRAY = {};
 
-  /**
-   * Replication factor.
-   */
-  private short replication;
-
-  /**
-   * Block collection ID.
-   */
-  private volatile long bcId;
-
   /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
   private LightWeightGSet.LinkedElement nextLinkedElement;
 
@@ -68,33 +58,34 @@ public abstract class BlockInfo extends Block
    * @param size the block's replication factor, or the total number of blocks
    *             in the block group
    */
-  public BlockInfo(short size) {
-    this.storages = new DatanodeStorageInfo[size];
-    this.bcId = INVALID_INODE_ID;
-    this.replication = isStriped() ? 0 : size;
-  }
+  // FIXME: I don't think this function still be used!
+  // public BlockInfo(short size) {
+  //   this.storages = new DatanodeStorageInfo[size];
+  //   this.bcId = INVALID_INODE_ID;
+  //   this.replication = isStriped() ? 0 : size;
+  // }
 
   public BlockInfo(Block blk, short size) {
     super(blk);
     this.storages = new DatanodeStorageInfo[size];
-    this.bcId = INVALID_INODE_ID;
-    this.replication = isStriped() ? 0 : size;
+    DatabaseDatablock.setBcId(INVALID_INODE_ID);
+    DatabaseDatablock.setReplication(isStriped() ? 0 : size);
   }
 
   public short getReplication() {
-    return replication;
+    return DatabaseDatablock.getReplication(getBlockId());
   }
 
   public void setReplication(short repl) {
-    this.replication = repl;
+    DatabaseDatablock.setReplication(getBlockId(), repl);
   }
 
   public long getBlockCollectionId() {
-    return bcId;
+    return DatabaseDatablock.getBcId(getBlockId());
   }
 
   public void setBlockCollectionId(long id) {
-    this.bcId = id;
+    return DatabaseDatablock.setBcId(getBlockId(), id);
   }
 
   public void delete() {
@@ -102,7 +93,7 @@ public abstract class BlockInfo extends Block
   }
 
   public boolean isDeleted() {
-    return bcId == INVALID_INODE_ID;
+    return DatabaseDatablock.getBcId(getBlockId()) == INVALID_INODE_ID;
   }
 
   public Iterator<DatanodeStorageInfo> getStorageInfos() {

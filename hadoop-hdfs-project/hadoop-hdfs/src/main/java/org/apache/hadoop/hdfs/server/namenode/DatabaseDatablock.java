@@ -91,6 +91,14 @@ public class DatabaseDatablock {
     return getAttribute(blockId, "generationStamp");
   }
 
+  public static long getBcId(final long blockId) {
+    return getAttribute(blockId, "bcId");
+  }
+
+  public static short getReplication(final long blockId) {
+    return getAttribute(blockId, "replication");
+  }
+
   public static void setBlockId(final long blockId, final long bid) {
     setAttribute(blockId, "blockId", bid);
   }
@@ -101,5 +109,13 @@ public class DatabaseDatablock {
 
   public static void setGenerationStamp(final long blockId, final long generationStamp) {
     setAttribute(blockId, "generationStamp", generationStamp);
+  }
+
+  public static void setBcId(final long blockId, final long bcId) {
+    setAttribute(blockId, "bcId", bcId);
+  }
+
+  public static void setReplication(final long blockId, final short replication) {
+    setAttribute(blockId, "replication", replication);
   }
 }
