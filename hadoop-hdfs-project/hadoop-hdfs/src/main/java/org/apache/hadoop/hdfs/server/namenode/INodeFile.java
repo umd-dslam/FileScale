@@ -1059,7 +1059,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   @Override
   public int numBlocks() {
-    return blocks.length;
+    return DatabaseINode2Block.getNumBlocks(getId());
   }
 
   @VisibleForTesting
