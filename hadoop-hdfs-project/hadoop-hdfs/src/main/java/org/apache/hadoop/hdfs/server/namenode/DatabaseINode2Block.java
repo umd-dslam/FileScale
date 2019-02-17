@@ -37,4 +37,26 @@ public class DatabaseINode2Block {
 
     return num;
   }
+
+  public static int getLastBlockId(final long id) {
+    int blockId = -1;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT blockId FROM inode2block WHERE id = ? ORDER BY index DESC LIMIT 1;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        blockId = rs.getInt(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.out.println(ex.getMessage());
+    }
+
+    LOG.info("getLastBlockId: (" + id + "," + blockId + ")");
+
+    return blockId;
+  }
 }

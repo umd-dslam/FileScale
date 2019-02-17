@@ -1054,7 +1054,12 @@ public class INodeFile extends INodeWithAdditionalFields
 
   @Override
   public BlockInfo getLastBlock() {
-    return blocks.length == 0 ? null: blocks[blocks.length-1];
+    int blockId = DatabaseINode2Block.getLastBlockId(getId())
+
+    if (blockId == -1)
+      return null;
+
+    return BlockManager.getInstance().getStoredBlock(new Block(blockId));
   }
 
   @Override
