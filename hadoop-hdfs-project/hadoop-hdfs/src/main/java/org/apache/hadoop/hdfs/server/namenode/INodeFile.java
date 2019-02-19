@@ -433,19 +433,16 @@ public class INodeFile extends INodeWithAdditionalFields
   BlockInfo removeLastBlock(Block oldblock) {
     Preconditions.checkState(isUnderConstruction(),
         "file is no longer under construction");
-    if (blocks.length == 0) {
+    BlockInfo lastBlock = getLastBlock();
+  
+    if (lastBlock == null) {
       return null;
     }
-    int size_1 = blocks.length - 1;
-    if (!blocks[size_1].equals(oldblock)) {
+    if (!lastBlock.equals(oldblock)) {
       return null;
     }
 
-    BlockInfo lastBlock = blocks[size_1];
-    //copy to a new list
-    BlockInfo[] newlist = new BlockInfo[size_1];
-    System.arraycopy(blocks, 0, newlist, 0, size_1);
-    setBlocks(newlist);
+    // Note: delete only set bc to INVALID
     lastBlock.delete();
     return lastBlock;
   }
