@@ -406,7 +406,11 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override // BlockCollection
   public void setBlock(int index, BlockInfo blk) {
     Preconditions.checkArgument(blk.isStriped() == this.isStriped());
-    this.blocks[index] = blk;
+    // remove index from inode2block
+    DatabaseINode2Block.delete(blk.getBlockId());
+    // update index in inode2block
+    DatabaseINode2Block.setBlockIndex(this.getId(), index, blk.getBlockId());
+    // Note: delete old block will happen in BlocksMap
   }
 
   @Override // BlockCollection, the file should be under construction
@@ -422,7 +426,6 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   void setLastBlock(BlockInfo blk) {
-    blk.setBlockCollectionId(this.getId());
     setBlock(numBlocks() - 1, blk);
   }
 
@@ -730,15 +733,8 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   void addBlock(BlockInfo newblock) {
     Preconditions.checkArgument(newblock.isStriped() == this.isStriped());
-    if (this.blocks.length == 0) {
-      this.setBlocks(new BlockInfo[]{newblock});
-    } else {
-      int size = this.blocks.length;
-      BlockInfo[] newlist = new BlockInfo[size + 1];
-      System.arraycopy(this.blocks, 0, newlist, 0, size);
-      newlist[size] = newblock;
-      this.setBlocks(newlist);
-    }
+    int index = DatabaseINode2Block.getNumBlocks(getId());
+    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), index)
   }
 
   /** Set the blocks. */

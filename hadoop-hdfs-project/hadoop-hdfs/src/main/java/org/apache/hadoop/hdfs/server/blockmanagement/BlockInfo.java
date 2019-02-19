@@ -68,7 +68,6 @@ public abstract class BlockInfo extends Block
   public BlockInfo(Block blk, short size) {
     super(blk);
     this.storages = new DatanodeStorageInfo[size];
-    DatabaseDatablock.setBcId(INVALID_INODE_ID);
     DatabaseDatablock.setReplication(isStriped() ? 0 : size);
   }
 
@@ -81,19 +80,19 @@ public abstract class BlockInfo extends Block
   }
 
   public long getBlockCollectionId() {
-    return DatabaseDatablock.getBcId(getBlockId());
+    return DatabaseINode2Block.getBcId(getBlockId());
   }
 
   public void setBlockCollectionId(long id) {
-    return DatabaseDatablock.setBcId(getBlockId(), id);
+    return DatabaseINode2Block.setBcId(getBlockId(), id);
   }
 
   public void delete() {
-    setBlockCollectionId(INVALID_INODE_ID);
+    DatabaseINode2Block.removeBlock(getBlockId());
   }
 
   public boolean isDeleted() {
-    return DatabaseDatablock.getBcId(getBlockId()) == INVALID_INODE_ID;
+    return DatabaseINode2Block.getBcId(getBlockId()) == 0;
   }
 
   public Iterator<DatanodeStorageInfo> getStorageInfos() {

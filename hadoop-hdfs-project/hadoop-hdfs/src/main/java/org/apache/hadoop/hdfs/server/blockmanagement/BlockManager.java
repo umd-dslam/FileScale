@@ -4572,6 +4572,7 @@ public class BlockManager implements BlockStatsMXBean {
 
     // delete block from database
     DatabaseINode2Block.removeBlock(block.getBlockId()); 
+    DatabaseDatablock.removeBlock(block.getBlockId());
 
     blocksMap.removeBlock(block);
     // If block is removed from blocksMap remove it from corruptReplicasMap
