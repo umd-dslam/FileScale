@@ -445,7 +445,6 @@ public class INodeFile extends INodeWithAdditionalFields
       return null;
     }
 
-    // Note: delete only set bc to INVALID
     lastBlock.delete();
     return lastBlock;
   }
@@ -744,7 +743,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   /** Clear all blocks of the file. */
   public void clearBlocks() {
-    this.blocks = BlockInfo.EMPTY_ARRAY;
+    DatabaseDatablock.clearBlocks(getId());
   }
 
   private void updateRemovedUnderConstructionFiles(

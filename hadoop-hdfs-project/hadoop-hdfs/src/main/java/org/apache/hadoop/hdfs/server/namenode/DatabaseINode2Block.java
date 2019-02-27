@@ -123,19 +123,6 @@ public class DatabaseINode2Block {
     return blockId;
   }
 
-  public static void removeBlock(final long blockId) {
-    try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "DELETE FROM inode2block WHERE blockId = ?";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, blockId);
-      pst.executeUpdate();
-      pst.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
-    }
-  }
-
   public static long getBcId(final long blockId) {
     return getAttribute(blockId, "id");
   }
