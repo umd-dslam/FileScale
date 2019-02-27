@@ -100,7 +100,7 @@ class BlocksMap {
     }
     decrementBlockStat(block);
 
-    assert blockInfo.getBlockCollectionId() == INodeId.INVALID_INODE_ID;
+    assert blockInfo.getBlockCollectionId() == 0;
     final int size = blockInfo.isStriped() ?
         blockInfo.getCapacity() : blockInfo.numNodes();
     for(int idx = size - 1; idx >= 0; idx--) {
@@ -109,6 +109,7 @@ class BlocksMap {
         removeBlock(dn, blockInfo); // remove from the list and wipe the location
       }
     }
+    DatabaseDatablock.delete(blockInfo.getBlockId());
   }
 
   /**

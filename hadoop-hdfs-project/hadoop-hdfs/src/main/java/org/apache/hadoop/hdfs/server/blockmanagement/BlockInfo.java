@@ -88,7 +88,7 @@ public abstract class BlockInfo extends Block
   }
 
   public void delete() {
-    DatabaseDatablock.removeBlock(getBlockId());
+    DatabaseINode2Block.delete(getBlockId());
   }
 
   public boolean isDeleted() {

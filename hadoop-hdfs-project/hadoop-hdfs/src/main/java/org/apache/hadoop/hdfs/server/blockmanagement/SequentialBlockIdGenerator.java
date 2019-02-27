@@ -67,7 +67,6 @@ public class SequentialBlockIdGenerator extends SequentialNumber {
    */
   private boolean isValidBlock(Block b) {
     BlockInfo bi = blockManager.getStoredBlock(b);
-    return bi != null && bi.getBlockCollectionId() !=
-        INodeId.INVALID_INODE_ID;
+    return bi != null && bi.getBlockCollectionId() != 0;
   }
 }

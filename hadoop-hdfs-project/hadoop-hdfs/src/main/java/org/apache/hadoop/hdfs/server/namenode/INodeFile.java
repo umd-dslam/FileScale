@@ -408,8 +408,6 @@ public class INodeFile extends INodeWithAdditionalFields
     Preconditions.checkArgument(blk.isStriped() == this.isStriped());
     // remove blk index from inode2block
     DatabaseINode2Block.delete(blk.getBlockId());
-    // delete old block from datablocks
-    DatabaseDatablock.delete(this.getId(), index);
     // update blockId in inode2block
     DatabaseINode2Block.setBlockId(this.getId(), index, blk.getBlockId());
   }
@@ -753,8 +751,6 @@ public class INodeFile extends INodeWithAdditionalFields
 
   /** Set the blocks. */
   private void setBlocks(BlockInfo[] blocks) {
-    // remove old blocks
-    DatabaseDatablock.removeAllBlocks(this.getId());
     if (blocks == null || blocks.length == 0) {
       return;
     }
@@ -763,15 +759,13 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   private void setBlocks(INodeFile that) {
-    // remove old blocks
-    DatabaseDatablock.removeAllBlocks(this.getId());
     // replace inodeId
     DatabaseINode2Block.setBcId(that.getId(), this.getId());
   }
 
   /** Clear all blocks of the file. */
   public void clearBlocks() {
-    DatabaseDatablock.removeAllBlocks(getId());
+    DatabaseINode2Block.delete(this.getId());
   }
 
   private void updateRemovedUnderConstructionFiles(
@@ -1191,15 +1185,15 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   void truncateBlocksTo(int n) {
-    final BlockInfo[] newBlocks;
-    if (n == 0) {
-      newBlocks = BlockInfo.EMPTY_ARRAY;
-    } else {
-      newBlocks = new BlockInfo[n];
-      System.arraycopy(getBlocks(), 0, newBlocks, 0, n);
-    }
-    // set new blocks
-    setBlocks(newBlocks);
+    // final BlockInfo[] newBlocks;
+    // if (n == 0) {
+    //   newBlocks = BlockInfo.EMPTY_ARRAY;
+    // } else {
+    //   newBlocks = new BlockInfo[n];
+    //   System.arraycopy(getBlocks(), 0, newBlocks, 0, n);
+    // }
+    // // set new blocks
+    // setBlocks(newBlocks);
   }
 
   /**
