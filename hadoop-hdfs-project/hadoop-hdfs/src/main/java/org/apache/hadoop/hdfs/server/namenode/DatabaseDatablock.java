@@ -152,13 +152,43 @@ public class DatabaseDatablock {
     return new BlockTuple(blockId, numBytes, generationStamp, replication);
   }
 
+  public static void delete(final long blockId) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "DELETE FROM datablocks WHERE blockId = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blockId);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+  }
+
+  public static void delete(final long nodeId, final int index) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql =
+          "DELETE FROM datablocks WHERE blockId = ("
+              + "  SELECT blockId FROM inode2block WHERE id = ? and index = ?"
+              + ");";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, nodeId);
+      pst.setInt(2, index);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+  }
+
   public static void removeBlock(final long blockId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql =
           "BEGIN;"
               + "DELETE FROM inode2block WHERE blockId = ?;"
-              + "DELETE FROM datablocks WHERE blockId = ?;";
+              + "DELETE FROM datablocks WHERE blockId = ?;"
               + "COMMIT;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);

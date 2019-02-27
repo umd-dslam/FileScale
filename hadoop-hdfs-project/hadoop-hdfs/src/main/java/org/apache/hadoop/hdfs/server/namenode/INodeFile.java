@@ -293,7 +293,7 @@ public class INodeFile extends INodeWithAdditionalFields
     long header = DatabaseINode.getHeader(that.getId());
     DatabaseINode.setHeader(this.getId(), header);
 
-    setBlocks(that.blocks);
+    setBlocks(that);
   }
   
   public INodeFile(INodeFile that, FileDiffList diffs) {
@@ -406,11 +406,12 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override // BlockCollection
   public void setBlock(int index, BlockInfo blk) {
     Preconditions.checkArgument(blk.isStriped() == this.isStriped());
-    // remove index from inode2block
+    // remove blk index from inode2block
     DatabaseINode2Block.delete(blk.getBlockId());
-    // update index in inode2block
-    DatabaseINode2Block.setBlockIndex(this.getId(), index, blk.getBlockId());
-    // Note: delete old block will happen in BlocksMap
+    // delete old block from datablocks
+    DatabaseDatablock.delete(this.getId(), index);
+    // update blockId in inode2block
+    DatabaseINode2Block.setBlockId(this.getId(), index, blk.getBlockId());
   }
 
   @Override // BlockCollection, the file should be under construction
@@ -676,18 +677,21 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override // BlockCollection
   public BlockInfo[] getBlocks() {
     List<Long> blockIds = DatabaseINode2Block.getBlockIds(getId());
-    
+
     if (blockIds.size() == 0) {
       return null;
     }
 
-    int i = 0;
-    BlockInfo[] blocks = new BlockInfo[blockIds.size()]; 
+    ArrayList<BlockInfo> blklist = new ArrayList<>();
     for(long blockId : blockIds) {
       // FIXME: after removing BlocksMap, we can consider return blockIds directly.
-      blocks[i++] = BlockManager.getInstance().getStoredBlock(new Block(blockId));
+      BlockInfo block = BlockManager.getInstance().getStoredBlock(new Block(blockId));
+      if (block != null) {
+        blklist.add(block);
+      }
     }
-    return blocks;
+
+    return blklist.toArray(new BlockInfo[blklist.size()]);
   }
 
   /** @return blocks of the file corresponding to the snapshot. */
@@ -745,17 +749,30 @@ public class INodeFile extends INodeWithAdditionalFields
   void addBlock(BlockInfo newblock) {
     Preconditions.checkArgument(newblock.isStriped() == this.isStriped());
     int index = DatabaseINode2Block.getNumBlocks(getId());
-    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), index)
+    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), index);
   }
 
   /** Set the blocks. */
   private void setBlocks(BlockInfo[] blocks) {
-    this.blocks = (blocks != null ? blocks : BlockInfo.EMPTY_ARRAY);
+    // remove old blocks
+    DatabaseDatablock.removeAllBlocks(this.getId());
+    if (blocks == null || blocks.length == 0) {
+      return;
+    }
+    // insert new blocks and optimize it in one query
+    DatabaseINode2Block.insert(getId(), blocks, 0);
+  }
+
+  private void setBlocks(INodeFile that) {
+    // remove old blocks
+    DatabaseDatablock.removeAllBlocks(this.getId());
+    // replace inodeId
+    DatabaseINode2Block.setBcId(that.getId(), this.getId());
   }
 
   /** Clear all blocks of the file. */
   public void clearBlocks() {
-    DatabaseDatablock.clearBlocks(getId());
+    DatabaseDatablock.removeAllBlocks(getId());
   }
 
   private void updateRemovedUnderConstructionFiles(

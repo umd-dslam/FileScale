@@ -23,6 +23,34 @@ public class DatabaseINode2Block {
     }
   }
 
+  public static void insert(final long id, final BlockInfo[] blocks, final int index) {
+    if (blocks == null || blocks.length == 0) {
+      return;
+    }
+
+    String sql = "INSERT INTO inode2block(id, blockId, index) VALUES ";
+    for (int i = 0; i < blocks.length; ++i) {
+      sql +=
+          "("
+              + String.valueOf(id)
+              + ","
+              + String.valueOf(blocks[i].getBlockId())
+              + ","
+              + String.valueOf(index + i)
+              + "),";
+    }
+    sql = sql.substring(0, sql.length() - 1) + ";";
+
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Statement st = conn.createStatement();
+      st.executeUpdate(sql);
+      st.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }    
+  }
+
   private static <T> void setAttribute(final long id, final String attrName, final T attrValue) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -131,6 +159,20 @@ public class DatabaseINode2Block {
     setAttribute(blockId, "id", bcId);
   }
 
+  public static void setBcId(final long bcId, final long newBcId) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE inode2block SET id = ? WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, newBcId);
+      pst.setLong(2, bcId);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+  }
+
   public static List<Long> getBlockIds(final long inodeId) {
     List<Long> blockIds = new ArrayList<>();
     try {
@@ -153,5 +195,47 @@ public class DatabaseINode2Block {
     LOG.info("getBlockIds: (" + blockIds + "," + inodeId + ")");
 
     return blockIds;
+  }
+
+  public static void delete(final long blockId) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "DELETE FROM inode2block WHERE blockId = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blockId);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+  }
+
+  public static void delete(final long nodeId, final int index) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "DELETE FROM inode2block WHERE id = ? and index = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, nodeId);
+      pst.setInt(2, index);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+  }
+
+  public static void setBlockId(final long nodeId, final int index, final long blockId) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE inode2block SET blockId = ? WHERE id = ? and index = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blockId);
+      pst.setLong(2, nodeId);
+      pst.setInt(3, index);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
   }
 }
