@@ -484,7 +484,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
   
   private ReadOnlyList<INode> getCurrentChildrenList() {
-    List<Long> childrenIds = DatabaseINode.getChildrenList(getId());
+    List<Long> childrenIds = DatabaseINode.getChildrenIds(getId());
     List<INode> children = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
     for(long id : childrenIds){
       INode child = FSDirectory.getInstance().getInode(id);
@@ -679,7 +679,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       byte blockStoragePolicyId, QuotaCounts counts, boolean useCache,
       int lastSnapshotId) {
 
-    List<Long> children = DatabaseINode.getChildrenList(getId());
+    List<Long> children = DatabaseINode.getChildrenIds(getId());
     if (!children.isEmpty()) {
       for (long childId : children) {
         INode child = FSDirectory.getInstance().getInode(childId);

@@ -130,4 +130,28 @@ public class DatabaseINode2Block {
   public static void setBcId(final long blockId, final long bcId) {
     setAttribute(blockId, "id", bcId);
   }
+
+  public static List<Long> getBlockIds(final long inodeId) {
+    List<Long> blockIds = new ArrayList<>();
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      // check the existence of node in Postgres
+      String sql = "SELECT blockId FROM inode2block WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, inodeId);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        long id = rs.getLong(1);
+        blockIds.add(id);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.out.println(ex.getMessage());
+    }
+
+    LOG.info("getBlockIds: (" + blockIds + "," + inodeId + ")");
+
+    return blockIds;
+  }
 }

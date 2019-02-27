@@ -218,7 +218,7 @@ public final class FSImageFormatPBINode {
 
         // TODO(gangliao): clean code
         // long id = dir.getInode(e.getParent()).getId();
-        // for (long childId : DatabaseINode.getChildrenList(id)){
+        // for (long childId : DatabaseINode.getChildrenIds(id)){
         //   INode child = dir.getInode(childId);
         //   addToParent(id, child);
         // }

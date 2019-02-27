@@ -263,7 +263,7 @@ public class DatabaseINode {
     LOG.info("removeChild: " + childId);
   }
 
-  public static List<Long> getChildrenList(final long parentId) {
+  public static List<Long> getChildrenIds(final long parentId) {
     List<Long> childIds = new ArrayList<>(INodeDirectory.DEFAULT_FILES_PER_DIRECTORY);
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -282,7 +282,7 @@ public class DatabaseINode {
       System.out.println(ex.getMessage());
     }
 
-    LOG.info("getChildrenList: (" + childIds + "," + parentId + ")");
+    LOG.info("getChildrenIds: (" + childIds + "," + parentId + ")");
 
     return childIds;
   }

@@ -675,7 +675,19 @@ public class INodeFile extends INodeWithAdditionalFields
   /** @return the blocks of the file. */
   @Override // BlockCollection
   public BlockInfo[] getBlocks() {
-    return this.blocks;
+    List<Long> blockIds = DatabaseINode2Block.getBlockIds(getId());
+    
+    if (blockIds.size() == 0) {
+      return null;
+    }
+
+    int i = 0;
+    BlockInfo[] blocks = new BlockInfo[blockIds.size()]; 
+    for(long blockId : blockIds) {
+      // FIXME: after removing BlocksMap, we can consider return blockIds directly.
+      blocks[i++] = BlockManager.getInstance().getStoredBlock(new Block(blockId));
+    }
+    return blocks;
   }
 
   /** @return blocks of the file corresponding to the snapshot. */
