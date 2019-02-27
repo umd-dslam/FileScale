@@ -716,27 +716,26 @@ public class INodeFile extends INodeWithAdditionalFields
    * append array of blocks to this.blocks
    */
   void concatBlocks(INodeFile[] inodes, BlockManager bm) {
-    int size = this.blocks.length;
-    int totalAddedBlocks = 0;
+    List<Long> blockIds;
+    
     for(INodeFile f : inodes) {
       Preconditions.checkState(f.isStriped() == this.isStriped());
-      totalAddedBlocks += f.blocks.length;
-    }
-    
-    BlockInfo[] newlist =
-        new BlockInfo[size + totalAddedBlocks];
-    System.arraycopy(this.blocks, 0, newlist, 0, size);
-    
-    for(INodeFile in: inodes) {
-      System.arraycopy(in.blocks, 0, newlist, size, in.blocks.length);
-      size += in.blocks.length;
+      blockIds.addAll(DatabaseINode2Block.getBlockIds(f.getId()));
+      DatabaseINode2Block.delete(f.getId());
     }
 
-    setBlocks(newlist);
-    for(BlockInfo b : blocks) {
-      b.setBlockCollectionId(getId());
+    if (blockIds.size() == 0) {
+      return;
+    }
+
+    int size = DatabaseINode2Block.getNumBlocks(this.getId());
+    DatabaseINode2Block.insert(this.getId(), blockIds, size);
+
+    short repl = getPreferredBlockReplication();
+    for(Long blockId : blockIds) {
+      // TODO: remove blocksmap
+      BlockInfo b = BlockManager.getInstance().getStoredBlock(new Block(blockId));
       short oldRepl = b.getReplication();
-      short repl = getPreferredBlockReplication();
       if (oldRepl != repl) {
         bm.setReplication(oldRepl, repl, b);
       }
@@ -760,7 +759,7 @@ public class INodeFile extends INodeWithAdditionalFields
       return;
     }
     // insert new blocks and optimize it in one query
-    DatabaseINode2Block.insert(getId(), blocks, 0);
+    DatabaseINode2Block.insert(this.getId(), blocks, 0);
   }
 
   private void setBlocks(INodeFile that) {
