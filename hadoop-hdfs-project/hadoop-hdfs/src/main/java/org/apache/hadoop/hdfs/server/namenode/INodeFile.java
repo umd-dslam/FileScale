@@ -1185,15 +1185,7 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   void truncateBlocksTo(int n) {
-    // final BlockInfo[] newBlocks;
-    // if (n == 0) {
-    //   newBlocks = BlockInfo.EMPTY_ARRAY;
-    // } else {
-    //   newBlocks = new BlockInfo[n];
-    //   System.arraycopy(getBlocks(), 0, newBlocks, 0, n);
-    // }
-    // // set new blocks
-    // setBlocks(newBlocks);
+    DatabaseINode2Block.truncate(this.getId(), n);
   }
 
   /**

@@ -268,6 +268,20 @@ public class DatabaseINode2Block {
     }
   }
 
+  public static void truncate(final long nodeId, final int n) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "DELETE FROM inode2block WHERE id = ? and index >= ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, nodeId);
+      pst.setInt(2, n);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+  }
+
   public static void setBlockId(final long nodeId, final int index, final long blockId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
