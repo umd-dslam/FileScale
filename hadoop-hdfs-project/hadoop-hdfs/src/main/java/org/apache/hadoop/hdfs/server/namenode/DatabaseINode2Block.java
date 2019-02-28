@@ -48,7 +48,7 @@ public class DatabaseINode2Block {
       st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
-    }    
+    }
   }
 
   public static void insert(final long id, final List<Long> blockIds, final int index) {
@@ -79,7 +79,7 @@ public class DatabaseINode2Block {
       st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
-    }    
+    }
   }
 
   private static <T> void setAttribute(final long id, final String attrName, final T attrValue) {
@@ -295,5 +295,25 @@ public class DatabaseINode2Block {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+  }
+
+  public static int getBlockId(final long nodeId, final int index) {
+    int blockId = -1;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT blockId from inode2block WHERE id = ? and index = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, nodeId);
+      pst.setInt(2, index);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        blockId = rs.getInt(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    return blockId;
   }
 }

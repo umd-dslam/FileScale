@@ -726,8 +726,7 @@ public class INodeFile extends INodeWithAdditionalFields
       return;
     }
 
-    int size = DatabaseINode2Block.getNumBlocks(this.getId());
-    DatabaseINode2Block.insert(this.getId(), blockIds, size);
+    DatabaseINode2Block.insert(this.getId(), blockIds, numBlocks());
 
     short repl = getPreferredBlockReplication();
     for(Long blockId : blockIds) {
@@ -745,8 +744,7 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   void addBlock(BlockInfo newblock) {
     Preconditions.checkArgument(newblock.isStriped() == this.isStriped());
-    int index = DatabaseINode2Block.getNumBlocks(getId());
-    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), index);
+    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), numBlocks());
   }
 
   /** Set the blocks. */
@@ -819,6 +817,7 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   public void clearFile(ReclaimContext reclaimContext) {
+    BlockInfo[] blocks = getBlocks();
     if (blocks != null && reclaimContext.collectedBlocks != null) {
       for (BlockInfo blk : blocks) {
         reclaimContext.collectedBlocks.addDeleteBlock(blk);
@@ -1009,6 +1008,7 @@ public class INodeFile extends INodeWithAdditionalFields
   // TODO: support EC with heterogeneous storage
   public final QuotaCounts storagespaceConsumedStriped() {
     QuotaCounts counts = new QuotaCounts.Builder().build();
+    BlockInfo[] blocks = getBlocks(); 
     for (BlockInfo b : blocks) {
       Preconditions.checkState(b.isStriped());
       long blockSize = b.isComplete() ?
@@ -1060,10 +1060,13 @@ public class INodeFile extends INodeWithAdditionalFields
    * Return the penultimate allocated block for this file.
    */
   BlockInfo getPenultimateBlock() {
-    if (blocks.length <= 1) {
+    int length = numBlocks();
+    if (length <= 1) {
       return null;
     }
-    return blocks[blocks.length - 2];
+
+    Block block = new Block(DatabaseINode2Block.getBlockId(this.getId(), length - 2));
+    return BlockManager.getInstance().getStoredBlock(block);
   }
 
   @Override
@@ -1088,9 +1091,9 @@ public class INodeFile extends INodeWithAdditionalFields
     super.dumpTreeRecursively(out, prefix, snapshotId);
     out.print(", fileSize=" + computeFileSize(snapshotId));
     // only compare the first block
-    out.print(", blocks=");
-    out.print(blocks.length == 0 ? null: blocks[0]);
-    out.println();
+    // out.print(", blocks=");
+    // out.print(blocks.length == 0 ? null: blocks[0]);
+    // out.println();
   }
 
   /**
