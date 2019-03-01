@@ -30,6 +30,8 @@ import org.apache.hadoop.hdfs.protocol.BlockType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.util.LightWeightGSet;
 
+import org.apache.hadoop.hdfs.server.namenode.DatabaseDatablock;
+import org.apache.hadoop.hdfs.server.namenode.DatabaseINode2Block;
 import static org.apache.hadoop.hdfs.server.namenode.INodeId.INVALID_INODE_ID;
 
 /**
@@ -68,7 +70,7 @@ public abstract class BlockInfo extends Block
   public BlockInfo(Block blk, short size) {
     super(blk);
     this.storages = new DatanodeStorageInfo[size];
-    DatabaseDatablock.setReplication(isStriped() ? 0 : size);
+    DatabaseDatablock.setReplication(blk.getBlockId(), isStriped() ? 0 : size);
   }
 
   public short getReplication() {
@@ -84,11 +86,11 @@ public abstract class BlockInfo extends Block
   }
 
   public void setBlockCollectionId(long id) {
-    return DatabaseINode2Block.setBcId(getBlockId(), id);
+    DatabaseINode2Block.setBcIdViaBlkId(getBlockId(), id);
   }
 
   public void delete() {
-    DatabaseINode2Block.delete(getBlockId());
+    DatabaseINode2Block.deleteViaBlkId(getBlockId());
   }
 
   public boolean isDeleted() {

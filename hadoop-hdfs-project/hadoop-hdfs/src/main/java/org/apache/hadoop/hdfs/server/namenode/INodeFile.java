@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -407,7 +408,7 @@ public class INodeFile extends INodeWithAdditionalFields
   public void setBlock(int index, BlockInfo blk) {
     Preconditions.checkArgument(blk.isStriped() == this.isStriped());
     // remove blk index from inode2block
-    DatabaseINode2Block.delete(blk.getBlockId());
+    DatabaseINode2Block.deleteViaBlkId(blk.getBlockId());
     // update blockId in inode2block
     DatabaseINode2Block.setBlockId(this.getId(), index, blk.getBlockId());
   }
@@ -719,7 +720,7 @@ public class INodeFile extends INodeWithAdditionalFields
     for(INodeFile f : inodes) {
       Preconditions.checkState(f.isStriped() == this.isStriped());
       blockIds.addAll(DatabaseINode2Block.getBlockIds(f.getId()));
-      DatabaseINode2Block.delete(f.getId());
+      DatabaseINode2Block.deleteViaBcId(f.getId());
     }
 
     if (blockIds.size() == 0) {
@@ -758,12 +759,12 @@ public class INodeFile extends INodeWithAdditionalFields
 
   private void setBlocks(INodeFile that) {
     // replace inodeId
-    DatabaseINode2Block.setBcId(that.getId(), this.getId());
+    DatabaseINode2Block.setBcIdViaBcId(that.getId(), this.getId());
   }
 
   /** Clear all blocks of the file. */
   public void clearBlocks() {
-    DatabaseINode2Block.delete(this.getId());
+    DatabaseINode2Block.deleteViaBcId(this.getId());
   }
 
   private void updateRemovedUnderConstructionFiles(
@@ -1071,7 +1072,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   @Override
   public BlockInfo getLastBlock() {
-    int blockId = DatabaseINode2Block.getLastBlockId(getId())
+    int blockId = DatabaseINode2Block.getLastBlockId(getId());
 
     if (blockId == -1)
       return null;

@@ -7,7 +7,12 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DatabaseDatablock {
+  static final Logger LOG = LoggerFactory.getLogger(DatabaseDatablock.class);
+
   public static void insertBlock(final long blkid, final long len, final long genStamp) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -109,47 +114,6 @@ public class DatabaseDatablock {
 
   public static void setReplication(final long blockId, final short replication) {
     setAttribute(blockId, "replication", replication);
-  }
-
-  // BlockTuple is used to store BlockInfo from Database
-  class BlockTuple {
-    public long blockId;
-    public long numBytes;
-    public long generationStamp;
-    public int replication;
-
-    public void BlockTuple(long blockId, long numBytes, long generationStamp, int replication) {
-      this.blockId = blockId;
-      this.numBytes = numBytes;
-      this.generationStamp = generationStamp;
-      this.replication = replication;
-    }
-  }
-
-  public static BlockTuple getBlock(final long blockId) {
-    long blockId;
-    long numBytes;
-    long generationStamp;
-    int replication;
-    try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT * FROM datablocks WHERE blockId = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, id);
-      ResultSet rs = pst.executeQuery();
-      while (rs.next()) {
-        blockId = rs.getLong(1);
-        numBytes = rs.getLong(2);
-        generationStamp = rs.getLong(3);
-        replication = rs.getInt(4);
-      }
-      rs.close();
-      pst.close();
-    } catch (SQLException ex) {
-      System.out.println(ex.getMessage());
-    }
-
-    return new BlockTuple(blockId, numBytes, generationStamp, replication);
   }
 
   public static void delete(final long blockId) {

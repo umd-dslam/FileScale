@@ -1,11 +1,22 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.util.List;
+import java.util.ArrayList;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+
 import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.PreparedStatement;
+import java.sql.Types;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DatabaseINode2Block {
+  static final Logger LOG = LoggerFactory.getLogger(DatabaseINode2Block.class);
+
   public static void insert(final long id, final long blockId, final int index) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -65,7 +76,7 @@ public class DatabaseINode2Block {
           "("
               + String.valueOf(id)
               + ","
-              + String.valueOf(blockIds[i])
+              + String.valueOf(blockIds.get(i))
               + ","
               + String.valueOf(idx)
               + "),";
@@ -186,11 +197,11 @@ public class DatabaseINode2Block {
     return getAttribute(blockId, "id");
   }
 
-  public static void setBcId(final long blockId, final long bcId) {
+  public static void setBcIdViaBlkId(final long blockId, final long bcId) {
     setAttribute(blockId, "id", bcId);
   }
 
-  public static void setBcId(final long bcId, final long newBcId) {
+  public static void setBcIdViaBcId(final long bcId, final long newBcId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "UPDATE inode2block SET id = ? WHERE id = ?;";
@@ -228,7 +239,7 @@ public class DatabaseINode2Block {
     return blockIds;
   }
 
-  public static void delete(final long blockId) {
+  public static void deleteViaBlkId(final long blockId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "DELETE FROM inode2block WHERE blockId = ?;";
@@ -255,7 +266,7 @@ public class DatabaseINode2Block {
     }
   }
 
-  public static void delete(final long nodeId) {
+  public static void deleteViaBcId(final long nodeId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "DELETE FROM inode2block WHERE id = ?;";
