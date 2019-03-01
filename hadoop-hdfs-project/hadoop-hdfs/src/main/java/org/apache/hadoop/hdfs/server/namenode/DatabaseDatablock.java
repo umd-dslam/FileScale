@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,5 +181,31 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+  }
+
+  public static long getTotalNumBytes(final long inodeId, final int length) {
+    long size = 0;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql =
+          "SELECT SUM(numBytes) FROM datablocks WHERE blockId = ("
+              + "  SELECT blockId FROM inode2block WHERE id = ? and index < ?"
+              + ");";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, inodeId);
+      pst.setInt(2, length);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        size = rs.getInt(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.out.println(ex.getMessage());
+    }
+
+    LOG.info("getTotalNumBytes: (" + inodeId + "," + size + ")");
+
+    return size;
   }
 }

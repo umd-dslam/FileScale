@@ -1,16 +1,15 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.List;
-import java.util.ArrayList;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-
 import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.PreparedStatement;
-import java.sql.Types;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

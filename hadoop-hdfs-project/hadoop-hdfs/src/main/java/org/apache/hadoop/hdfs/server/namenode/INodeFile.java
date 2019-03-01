@@ -364,6 +364,7 @@ public class INodeFile extends INodeWithAdditionalFields
   /** Assert all blocks are complete. */
   private void assertAllBlocksComplete(int numCommittedAllowed,
       short minReplication) {
+    BlockInfo[] blocks = getBlocks();
     for (int i = 0; i < blocks.length; i++) {
       final String err = checkBlockComplete(blocks, i, numCommittedAllowed,
           minReplication);
@@ -969,12 +970,12 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   public final long computeFileSize(boolean includesLastUcBlock,
       boolean usePreferredBlockSize4LastUcBlock) {
-    if (blocks.length == 0) {
+    int length = numBlocks();
+    if (length == 0) {
       return 0;
     }
-    final int last = blocks.length - 1;
     //check if the last block is BlockInfoUnderConstruction
-    BlockInfo lastBlk = blocks[last];
+    BlockInfo lastBlk = getLastBlock();
     long size = lastBlk.getNumBytes();
     if (!lastBlk.isComplete()) {
        if (!includesLastUcBlock) {
@@ -987,9 +988,7 @@ public class INodeFile extends INodeWithAdditionalFields
        }
     }
     //sum other blocks
-    for (int i = 0; i < last; i++) {
-      size += blocks[i].getNumBytes();
-    }
+    size += DatabaseDatablock.getTotalNumBytes(this.getId(), length - 1);
     return size;
   }
 
