@@ -60,10 +60,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   /** parent is either an {@link INodeDirectory} or an {@link INodeReference}.*/
 
-  INode(INode parent) {
-    DatabaseINode.setParent(this.getId(), parent == null
-      ? DatabaseINode.LONG_NULL : parent.getId());
-  }
+  INode(INode parent) {}
 
   /** Get inode id */
   public abstract long getId();

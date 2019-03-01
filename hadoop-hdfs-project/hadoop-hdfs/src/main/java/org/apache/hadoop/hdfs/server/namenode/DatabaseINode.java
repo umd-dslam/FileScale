@@ -129,6 +129,7 @@ public class DatabaseINode {
 
   public static void insertInode(
       final long id,
+      final long pid,
       final String name,
       final long accessTime,
       final long modificationTime,
@@ -142,8 +143,8 @@ public class DatabaseINode {
 
       String sql =
           "INSERT INTO inodes("
-              + "	id, name, accessTime, modificationTime, permission, header"
-              + ") VALUES (?, ?, ?, ?, ?, ?);";
+              + "	id, name, accessTime, modificationTime, permission, header, parent"
+              + ") VALUES (?, ?, ?, ?, ?, ?, ?);";
 
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -157,6 +158,7 @@ public class DatabaseINode {
       pst.setLong(4, modificationTime);
       pst.setLong(5, permission);
       pst.setLong(6, header);
+      pst.setLong(7, pid);
 
       pst.executeUpdate();
       pst.close();

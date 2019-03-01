@@ -129,7 +129,12 @@ public abstract class INodeWithAdditionalFields extends INode
     if (name != null && name.length > 0) {
       strName = DFSUtil.bytes2String(name);
     }
-    DatabaseINode.insertInode(id, strName, accessTime, modificationTime, permission, 0L);
+
+    long pid = DatabaseINode.LONG_NULL; 
+    if (parent != null) {
+        pid = parent.getId();
+    }
+    DatabaseINode.insertInode(id, strName, accessTime, modificationTime, permission, 0L, pid);
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
