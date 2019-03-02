@@ -12,7 +12,37 @@ import org.slf4j.LoggerFactory;
 public class DatabaseDatablock {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseDatablock.class);
 
+  private static boolean checkBlockExistence(final long blkid) {
+    boolean exist = false;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      // check the existence of node in Postgres
+      String sql =
+          "SELECT CASE WHEN EXISTS ("
+              + "   SELECT * FROM datablocks WHERE blockId = ?"
+              + ") "
+              + "THEN CAST(1 AS BIT) "
+              + "ELSE CAST(0 AS BIT) END";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blkid);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        if (rs.getBoolean(1) == true) {
+          exist = true;
+        }
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    return exist;
+  }
+
   public static void insertBlock(final long blkid, final long len, final long genStamp) {
+    if (checkBlockExistence(blkid)) {
+      return;
+    }
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
 

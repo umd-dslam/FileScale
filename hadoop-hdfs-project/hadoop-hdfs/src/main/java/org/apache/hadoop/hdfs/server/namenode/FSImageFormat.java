@@ -684,39 +684,39 @@ public class FSImageFormat {
     }
   }
 
-    public void updateBlocksMap(INodeFile file) {
-      // Add file->block mapping
-      final BlockInfo[] blocks = file.getBlocks();
-      if (blocks != null) {
-        final BlockManager bm = namesystem.getBlockManager();
-        for (int i = 0; i < blocks.length; i++) {
-          file.setBlock(i, bm.addBlockCollectionWithCheck(blocks[i], file));
-        } 
-      }
+  public void updateBlocksMap(INodeFile file) {
+    // Add file->block mapping
+    final BlockInfo[] blocks = file.getBlocks();
+    if (blocks != null) {
+      final BlockManager bm = namesystem.getBlockManager();
+      for (int i = 0; i < blocks.length; i++) {
+        file.setBlock(i, bm.addBlockCollectionWithCheck(blocks[i], file));
+      } 
     }
+  }
 
-    /** @return The FSDirectory of the namesystem where the fsimage is loaded */
-    public FSDirectory getFSDirectoryInLoading() {
-      return namesystem.dir;
-    }
+  /** @return The FSDirectory of the namesystem where the fsimage is loaded */
+  public FSDirectory getFSDirectoryInLoading() {
+    return namesystem.dir;
+  }
 
-    public INode loadINodeWithLocalName(boolean isSnapshotINode, DataInput in,
-        boolean updateINodeMap) throws IOException {
-      return loadINodeWithLocalName(isSnapshotINode, in, updateINodeMap, null);
-    }
+  public INode loadINodeWithLocalName(boolean isSnapshotINode, DataInput in,
+      boolean updateINodeMap) throws IOException {
+    return loadINodeWithLocalName(isSnapshotINode, in, updateINodeMap, null);
+  }
 
-    public INode loadINodeWithLocalName(boolean isSnapshotINode,
-        DataInput in, boolean updateINodeMap, Counter counter)
-        throws IOException {
-      byte[] localName = FSImageSerialization.readLocalName(in);
-      localName =
-          renameReservedComponentOnUpgrade(localName, getLayoutVersion());
-      INode inode = loadINode(localName, isSnapshotINode, in, counter);
-      if (updateINodeMap) {
-        namesystem.dir.addToInodeMap(inode);
-      }
-      return inode;
+  public INode loadINodeWithLocalName(boolean isSnapshotINode,
+      DataInput in, boolean updateINodeMap, Counter counter)
+      throws IOException {
+    byte[] localName = FSImageSerialization.readLocalName(in);
+    localName =
+        renameReservedComponentOnUpgrade(localName, getLayoutVersion());
+    INode inode = loadINode(localName, isSnapshotINode, in, counter);
+    if (updateINodeMap) {
+      namesystem.dir.addToInodeMap(inode);
     }
+    return inode;
+  }
   
   /**
    * load an inode from fsimage except for its name
@@ -755,8 +755,13 @@ public class FSImageFormat {
       // read blocks
       BlockInfo[] blocks = new BlockInfoContiguous[numBlocks];
       for (int j = 0; j < numBlocks; j++) {
-        blocks[j] = new BlockInfoContiguous(replication);
-        blocks[j].readFields(in);
+        long bid = in.readLong();
+        long num = in.readLong();
+        long stamp = in.readLong();
+        if (num < 0) {
+          throw new IOException("Unexpected block size: " + num);
+        }
+        blocks[j] = new BlockInfoContiguous(bid, num, stamp, replication);
       }
 
       String clientName = "";

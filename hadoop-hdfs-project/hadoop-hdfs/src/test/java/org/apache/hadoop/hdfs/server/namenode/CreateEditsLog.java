@@ -68,18 +68,16 @@ public class CreateEditsLog {
       0L);
     editLog.logMkDir(BASE_PATH, dirInode);
     BlockInfo[] blocks = new BlockInfo[blocksPerFile];
-    for (int iB = 0; iB < blocksPerFile; ++iB) {
-      blocks[iB] = 
-       new BlockInfoContiguous(new Block(0, blockSize, BLOCK_GENERATION_STAMP),
-           replication);
-    }
     
     long currentBlockId = startingBlockId;
     long bidAtSync = startingBlockId;
 
     for (int iF = 0; iF < numFiles; iF++) {
       for (int iB = 0; iB < blocksPerFile; ++iB) {
-         blocks[iB].setBlockId(currentBlockId++);
+        blocks[iB] = 
+          new BlockInfoContiguous(new Block(currentBlockId++, blockSize, BLOCK_GENERATION_STAMP),
+            replication);          
+
       }
 
       final INodeFile inode = new INodeFile(inodeId.nextValue(), null,

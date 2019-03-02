@@ -73,6 +73,12 @@ public abstract class BlockInfo extends Block
     DatabaseDatablock.setReplication(blk.getBlockId(), isStriped() ? 0 : size);
   }
 
+  public BlockInfo(long bid, long num, long stamp, short size) {
+    super(bid, num, stamp);
+    this.storages = new DatanodeStorageInfo[size];
+    DatabaseDatablock.setReplication(bid, isStriped() ? 0 : size);    
+  }
+
   public short getReplication() {
     return DatabaseDatablock.getReplication(getBlockId());
   }
