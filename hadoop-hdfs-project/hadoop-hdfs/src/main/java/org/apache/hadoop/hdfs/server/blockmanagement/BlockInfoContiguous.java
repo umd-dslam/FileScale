@@ -28,10 +28,6 @@ import org.apache.hadoop.hdfs.protocol.BlockType;
 @InterfaceAudience.Private
 public class BlockInfoContiguous extends BlockInfo {
 
-  public BlockInfoContiguous(short size) {
-    super(size);
-  }
-
   public BlockInfoContiguous(Block blk, short size) {
     super(blk, size);
   }

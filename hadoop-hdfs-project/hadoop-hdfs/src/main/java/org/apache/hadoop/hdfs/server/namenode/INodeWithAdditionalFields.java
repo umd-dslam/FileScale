@@ -134,7 +134,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if (parent != null) {
         pid = parent.getId();
     }
-    DatabaseINode.insertInode(id, strName, accessTime, modificationTime, permission, 0L, pid);
+    DatabaseINode.insertInode(id, pid, strName, accessTime, modificationTime, permission, 0L);
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
