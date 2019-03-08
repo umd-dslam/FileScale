@@ -26,7 +26,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeId;
 import org.apache.hadoop.util.GSet;
 import org.apache.hadoop.util.LightWeightGSet;
 
-import org.apache.hadoop.hdfs.server.namenode.DatabaseDatablock;
+import org.apache.hadoop.hdfs.db.*;
 
 /**
  * This class maintains the map from a block to its metadata.

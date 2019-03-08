@@ -30,8 +30,7 @@ import org.apache.hadoop.hdfs.protocol.BlockType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.util.LightWeightGSet;
 
-import org.apache.hadoop.hdfs.server.namenode.DatabaseDatablock;
-import org.apache.hadoop.hdfs.server.namenode.DatabaseINode2Block;
+import org.apache.hadoop.hdfs.db.*;
 import static org.apache.hadoop.hdfs.server.namenode.INodeId.INVALID_INODE_ID;
 
 /**
@@ -61,11 +60,11 @@ public abstract class BlockInfo extends Block
    *             in the block group
    */
   // FIXME: I don't think this function still be used!
-  // public BlockInfo(short size) {
-  //   this.storages = new DatanodeStorageInfo[size];
-  //   this.bcId = INVALID_INODE_ID;
-  //   this.replication = isStriped() ? 0 : size;
-  // }
+  public BlockInfo(short size) {
+    super(0, 0, 0);
+    this.storages = new DatanodeStorageInfo[size];
+    DatabaseDatablock.setReplication(0, isStriped() ? 0 : size);
+  }
 
   public BlockInfo(Block blk, short size) {
     super(blk);

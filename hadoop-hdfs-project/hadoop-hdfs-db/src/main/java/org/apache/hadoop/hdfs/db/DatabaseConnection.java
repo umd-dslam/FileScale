@@ -1,6 +1,5 @@
-package org.apache.hadoop.hdfs.server.namenode;
+package org.apache.hadoop.hdfs.db;
 
-import com.google.common.base.Preconditions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -38,8 +37,6 @@ public class DatabaseConnection {
       ex.printStackTrace();
       System.exit(0);
     }
-
-    Preconditions.checkArgument(connection != null);
 
     try {
       // create inode table in Postgres

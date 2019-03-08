@@ -21,31 +21,32 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <groupId>org.apache.hadoop</groupId>
     <artifactId>hadoop-project</artifactId>
     <version>3.3.0-SNAPSHOT</version>
-    <relativePath>../hadoop-project</relativePath>
+    <relativePath>../../hadoop-project</relativePath>
   </parent>
-  <artifactId>hadoop-hdfs-project</artifactId>
-  <version>3.3.0-SNAPSHOT</version>
-  <description>Apache Hadoop HDFS Project</description>
-  <name>Apache Hadoop HDFS Project</name>
-  <packaging>pom</packaging>
+  <artifactId>hadoop-hdfs-db</artifactId>
+  <version>1.0.0</version>
+  <description>Apache Hadoop HDFS-DB</description>
+  <name>Apache Hadoop HDFS-DB</name>
+  <packaging>jar</packaging>
 
-  <modules>
-    <module>hadoop-hdfs</module>
-    <module>hadoop-hdfs-client</module>
-    <module>hadoop-hdfs-db</module>
-    <module>hadoop-hdfs-native-client</module>
-    <module>hadoop-hdfs-httpfs</module>
-    <module>hadoop-hdfs-nfs</module>
-    <module>hadoop-hdfs-rbf</module>
-  </modules>
+  <dependencies>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.rat</groupId>
@@ -55,5 +56,4 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       </plugin>
     </plugins>
   </build>
-
 </project>

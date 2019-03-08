@@ -1,4 +1,4 @@
-package org.apache.hadoop.hdfs.server.namenode;
+package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,7 +9,6 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,34 +27,6 @@ public class DatabaseINode2Block {
 
       pst.executeUpdate();
       pst.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
-    }
-  }
-
-  public static void insert(final long id, final BlockInfo[] blocks, final int index) {
-    if (blocks == null || blocks.length == 0) {
-      return;
-    }
-
-    String sql = "INSERT INTO inode2block(id, blockId, index) VALUES ";
-    for (int i = 0; i < blocks.length; ++i) {
-      sql +=
-          "("
-              + String.valueOf(id)
-              + ","
-              + String.valueOf(blocks[i].getBlockId())
-              + ","
-              + String.valueOf(index + i)
-              + "),";
-    }
-    sql = sql.substring(0, sql.length() - 1) + ";";
-
-    try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      Statement st = conn.createStatement();
-      st.executeUpdate(sql);
-      st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }

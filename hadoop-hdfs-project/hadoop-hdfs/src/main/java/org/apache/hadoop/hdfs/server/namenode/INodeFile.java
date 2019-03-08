@@ -55,6 +55,7 @@ import org.apache.hadoop.hdfs.server.namenode.snapshot.FileWithSnapshotFeature;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DiffList;
 import org.apache.hadoop.hdfs.util.LongBitFormat;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.util.StringUtils;
 import static org.apache.hadoop.io.erasurecode.ErasureCodeConstants.REPLICATION_POLICY_ID;
 
@@ -716,7 +717,7 @@ public class INodeFile extends INodeWithAdditionalFields
    * append array of blocks to this.blocks
    */
   void concatBlocks(INodeFile[] inodes, BlockManager bm) {
-    List<Long> blockIds;
+    List<Long> blockIds = new ArrayList<Long>();
     
     for(INodeFile f : inodes) {
       Preconditions.checkState(f.isStriped() == this.isStriped());
@@ -755,7 +756,11 @@ public class INodeFile extends INodeWithAdditionalFields
       return;
     }
     // insert new blocks and optimize it in one query
-    DatabaseINode2Block.insert(this.getId(), blocks, 0);
+    List<Long> blockIds = new ArrayList<Long>();
+    for (int i = 0; i < blocks.length; ++i) {
+      blockIds.add(blocks[i].getBlockId());
+    }
+    DatabaseINode2Block.insert(this.getId(), blockIds, 0);
   }
 
   private void setBlocks(INodeFile that) {

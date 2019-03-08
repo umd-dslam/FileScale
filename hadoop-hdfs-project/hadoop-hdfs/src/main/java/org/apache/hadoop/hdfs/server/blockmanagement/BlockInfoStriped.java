@@ -24,7 +24,7 @@ import org.apache.hadoop.hdfs.protocol.BlockType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.util.StripedBlockUtil;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
-import org.apache.hadoop.hdfs.server.namenode.DatabaseDatablock;
+import org.apache.hadoop.hdfs.db.*;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

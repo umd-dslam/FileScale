@@ -1,4 +1,4 @@
-package org.apache.hadoop.hdfs.server.namenode;
+package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -264,7 +264,7 @@ public class DatabaseINode {
   }
 
   public static List<Long> getChildrenIds(final long parentId) {
-    List<Long> childIds = new ArrayList<>(INodeDirectory.DEFAULT_FILES_PER_DIRECTORY);
+    List<Long> childIds = new ArrayList<>();
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       // check the existence of node in Postgres
