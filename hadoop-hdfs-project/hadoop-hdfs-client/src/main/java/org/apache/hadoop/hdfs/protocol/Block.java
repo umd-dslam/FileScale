@@ -102,7 +102,7 @@ public class Block implements Writable, Comparable<Block> {
   }
 
   public Block(Block blk) {
-    this(blk.blockId, blk.numBytes, blk.generationStamp);
+    blockId = blk.getBlockId();
   }
 
   /**

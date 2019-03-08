@@ -109,6 +109,7 @@ import org.apache.hadoop.hdfs.server.protocol.VolumeFailureSummary;
 import org.apache.hadoop.hdfs.util.FoldedTreeSet;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
 import org.apache.hadoop.hdfs.server.namenode.CacheManager;
+import org.apache.hadoop.hdfs.server.namenode.DatabaseDatablock;
 
 import static org.apache.hadoop.hdfs.util.StripedBlockUtil.getInternalBlockLength;
 
@@ -1712,9 +1713,13 @@ public class BlockManager implements BlockStatsMXBean {
 
     // Add this replica to corruptReplicas Map. For striped blocks, we always
     // use the id of whole striped block group when adding to corruptReplicas
-    Block corrupted = new Block(b.getCorrupted());
+    Block corrupted;
     if (b.getStored().isStriped()) {
-      corrupted.setBlockId(b.getStored().getBlockId());
+      long bid = b.getCorrupted().getBlockId();
+      Long[] res = DatabaseDatablock.getNumBytesAndStamp(bid);
+      corrupted = new Block(b.getStored().getBlockId(), res[0], res[1]);
+    } else {
+      corrupted = new Block(b.getCorrupted());
     }
     corruptReplicas.addToCorruptReplicasMap(corrupted, node, b.getReason(),
         b.getReasonCode(), b.getStored().isStriped());

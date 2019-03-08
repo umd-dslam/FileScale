@@ -117,6 +117,27 @@ public class DatabaseDatablock {
     return result;
   }
 
+  public static Long[] getNumBytesAndStamp(final long blockId) {
+    Long[] result = new Long[2];
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT numBytes, generationStamp FROM datablocks WHERE blockId = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blockId);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        result[0] = rs.getLong(1);
+        result[1] = rs.getLong(2);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    return result;    
+  }
+
   public static long getNumBytes(final long blockId) {
     return getAttribute(blockId, "numBytes");
   }
