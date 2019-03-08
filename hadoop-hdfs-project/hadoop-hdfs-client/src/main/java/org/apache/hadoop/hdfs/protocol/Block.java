@@ -25,6 +25,8 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.io.*;
 
+import org.apache.hadoop.hdfs.server.namenode.DatabaseDatablock;
+
 import javax.annotation.Nonnull;
 
 /**************************************************
@@ -140,7 +142,7 @@ public class Block implements Writable, Comparable<Block> {
     return DatabaseDatablock.getNumBytes(blockId);
   }
   public void setNumBytes(long len) {
-    DatabaseDatablock.setNumBytes(len);
+    DatabaseDatablock.setNumBytes(blockId, len);
   }
 
   public long getGenerationStamp() {
@@ -162,7 +164,7 @@ public class Block implements Writable, Comparable<Block> {
     StringBuilder sb = new StringBuilder();
     sb.append(BLOCK_FILE_PREFIX).
        append(b.blockId).append("_").
-       append(b.getGenerationStamp(b.blockId));
+       append(b.getGenerationStamp());
     return sb.toString();
   }
 
@@ -196,17 +198,18 @@ public class Block implements Writable, Comparable<Block> {
 
   final void writeHelper(DataOutput out) throws IOException {
     out.writeLong(this.blockId);
-    out.writeLong(DatabaseDatablock.getNumBytes(this.blockId));
-    out.writeLong(DatabaseDatablock.getGenerationStamp(this.blockId));
+    Long[] res = DatabaseDatablock.getNumBytesAndStamp(this.blockId);
+    out.writeLong(res[0]);
+    out.writeLong(res[1]);
   }
 
   final void readHelper(DataInput in) throws IOException {
     long bid = in.readLong();
     long num = in.readLong();
-    DatabaseDatablock.setBlockId(this.blockId, bid);
-    this.blockId = bid;
-    DatabaseDatablock.setNumBytes(this.blockId, num);
-    DatabaseDatablock.setGenerationStamp(this.blockId, in.readLong());
+    long stamp = in.readLong();
+    setBlockId(bid);
+    setNumBytes(num);
+    setGenerationStamp(stamp);
     if (num < 0) {
       throw new IOException("Unexpected block size: " + num);
     }
@@ -215,7 +218,7 @@ public class Block implements Writable, Comparable<Block> {
   // write only the identifier part of the block
   public void writeId(DataOutput out) throws IOException {
     out.writeLong(this.blockId);
-    out.writeLong(DatabaseDatablock.getGenerationStamp(this.blockId));
+    out.writeLong(this.getGenerationStamp());
   }
 
   // Read only the identifier part of the block
@@ -246,7 +249,7 @@ public class Block implements Writable, Comparable<Block> {
     // only one null
     return !(a == null || b == null) &&
         a.blockId == b.blockId &&
-        a.getGenerationStamp(a.blockId) == b.getGenerationStamp(b.blockId);
+        a.getGenerationStamp() == b.getGenerationStamp();
   }
 
   @Override // Object
