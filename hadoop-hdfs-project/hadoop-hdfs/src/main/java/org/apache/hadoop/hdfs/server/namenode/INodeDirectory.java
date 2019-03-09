@@ -39,6 +39,7 @@ import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeat
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeature.DirectoryDiffList;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.ReadOnlyList;
+import org.apache.hadoop.hdfs.db.*;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -351,8 +352,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
     children.set(i, newChild);
     */
-    DatabaseConnection.setParent(newChild.getId(), DatabaseConnection.LONG_NULL);
-    DatabaseConnection.setParent(newChild.getId(), getId());
+    DatabaseINode.setParent(newChild.getId(), getId());
     
     // replace the instance in the created list of the diff list
     DirectoryWithSnapshotFeature sf = this.getDirectoryWithSnapshotFeature();
@@ -435,7 +435,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       // ReadOnlyList<INode> c = getCurrentChildrenList();
       // final int i = ReadOnlyList.Util.binarySearch(c, name);
       // return i < 0 ? null : c.get(i);
-      long id = DatabaseConnection.getChild(this.getId(), DFSUtil.bytes2String(name));
+      long id = DatabaseINode.getChild(this.getId(), DFSUtil.bytes2String(name));
       return id == -1 ? null : FSDirectory.getInstance().getInode(id);
     }
     
@@ -484,7 +484,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
   
   private ReadOnlyList<INode> getCurrentChildrenList() {
-    List<Long> childrenIds = DatabaseConnection.getChildrenList(getId());
+    List<Long> childrenIds = DatabaseINode.getChildrenIds(getId());
     List<INode> children = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
     for(long id : childrenIds){
       INode child = FSDirectory.getInstance().getInode(id);
@@ -560,7 +560,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
    */
   public boolean addChild(INode node, final boolean setModTime,
       final int latestSnapshotId) {
-    if (DatabaseConnection.checkInodeExistence(getId(), node.getLocalName())) {
+    if (DatabaseINode.checkInodeExistence(getId(), node.getLocalName())) {
       return false;
     }
 
@@ -583,7 +583,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public boolean addChild(INode node) {
     // ADD(gangliao): insert new inode into Postgres
-    if(!DatabaseConnection.addChild(
+    if(!DatabaseINode.addChild(
       node.getId(), node.getLocalName(), this.getId())){
       return false;
     }
@@ -609,7 +609,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return sf.addChild(this, node, setModTime, latestSnapshotId);
     }
 
-    if(!DatabaseConnection.addChild(node.getId(), name, this.getId())) {
+    if(!DatabaseINode.addChild(node.getId(), name, this.getId())) {
       return false;
     }
 
@@ -679,7 +679,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       byte blockStoragePolicyId, QuotaCounts counts, boolean useCache,
       int lastSnapshotId) {
 
-    List<Long> children = DatabaseConnection.getChildrenList(getId());
+    List<Long> children = DatabaseINode.getChildrenIds(getId());
     if (!children.isEmpty()) {
       for (long childId : children) {
         INode child = FSDirectory.getInstance().getInode(childId);

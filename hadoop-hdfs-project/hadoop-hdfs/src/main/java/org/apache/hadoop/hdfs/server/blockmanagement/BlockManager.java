@@ -109,6 +109,7 @@ import org.apache.hadoop.hdfs.server.protocol.VolumeFailureSummary;
 import org.apache.hadoop.hdfs.util.FoldedTreeSet;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
 import org.apache.hadoop.hdfs.server.namenode.CacheManager;
+import org.apache.hadoop.hdfs.db.*;
 
 import static org.apache.hadoop.hdfs.util.StripedBlockUtil.getInternalBlockLength;
 
@@ -443,6 +444,8 @@ public class BlockManager implements BlockStatsMXBean {
   /** Storages accessible from multiple DNs. */
   private final ProvidedStorageMap providedStorageMap;
 
+  private static BlockManager instance;
+
   public BlockManager(final Namesystem namesystem, boolean haEnabled,
       final Configuration conf) throws IOException {
     this.namesystem = namesystem;
@@ -581,6 +584,24 @@ public class BlockManager implements BlockStatsMXBean {
     LOG.info("redundancyRecheckInterval  = {}ms", redundancyRecheckIntervalMs);
     LOG.info("encryptDataTransfer        = {}", encryptDataTransfer);
     LOG.info("maxNumBlocksToLog          = {}", maxNumBlocksToLog);
+  }
+
+  public static BlockManager getInstance(final Namesystem namesystem, boolean haEnabled,
+      final Configuration conf) {
+    if (instance == null) {
+      try {
+        instance = new BlockManager(namesystem, haEnabled, conf);
+      } catch (IOException ex) {
+        System.out.println(ex.toString());
+      }
+    }
+    return instance;
+  }
+
+  // Preconditions ensure getInstance(ns, haEnabled, conf) will be invoked first in BlockManager 
+  public static BlockManager getInstance() {
+    Preconditions.checkArgument(instance != null);
+    return instance;
   }
 
   private static BlockTokenSecretManager createBlockTokenSecretManager(
@@ -1692,9 +1713,13 @@ public class BlockManager implements BlockStatsMXBean {
 
     // Add this replica to corruptReplicas Map. For striped blocks, we always
     // use the id of whole striped block group when adding to corruptReplicas
-    Block corrupted = new Block(b.getCorrupted());
+    Block corrupted;
     if (b.getStored().isStriped()) {
-      corrupted.setBlockId(b.getStored().getBlockId());
+      long bid = b.getCorrupted().getBlockId();
+      Long[] res = DatabaseDatablock.getNumBytesAndStamp(bid);
+      corrupted = new Block(b.getStored().getBlockId(), res[0], res[1]);
+    } else {
+      corrupted = new Block(b.getCorrupted());
     }
     corruptReplicas.addToCorruptReplicasMap(corrupted, node, b.getReason(),
         b.getReasonCode(), b.getStored().isStriped());

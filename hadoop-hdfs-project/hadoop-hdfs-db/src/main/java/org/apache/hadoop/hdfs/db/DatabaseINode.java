@@ -1,80 +1,20 @@
-package org.apache.hadoop.hdfs.server.namenode;
+package org.apache.hadoop.hdfs.db;
 
-import com.google.common.base.Preconditions;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DatabaseConnection {
+public class DatabaseINode {
+  static final Logger LOG = LoggerFactory.getLogger(DatabaseINode.class);
 
   public static final long LONG_NULL = 0L;
-  private static DatabaseConnection instance;
-  private Connection connection;
-  private String url = "jdbc:postgresql://localhost:5432/docker";
-  private String username = "docker";
-  private String password = "docker";
-
-  static final Logger LOG = LoggerFactory.getLogger(DatabaseConnection.class);
-
-  private DatabaseConnection() throws SQLException {
-    try {
-      Class.forName("org.postgresql.Driver");
-
-      Properties props = new Properties();
-      props.setProperty("user", username);
-      props.setProperty("password", password);
-
-      this.connection = DriverManager.getConnection(url, props);
-    } catch (Exception ex) {
-      System.err.println("Database Connection Creation Failed : " + ex.getMessage());
-      ex.printStackTrace();
-      System.exit(0);
-    }
-
-    Preconditions.checkArgument(connection != null);
-
-    try {
-      // create inode table in Postgres
-      String sql =
-          "DROP TABLE IF EXISTS inodes;"
-              + "CREATE TABLE inodes("
-              + "   id int primary key, parent int, name text,"
-              + "   accessTime bigint, modificationTime bigint,"
-              + "   header bigint, permission bigint, blockIds bigint[]"
-              + ");"
-      Statement st = connection.createStatement();
-      st.execute(sql);
-
-      LOG.info("DatabaseConnection: [OK] Create inodes Table in Postgres.");
-
-      st.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
-    }
-  }
-
-  public Connection getConnection() {
-    return connection;
-  }
-
-  public static DatabaseConnection getInstance() throws SQLException {
-    if (instance == null) {
-      instance = new DatabaseConnection();
-    } else if (instance.getConnection().isClosed()) {
-      instance = new DatabaseConnection();
-    }
-    return instance;
-  }
 
   public static boolean checkInodeExistence(final long parentId, final String childName) {
     boolean exist = false;
@@ -189,6 +129,7 @@ public class DatabaseConnection {
 
   public static void insertInode(
       final long id,
+      final long pid,
       final String name,
       final long accessTime,
       final long modificationTime,
@@ -202,8 +143,8 @@ public class DatabaseConnection {
 
       String sql =
           "INSERT INTO inodes("
-              + "	id, name, accessTime, modificationTime, permission, header"
-              + ") VALUES (?, ?, ?, ?, ?, ?);";
+              + "	id, name, accessTime, modificationTime, permission, header, parent"
+              + ") VALUES (?, ?, ?, ?, ?, ?, ?);";
 
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -217,6 +158,7 @@ public class DatabaseConnection {
       pst.setLong(4, modificationTime);
       pst.setLong(5, permission);
       pst.setLong(6, header);
+      pst.setLong(7, pid);
 
       pst.executeUpdate();
       pst.close();
@@ -321,9 +263,8 @@ public class DatabaseConnection {
     LOG.info("removeChild: " + childId);
   }
 
-  public static List<Long> getChildrenList(final long parentId) {
-
-    List<Long> childIds = new ArrayList<>(INodeDirectory.DEFAULT_FILES_PER_DIRECTORY);
+  public static List<Long> getChildrenIds(final long parentId) {
+    List<Long> childIds = new ArrayList<>();
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       // check the existence of node in Postgres
@@ -341,7 +282,7 @@ public class DatabaseConnection {
       System.out.println(ex.getMessage());
     }
 
-    LOG.info("getChildrenList: (" + childIds + "," + parentId + ")");
+    LOG.info("getChildrenIds: (" + childIds + "," + parentId + ")");
 
     return childIds;
   }

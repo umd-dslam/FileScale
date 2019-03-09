@@ -26,6 +26,8 @@ import org.apache.hadoop.hdfs.server.namenode.INodeId;
 import org.apache.hadoop.util.GSet;
 import org.apache.hadoop.util.LightWeightGSet;
 
+import org.apache.hadoop.hdfs.db.*;
+
 /**
  * This class maintains the map from a block to its metadata.
  * block's metadata currently includes blockCollection it belongs to and
@@ -100,7 +102,7 @@ class BlocksMap {
     }
     decrementBlockStat(block);
 
-    assert blockInfo.getBlockCollectionId() == INodeId.INVALID_INODE_ID;
+    assert blockInfo.getBlockCollectionId() == 0;
     final int size = blockInfo.isStriped() ?
         blockInfo.getCapacity() : blockInfo.numNodes();
     for(int idx = size - 1; idx >= 0; idx--) {
@@ -109,6 +111,7 @@ class BlocksMap {
         removeBlock(dn, blockInfo); // remove from the list and wipe the location
       }
     }
+    DatabaseDatablock.delete(blockInfo.getBlockId());
   }
 
   /**

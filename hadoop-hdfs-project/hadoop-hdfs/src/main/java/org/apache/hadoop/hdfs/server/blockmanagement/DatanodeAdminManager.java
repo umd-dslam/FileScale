@@ -694,7 +694,7 @@ public class DatanodeAdminManager {
         }
 
         long bcId = block.getBlockCollectionId();
-        if (bcId == INodeId.INVALID_INODE_ID) {
+        if (bcId == 0) {
           // Orphan block, will be invalidated eventually. Skip.
           continue;
         }

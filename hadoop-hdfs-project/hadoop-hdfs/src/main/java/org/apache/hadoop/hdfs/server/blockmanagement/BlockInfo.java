@@ -30,6 +30,7 @@ import org.apache.hadoop.hdfs.protocol.BlockType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.util.LightWeightGSet;
 
+import org.apache.hadoop.hdfs.db.*;
 import static org.apache.hadoop.hdfs.server.namenode.INodeId.INVALID_INODE_ID;
 
 /**
@@ -43,16 +44,6 @@ public abstract class BlockInfo extends Block
     implements LightWeightGSet.LinkedElement {
 
   public static final BlockInfo[] EMPTY_ARRAY = {};
-
-  /**
-   * Replication factor.
-   */
-  private short replication;
-
-  /**
-   * Block collection ID.
-   */
-  private volatile long bcId;
 
   /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
   private LightWeightGSet.LinkedElement nextLinkedElement;
@@ -68,41 +59,47 @@ public abstract class BlockInfo extends Block
    * @param size the block's replication factor, or the total number of blocks
    *             in the block group
    */
+  // FIXME: I don't think this function still be used!
   public BlockInfo(short size) {
+    super(0, 0, 0);
     this.storages = new DatanodeStorageInfo[size];
-    this.bcId = INVALID_INODE_ID;
-    this.replication = isStriped() ? 0 : size;
+    DatabaseDatablock.setReplication(0, isStriped() ? 0 : size);
   }
 
   public BlockInfo(Block blk, short size) {
     super(blk);
     this.storages = new DatanodeStorageInfo[size];
-    this.bcId = INVALID_INODE_ID;
-    this.replication = isStriped() ? 0 : size;
+    DatabaseDatablock.setReplication(blk.getBlockId(), isStriped() ? 0 : size);
+  }
+
+  public BlockInfo(long bid, long num, long stamp, short size) {
+    super(bid, num, stamp);
+    this.storages = new DatanodeStorageInfo[size];
+    DatabaseDatablock.setReplication(bid, isStriped() ? 0 : size);    
   }
 
   public short getReplication() {
-    return replication;
+    return DatabaseDatablock.getReplication(getBlockId());
   }
 
   public void setReplication(short repl) {
-    this.replication = repl;
+    DatabaseDatablock.setReplication(getBlockId(), repl);
   }
 
   public long getBlockCollectionId() {
-    return bcId;
+    return DatabaseINode2Block.getBcId(getBlockId());
   }
 
   public void setBlockCollectionId(long id) {
-    this.bcId = id;
+    DatabaseINode2Block.setBcIdViaBlkId(getBlockId(), id);
   }
 
   public void delete() {
-    setBlockCollectionId(INVALID_INODE_ID);
+    DatabaseINode2Block.deleteViaBlkId(getBlockId());
   }
 
   public boolean isDeleted() {
-    return bcId == INVALID_INODE_ID;
+    return DatabaseINode2Block.getBcId(getBlockId()) == 0;
   }
 
   public Iterator<DatanodeStorageInfo> getStorageInfos() {

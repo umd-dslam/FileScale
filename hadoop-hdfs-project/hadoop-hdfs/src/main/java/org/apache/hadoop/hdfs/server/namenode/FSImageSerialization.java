@@ -69,7 +69,11 @@ public class FSImageSerialization {
 
   // Static-only class
   private FSImageSerialization() {}
-  
+
+  static Long[] sblk;
+  static {
+    sblk = new Long[3];
+  }
   /**
    * In order to reduce allocation, we reuse some static objects. However, the methods
    * in this class should be thread-safe since image-saving is multithreaded, so 
@@ -114,6 +118,15 @@ public class FSImageSerialization {
     }
   }
 
+  private static void readFields(DataInput in) throws IOException {
+    sblk[0] = in.readLong();  // bid
+    sblk[1] = in.readLong();  // num
+    sblk[2] = in.readLong();  // stamp
+    if (sblk[1] < 0) {
+        throw new IOException("Unexpected block size: " + sblk[1]);
+    }
+  }
+
   // Helper function that reads in an INodeUnderConstruction
   // from the input stream
   //
@@ -132,16 +145,15 @@ public class FSImageSerialization {
 
     final BlockInfoContiguous[] blocksContiguous =
         new BlockInfoContiguous[numBlocks];
-    Block blk = new Block();
     int i = 0;
     for (; i < numBlocks - 1; i++) {
-      blk.readFields(in);
-      blocksContiguous[i] = new BlockInfoContiguous(blk, blockReplication);
+      readFields(in);
+      blocksContiguous[i] = new BlockInfoContiguous(sblk[0], sblk[1], sblk[2], blockReplication);
     }
     // last block is UNDER_CONSTRUCTION
     if(numBlocks > 0) {
-      blk.readFields(in);
-      blocksContiguous[i] = new BlockInfoContiguous(blk, blockReplication);
+      readFields(in);
+      blocksContiguous[i] = new BlockInfoContiguous(sblk[0], sblk[1], sblk[2], blockReplication);
       blocksContiguous[i].convertToBlockUnderConstruction(
           BlockUCState.UNDER_CONSTRUCTION, null);
     }

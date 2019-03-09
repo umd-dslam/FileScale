@@ -28,6 +28,7 @@ import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode.ReclaimContext;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.util.ChunkedArrayList;
+import org.apache.hadoop.hdfs.db.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -266,7 +267,7 @@ class FSDirDeleteOp {
     }
 
     // ADD(gangliao): Remove inode from Postgres
-    DatabaseConnection.removeChild(targetNode.getId());
+    DatabaseINode.removeChild(targetNode.getId());
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "

@@ -75,6 +75,7 @@ import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.BlockWithLocations;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.StripedBlockWithLocations;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorageReport;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.net.NetworkTopology;
@@ -501,14 +502,15 @@ public class Dispatcher {
       if (idxInLocs == -1) {
         return null;
       }
+      long blkId = getBlock().getBlockId();
+      Long[] res = DatabaseDatablock.getNumBytesAndStamp(blkId);
       byte idxInGroup = indices[idxInLocs];
-      long blkId = getBlock().getBlockId() + idxInGroup;
-      long numBytes = getInternalBlockLength(getNumBytes(), cellSize,
+      blkId = blkId + idxInGroup;
+      long numBytes = getInternalBlockLength(res[0], cellSize,
           dataBlockNum, idxInGroup);
-      Block blk = new Block(getBlock());
-      blk.setBlockId(blkId);
-      blk.setNumBytes(numBytes);
-      DBlock dblk = new DBlock(blk);
+      long stamp = res[1];
+      // TODO: optimation later
+      DBlock dblk = new DBlock(new Block(blkId, numBytes, stamp));
       dblk.addLocation(storage);
       return dblk;
     }

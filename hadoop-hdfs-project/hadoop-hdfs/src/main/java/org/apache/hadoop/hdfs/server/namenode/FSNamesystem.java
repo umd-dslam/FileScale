@@ -268,6 +268,7 @@ import org.apache.hadoop.hdfs.server.namenode.top.TopAuditLogger;
 import org.apache.hadoop.hdfs.server.namenode.top.TopConf;
 import org.apache.hadoop.hdfs.server.namenode.top.metrics.TopMetrics;
 import org.apache.hadoop.hdfs.server.namenode.top.window.RollingWindowManager;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
@@ -797,7 +798,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       }
 
       // block manager needs the haEnabled initialized
-      this.blockManager = new BlockManager(this, haEnabled, conf);
+      this.blockManager = BlockManager.getInstance(this, haEnabled, conf);
+      
       this.datanodeStatistics = blockManager.getDatanodeManager().getDatanodeStatistics();
 
       // Get the checksum type from config
@@ -3759,9 +3761,12 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
               if(copyTruncate) {
                 dsInfos[i].addBlock(truncatedBlock, truncatedBlock);
               } else {
-                Block bi = new Block(storedBlock);
+                Block bi;
                 if (storedBlock.isStriped()) {
-                  bi.setBlockId(bi.getBlockId() + i);
+                  Long[] res = DatabaseDatablock.getNumBytesAndStamp(storedBlock.getBlockId());
+                  bi = new Block(storedBlock.getBlockId() + i, res[0], res[1]);
+                } else {
+                  bi = new Block(storedBlock);
                 }
                 dsInfos[i].addBlock(storedBlock, bi);
               }

@@ -673,9 +673,13 @@ public abstract class FSEditLogOp {
       }
       Block[] blocks = new Block[numBlocks];
       for (int i = 0; i < numBlocks; i++) {
-        Block blk = new Block();
-        blk.readFields(in);
-        blocks[i] = blk;
+        long blkid = in.readLong();  // bid
+        long bytes = in.readLong();  // num
+        long stamp = in.readLong();  // stamp
+        if (bytes < 0) {
+            throw new IOException("Unexpected block size: " + bytes);
+        }
+        blocks[i] = new Block(blkid, bytes, stamp);
       }
       return blocks;
     }

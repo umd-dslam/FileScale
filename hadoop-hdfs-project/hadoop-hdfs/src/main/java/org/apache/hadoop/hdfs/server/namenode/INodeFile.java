@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -54,6 +55,7 @@ import org.apache.hadoop.hdfs.server.namenode.snapshot.FileWithSnapshotFeature;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DiffList;
 import org.apache.hadoop.hdfs.util.LongBitFormat;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.util.StringUtils;
 import static org.apache.hadoop.io.erasurecode.ErasureCodeConstants.REPLICATION_POLICY_ID;
 
@@ -248,8 +250,6 @@ public class INodeFile extends INodeWithAdditionalFields
 
   }
 
-  private BlockInfo[] blocks;
-
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
             long atime, BlockInfo[] blklist, short replication,
             long preferredBlockSize) {
@@ -266,7 +266,7 @@ public class INodeFile extends INodeWithAdditionalFields
     
     // ADD(gangliao): set inode's header into Postgres
     long header = HeaderFormat.toLong(preferredBlockSize, layoutRedundancy, storagePolicyID);
-    DatabaseConnection.setHeader(id, header);
+    DatabaseINode.setHeader(id, header);
     
     if (blklist != null && blklist.length > 0) {
       for (BlockInfo b : blklist) {
@@ -292,10 +292,10 @@ public class INodeFile extends INodeWithAdditionalFields
     this.features = that.features;
 
     // ADD(gangliao): copy inode's header from Postgres
-    long header = DatabaseConnection.getHeader(that.getId());
-    DatabaseConnection.setHeader(this.getId(), header);
+    long header = DatabaseINode.getHeader(that.getId());
+    DatabaseINode.setHeader(this.getId(), header);
 
-    setBlocks(that.blocks);
+    setBlocks(that);
   }
   
   public INodeFile(INodeFile that, FileDiffList diffs) {
@@ -365,6 +365,7 @@ public class INodeFile extends INodeWithAdditionalFields
   /** Assert all blocks are complete. */
   private void assertAllBlocksComplete(int numCommittedAllowed,
       short minReplication) {
+    BlockInfo[] blocks = getBlocks();
     for (int i = 0; i < blocks.length; i++) {
       final String err = checkBlockComplete(blocks, i, numCommittedAllowed,
           minReplication);
@@ -408,7 +409,10 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override // BlockCollection
   public void setBlock(int index, BlockInfo blk) {
     Preconditions.checkArgument(blk.isStriped() == this.isStriped());
-    this.blocks[index] = blk;
+    // remove blk index from inode2block
+    DatabaseINode2Block.deleteViaBlkId(blk.getBlockId());
+    // update blockId in inode2block
+    DatabaseINode2Block.setBlockId(this.getId(), index, blk.getBlockId());
   }
 
   @Override // BlockCollection, the file should be under construction
@@ -424,7 +428,6 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   void setLastBlock(BlockInfo blk) {
-    blk.setBlockCollectionId(this.getId());
     setBlock(numBlocks() - 1, blk);
   }
 
@@ -435,19 +438,15 @@ public class INodeFile extends INodeWithAdditionalFields
   BlockInfo removeLastBlock(Block oldblock) {
     Preconditions.checkState(isUnderConstruction(),
         "file is no longer under construction");
-    if (blocks.length == 0) {
+    BlockInfo lastBlock = getLastBlock();
+  
+    if (lastBlock == null) {
       return null;
     }
-    int size_1 = blocks.length - 1;
-    if (!blocks[size_1].equals(oldblock)) {
+    if (!lastBlock.equals(oldblock)) {
       return null;
     }
 
-    BlockInfo lastBlock = blocks[size_1];
-    //copy to a new list
-    BlockInfo[] newlist = new BlockInfo[size_1];
-    System.arraycopy(blocks, 0, newlist, 0, size_1);
-    setBlocks(newlist);
     lastBlock.delete();
     return lastBlock;
   }
@@ -527,7 +526,7 @@ public class INodeFile extends INodeWithAdditionalFields
       return getSnapshotINode(snapshot).getFileReplication();
     }
     return HeaderFormat.getReplication(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   /**
@@ -565,7 +564,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   /** Set the replication factor of this file. */
   private void setFileReplication(short replication) {
-    long header = DatabaseConnection.getHeader(this.getId());
+    long header = DatabaseINode.getHeader(this.getId());
 
     long layoutRedundancy =
         HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.retrieve(header);
@@ -574,7 +573,7 @@ public class INodeFile extends INodeWithAdditionalFields
     header = HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.
         combine(layoutRedundancy, header);
 
-    DatabaseConnection.setHeader(this.getId(), header);
+    DatabaseINode.setHeader(this.getId(), header);
   }
 
   /** Set the replication factor of this file. */
@@ -589,13 +588,13 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override
   public long getPreferredBlockSize() {
     return HeaderFormat.getPreferredBlockSize(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   @Override
   public byte getLocalStoragePolicyID() {
     return HeaderFormat.getStoragePolicyID(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   @Override
@@ -625,10 +624,10 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   private void setStoragePolicyID(byte storagePolicyId) {
-    long header = DatabaseConnection.getHeader(this.getId());
+    long header = DatabaseINode.getHeader(this.getId());
     header = HeaderFormat.STORAGE_POLICY_ID.BITS.combine(storagePolicyId,
         header);
-    DatabaseConnection.setHeader(this.getId(), header);
+    DatabaseINode.setHeader(this.getId(), header);
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,
@@ -645,7 +644,7 @@ public class INodeFile extends INodeWithAdditionalFields
   public byte getErasureCodingPolicyID() {
     if (isStriped()) {
       return HeaderFormat.getECPolicyID(
-        DatabaseConnection.getHeader(this.getId()));
+        DatabaseINode.getHeader(this.getId()));
     }
     return REPLICATION_POLICY_ID;
   }
@@ -657,7 +656,7 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override
   public boolean isStriped() {
     return HeaderFormat.isStriped(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   /**
@@ -667,18 +666,33 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override
   public BlockType getBlockType() {
     return HeaderFormat.getBlockType(
-      DatabaseConnection.getHeader(this.getId()));
+      DatabaseINode.getHeader(this.getId()));
   }
 
   @Override // INodeFileAttributes
   public long getHeaderLong() {
-    return DatabaseConnection.getHeader(this.getId());
+    return DatabaseINode.getHeader(this.getId());
   }
 
   /** @return the blocks of the file. */
   @Override // BlockCollection
   public BlockInfo[] getBlocks() {
-    return this.blocks;
+    List<Long> blockIds = DatabaseINode2Block.getBlockIds(getId());
+
+    if (blockIds.size() == 0) {
+      return null;
+    }
+
+    ArrayList<BlockInfo> blklist = new ArrayList<>();
+    for(long blockId : blockIds) {
+      // FIXME: after removing BlocksMap, we can consider return blockIds directly.
+      BlockInfo block = BlockManager.getInstance().getStoredBlock(new Block(blockId));
+      if (block != null) {
+        blklist.add(block);
+      }
+    }
+
+    return blklist.toArray(new BlockInfo[blklist.size()]);
   }
 
   /** @return blocks of the file corresponding to the snapshot. */
@@ -703,27 +717,25 @@ public class INodeFile extends INodeWithAdditionalFields
    * append array of blocks to this.blocks
    */
   void concatBlocks(INodeFile[] inodes, BlockManager bm) {
-    int size = this.blocks.length;
-    int totalAddedBlocks = 0;
+    List<Long> blockIds = new ArrayList<Long>();
+    
     for(INodeFile f : inodes) {
       Preconditions.checkState(f.isStriped() == this.isStriped());
-      totalAddedBlocks += f.blocks.length;
-    }
-    
-    BlockInfo[] newlist =
-        new BlockInfo[size + totalAddedBlocks];
-    System.arraycopy(this.blocks, 0, newlist, 0, size);
-    
-    for(INodeFile in: inodes) {
-      System.arraycopy(in.blocks, 0, newlist, size, in.blocks.length);
-      size += in.blocks.length;
+      blockIds.addAll(DatabaseINode2Block.getBlockIds(f.getId()));
+      DatabaseINode2Block.deleteViaBcId(f.getId());
     }
 
-    setBlocks(newlist);
-    for(BlockInfo b : blocks) {
-      b.setBlockCollectionId(getId());
+    if (blockIds.size() == 0) {
+      return;
+    }
+
+    DatabaseINode2Block.insert(this.getId(), blockIds, numBlocks());
+
+    short repl = getPreferredBlockReplication();
+    for(Long blockId : blockIds) {
+      // TODO: remove blocksmap
+      BlockInfo b = BlockManager.getInstance().getStoredBlock(new Block(blockId));
       short oldRepl = b.getReplication();
-      short repl = getPreferredBlockReplication();
       if (oldRepl != repl) {
         bm.setReplication(oldRepl, repl, b);
       }
@@ -735,25 +747,30 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   void addBlock(BlockInfo newblock) {
     Preconditions.checkArgument(newblock.isStriped() == this.isStriped());
-    if (this.blocks.length == 0) {
-      this.setBlocks(new BlockInfo[]{newblock});
-    } else {
-      int size = this.blocks.length;
-      BlockInfo[] newlist = new BlockInfo[size + 1];
-      System.arraycopy(this.blocks, 0, newlist, 0, size);
-      newlist[size] = newblock;
-      this.setBlocks(newlist);
-    }
+    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), numBlocks());
   }
 
   /** Set the blocks. */
   private void setBlocks(BlockInfo[] blocks) {
-    this.blocks = (blocks != null ? blocks : BlockInfo.EMPTY_ARRAY);
+    if (blocks == null || blocks.length == 0) {
+      return;
+    }
+    // insert new blocks and optimize it in one query
+    List<Long> blockIds = new ArrayList<Long>();
+    for (int i = 0; i < blocks.length; ++i) {
+      blockIds.add(blocks[i].getBlockId());
+    }
+    DatabaseINode2Block.insert(this.getId(), blockIds, 0);
+  }
+
+  private void setBlocks(INodeFile that) {
+    // replace inodeId
+    DatabaseINode2Block.setBcIdViaBcId(that.getId(), this.getId());
   }
 
   /** Clear all blocks of the file. */
   public void clearBlocks() {
-    this.blocks = BlockInfo.EMPTY_ARRAY;
+    DatabaseINode2Block.deleteViaBcId(this.getId());
   }
 
   private void updateRemovedUnderConstructionFiles(
@@ -807,6 +824,7 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   public void clearFile(ReclaimContext reclaimContext) {
+    BlockInfo[] blocks = getBlocks();
     if (blocks != null && reclaimContext.collectedBlocks != null) {
       for (BlockInfo blk : blocks) {
         reclaimContext.collectedBlocks.addDeleteBlock(blk);
@@ -957,12 +975,12 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   public final long computeFileSize(boolean includesLastUcBlock,
       boolean usePreferredBlockSize4LastUcBlock) {
-    if (blocks.length == 0) {
+    int length = numBlocks();
+    if (length == 0) {
       return 0;
     }
-    final int last = blocks.length - 1;
     //check if the last block is BlockInfoUnderConstruction
-    BlockInfo lastBlk = blocks[last];
+    BlockInfo lastBlk = getLastBlock();
     long size = lastBlk.getNumBytes();
     if (!lastBlk.isComplete()) {
        if (!includesLastUcBlock) {
@@ -975,9 +993,7 @@ public class INodeFile extends INodeWithAdditionalFields
        }
     }
     //sum other blocks
-    for (int i = 0; i < last; i++) {
-      size += blocks[i].getNumBytes();
-    }
+    size += DatabaseDatablock.getTotalNumBytes(this.getId(), length - 1);
     return size;
   }
 
@@ -997,6 +1013,7 @@ public class INodeFile extends INodeWithAdditionalFields
   // TODO: support EC with heterogeneous storage
   public final QuotaCounts storagespaceConsumedStriped() {
     QuotaCounts counts = new QuotaCounts.Builder().build();
+    BlockInfo[] blocks = getBlocks(); 
     for (BlockInfo b : blocks) {
       Preconditions.checkState(b.isStriped());
       long blockSize = b.isComplete() ?
@@ -1048,20 +1065,28 @@ public class INodeFile extends INodeWithAdditionalFields
    * Return the penultimate allocated block for this file.
    */
   BlockInfo getPenultimateBlock() {
-    if (blocks.length <= 1) {
+    int length = numBlocks();
+    if (length <= 1) {
       return null;
     }
-    return blocks[blocks.length - 2];
+
+    Block block = new Block(DatabaseINode2Block.getBlockId(this.getId(), length - 2));
+    return BlockManager.getInstance().getStoredBlock(block);
   }
 
   @Override
   public BlockInfo getLastBlock() {
-    return blocks.length == 0 ? null: blocks[blocks.length-1];
+    int blockId = DatabaseINode2Block.getLastBlockId(getId());
+
+    if (blockId == -1)
+      return null;
+
+    return BlockManager.getInstance().getStoredBlock(new Block(blockId));
   }
 
   @Override
   public int numBlocks() {
-    return blocks.length;
+    return DatabaseINode2Block.getNumBlocks(getId());
   }
 
   @VisibleForTesting
@@ -1071,9 +1096,9 @@ public class INodeFile extends INodeWithAdditionalFields
     super.dumpTreeRecursively(out, prefix, snapshotId);
     out.print(", fileSize=" + computeFileSize(snapshotId));
     // only compare the first block
-    out.print(", blocks=");
-    out.print(blocks.length == 0 ? null: blocks[0]);
-    out.println();
+    // out.print(", blocks=");
+    // out.print(blocks.length == 0 ? null: blocks[0]);
+    // out.println();
   }
 
   /**
@@ -1168,15 +1193,7 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   void truncateBlocksTo(int n) {
-    final BlockInfo[] newBlocks;
-    if (n == 0) {
-      newBlocks = BlockInfo.EMPTY_ARRAY;
-    } else {
-      newBlocks = new BlockInfo[n];
-      System.arraycopy(getBlocks(), 0, newBlocks, 0, n);
-    }
-    // set new blocks
-    setBlocks(newBlocks);
+    DatabaseINode2Block.truncate(this.getId(), n);
   }
 
   /**
