@@ -680,7 +680,7 @@ public class INodeFile extends INodeWithAdditionalFields
     List<Long> blockIds = DatabaseINode2Block.getBlockIds(getId());
 
     if (blockIds.size() == 0) {
-      return null;
+      return BlockInfo.EMPTY_ARRAY;
     }
 
     ArrayList<BlockInfo> blklist = new ArrayList<>();
