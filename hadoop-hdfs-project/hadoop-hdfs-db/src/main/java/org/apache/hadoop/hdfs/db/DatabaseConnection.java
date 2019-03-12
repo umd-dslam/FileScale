@@ -41,25 +41,22 @@ public class DatabaseConnection {
     try {
       // create inode table in Postgres
       String sql =
-          "DROP TABLE IF EXISTS inodes;"
-              + "CREATE TABLE inodes("
+              "CREATE TABLE IF NOT EXISTS inodes("
               + "   id bigint primary key, parent bigint, name text,"
               + "   accessTime bigint, modificationTime bigint,"
               + "   header bigint, permission bigint"
               + ");"
-              + "DROP TABLE IF EXISTS inode2block;"
-              + "CREATE TABLE inode2block("
-              + "   id bigint primary key, blockId bigint, index int"
+              + "CREATE TABLE IF NOT EXISTS inode2block("
+              + "   blockId bigint primary key, id bigint, index int"
               + ");"
-              + "DROP TABLE IF EXISTS datablocks;"
-              + "CREATE TABLE datablocks("
+              + "CREATE TABLE IF NOT EXISTS datablocks("
               + "   blockId bigint primary key, numBytes bigint, generationStamp bigint,"
               + "   replication int"
               + ");";
       Statement st = connection.createStatement();
       st.execute(sql);
 
-      LOG.info("DatabaseConnection: [OK] Create inodes Table in Postgres.");
+      LOG.info("DatabaseConnection: [OK] Create inodes, inode2block and datablocks in db.");
 
       st.close();
     } catch (SQLException ex) {
