@@ -993,7 +993,9 @@ public class INodeFile extends INodeWithAdditionalFields
        }
     }
     //sum other blocks
-    size += DatabaseDatablock.getTotalNumBytes(this.getId(), length - 1);
+    if (length > 1) {
+      size += DatabaseDatablock.getTotalNumBytes(this.getId(), length - 1);
+    }
     return size;
   }
 

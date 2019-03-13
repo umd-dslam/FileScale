@@ -16,6 +16,7 @@ public class DatabaseINode2Block {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode2Block.class);
 
   public static void insert(final long id, final long blockId, final int index) {
+    LOG.info("INode2Block [insert]: (" + id + "," + blockId + "," + index + ")");
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "INSERT INTO inode2block(id, blockId, index) VALUES (?, ?, ?);";
@@ -61,6 +62,7 @@ public class DatabaseINode2Block {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    LOG.info("INode2Block [insert]: (" + sql + ")");
   }
 
   private static <T> void setAttribute(final long id, final String attrName, final T attrValue) {
@@ -180,6 +182,7 @@ public class DatabaseINode2Block {
       pst.setLong(2, bcId);
       pst.executeUpdate();
       pst.close();
+      LOG.info("setBcIdViaBcId: (" + bcId + "," + newBcId + "," + sql + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -200,12 +203,10 @@ public class DatabaseINode2Block {
       }
       rs.close();
       pst.close();
+      LOG.info("getBlockIds: (" + blockIds + "," + inodeId + ")");
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
-
-    LOG.info("getBlockIds: (" + blockIds + "," + inodeId + ")");
-
     return blockIds;
   }
 
@@ -217,6 +218,7 @@ public class DatabaseINode2Block {
       pst.setLong(1, blockId);
       pst.executeUpdate();
       pst.close();
+      LOG.info("deleteViaBlkId: (" + blockId + "," + sql + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -231,6 +233,7 @@ public class DatabaseINode2Block {
       pst.setInt(2, index);
       pst.executeUpdate();
       pst.close();
+      LOG.info("delete: (" + nodeId + "," + index + "," + sql + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -244,6 +247,7 @@ public class DatabaseINode2Block {
       pst.setLong(1, nodeId);
       pst.executeUpdate();
       pst.close();
+      LOG.info("deleteViaBcId: (" + nodeId + "," + sql + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -258,6 +262,7 @@ public class DatabaseINode2Block {
       pst.setInt(2, n);
       pst.executeUpdate();
       pst.close();
+      LOG.info("truncate: (" + nodeId + "," + n + "," + sql + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -273,6 +278,7 @@ public class DatabaseINode2Block {
       pst.setInt(3, index);
       pst.executeUpdate();
       pst.close();
+      LOG.info("setBlockId: (" + nodeId + "," + blockId + "," + index + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -292,6 +298,7 @@ public class DatabaseINode2Block {
       }
       rs.close();
       pst.close();
+      LOG.info("getBlockId: (" + nodeId + "," + blockId + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }

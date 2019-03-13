@@ -1143,7 +1143,7 @@ public class NNThroughputBenchmark implements Tool {
         clientProto.create(fileName, FsPermission.getDefault(), clientName,
             new EnumSetWritable<CreateFlag>(EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE)), true, replication,
             BLOCK_SIZE, CryptoProtocolVersion.supported(), null);
-        ExtendedBlock lastBlock = addBlocks(fileName, clientName);
+        ExtendedBlock lastBlock = addBlocks(fileName, clientName, idx);
         clientProto.complete(fileName, clientName, lastBlock, HdfsConstants.GRANDFATHER_INODE_ID);
       }
       // prepare block reports
@@ -1152,7 +1152,7 @@ public class NNThroughputBenchmark implements Tool {
       }
     }
 
-    private ExtendedBlock addBlocks(String fileName, String clientName)
+    private ExtendedBlock addBlocks(String fileName, String clientName, int dnIdx)
     throws IOException {
       ExtendedBlock prevBlock = null;
       for(int jdx = 0; jdx < blocksPerFile; jdx++) {
@@ -1160,7 +1160,6 @@ public class NNThroughputBenchmark implements Tool {
             prevBlock, null, HdfsConstants.GRANDFATHER_INODE_ID, null);
         prevBlock = loc.getBlock();
         for(DatanodeInfo dnInfo : loc.getLocations()) {
-          int dnIdx = dnInfo.getXferPort() - 1;
           datanodes[dnIdx].addBlock(loc.getBlock().getLocalBlock());
           ReceivedDeletedBlockInfo[] rdBlocks = { new ReceivedDeletedBlockInfo(
               loc.getBlock().getLocalBlock(),
