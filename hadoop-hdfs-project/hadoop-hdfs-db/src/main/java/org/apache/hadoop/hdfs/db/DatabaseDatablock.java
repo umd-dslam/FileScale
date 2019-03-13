@@ -71,8 +71,10 @@ public class DatabaseDatablock {
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
         ResultSetMetaData rsmd = rs.getMetaData();
-        if (rsmd.getColumnType(1) == Types.BIGINT || rsmd.getColumnType(1) == Types.INTEGER) {
+        if (rsmd.getColumnType(1) == Types.BIGINT) {
           result = (T) Long.valueOf(rs.getLong(1));
+        } else if (rsmd.getColumnType(1) == Types.INTEGER) {
+          result = (T) Short.valueOf(rs.getString(1));
         } else if (rsmd.getColumnType(1) == Types.VARCHAR) {
           result = (T) rs.getString(1);
         }
