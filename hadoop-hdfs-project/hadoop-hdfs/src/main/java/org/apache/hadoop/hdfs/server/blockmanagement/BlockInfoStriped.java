@@ -291,7 +291,7 @@ public class BlockInfoStriped extends BlockInfo {
               throw new NoSuchElementException();
             }
             int i = index++;
-            return new StorageAndBlockIndex(storages[i], getStorageBlockIndex(getBlockId(), i));
+            return new StorageAndBlockIndex(storages[i], DatabaseDatablock.getStorageBlockIndex(getBlockId(), i));
           }
 
           @Override
