@@ -108,7 +108,7 @@ public class DatabaseDatablock {
       System.err.println(ex.getMessage());
     }
 
-    return result;    
+    return result;
   }
 
   public static long getNumBytes(final long blockId) {
@@ -275,5 +275,95 @@ public class DatabaseDatablock {
     LOG.info("getTotalNumBytes: (" + inodeId + "," + size + ")");
 
     return size;
+  }
+
+  public static void setECPolicyId(final long blockId, final byte ecPolicyId) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE datablocks SET ecPolicyId = ? WHERE blockId = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setInt(1, (int) ecPolicyId);
+      pst.setLong(2, blockId);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("setECPolicyId [UPDATE]: (" + blockId + "," + ecPolicyId + ")");
+  }
+
+  public static byte getECPolicyId(final long blockId) {
+    byte ecId = -1;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT ecPolicyId FROM datablocks WHERE blockId = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blockId);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        ecId = (byte) rs.getInt(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    return ecId;
+  }
+
+  public static void addStorage(final long blockId, final int index, final int blockIndex) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "INSERT INTO blockstripes(blockId, index, blockIndex) VALUES (?, ?, ?);";
+      PreparedStatement pst = conn.prepareStatement(sql);
+
+      pst.setLong(1, blockId);
+      pst.setInt(2, index);
+      pst.setInt(3, blockIndex);
+
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+  }
+
+  public static byte getStorageBlockIndex(final long blockId, final int index) {
+    byte blockIndex = -1;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT blockIndex FROM blockstripes WHERE blockId = ? and index = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blockId);
+      pst.setInt(2, index);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        blockIndex = (byte) rs.getInt(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    return blockIndex;
+  }
+
+  public static void setStorageBlockIndex(
+      final long blockId, final int index, final byte blockIndex) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE blockstripes SET blockIndex = ? WHERE blockId = ? and index = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+
+      pst.setInt(1, (int) blockIndex);
+      pst.setLong(2, blockId);
+      pst.setInt(3, index);
+
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
   }
 }

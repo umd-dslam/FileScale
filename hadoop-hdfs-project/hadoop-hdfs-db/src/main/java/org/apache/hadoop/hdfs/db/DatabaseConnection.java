@@ -2,14 +2,8 @@ package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +35,7 @@ public class DatabaseConnection {
     try {
       // create inode table in Postgres
       String sql =
-              "CREATE TABLE IF NOT EXISTS inodes("
+          "CREATE TABLE IF NOT EXISTS inodes("
               + "   id bigint primary key, parent bigint, name text,"
               + "   accessTime bigint, modificationTime bigint,"
               + "   header bigint, permission bigint"
@@ -51,7 +45,11 @@ public class DatabaseConnection {
               + ");"
               + "CREATE TABLE IF NOT EXISTS datablocks("
               + "   blockId bigint primary key, numBytes bigint, generationStamp bigint,"
-              + "   replication int"
+              + "   replication int, ecPolicyId int"
+              + ");"
+              + "CREATE TABLE IF NOT EXISTS blockstripes("
+              + "   blockId bigint, index int, blockIndex int,"
+              + "   PRIMARY KEY(blockId, index)"
               + ");";
       Statement st = connection.createStatement();
       st.execute(sql);
