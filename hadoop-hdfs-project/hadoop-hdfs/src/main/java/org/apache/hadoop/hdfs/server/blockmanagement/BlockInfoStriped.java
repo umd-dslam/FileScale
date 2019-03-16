@@ -22,6 +22,7 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.ErasureCodingPolicyManager;
 import org.apache.hadoop.hdfs.util.StripedBlockUtil;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
 import org.apache.hadoop.hdfs.db.*;
@@ -49,7 +50,7 @@ public class BlockInfoStriped extends BlockInfo {
   }
 
   public byte getECPolicyId() {
-    return DatabaseDatablock.getECPolicyId(blk.getBlockId());
+    return DatabaseDatablock.getECPolicyId(getBlockId());
   }
 
   public short getTotalBlockNum() {
@@ -186,7 +187,7 @@ public class BlockInfoStriped extends BlockInfo {
     }
     // set the entry to null
     setStorageInfo(dnIndex, null);
-    DatabaseDatablock.setStorageBlockIndex(getBlockId(), dnIndex, -1);
+    DatabaseDatablock.setStorageBlockIndex(getBlockId(), dnIndex, (byte) -1);
     return true;
   }
 
