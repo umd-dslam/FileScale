@@ -45,7 +45,7 @@ import java.util.NoSuchElementException;
 public class BlockInfoStriped extends BlockInfo {
   public BlockInfoStriped(Block blk, ErasureCodingPolicy ecPolicy) {
     super(blk, (short) (ecPolicy.getNumDataUnits() + ecPolicy.getNumParityUnits()));
-    DatabaseDatablock.setECPolicyId(blk.getBlockId(), ecPolicy.getId();
+    DatabaseDatablock.setECPolicyId(blk.getBlockId(), ecPolicy.getId());
   }
 
   public byte getECPolicyId() {
@@ -117,23 +117,33 @@ public class BlockInfoStriped extends BlockInfo {
     int blockIndex = BlockIdManager.getBlockIndex(reportedBlock);
     int index = blockIndex;
     DatanodeStorageInfo old = getStorageInfo(index);
-    if (old != null && !old.equals(storage)) { // over replicated
-      // check if the storage has been stored
-      int i = findStorageInfo(storage);
-      if (i == -1) {
-        index = findSlot();
+
+    boolean update = true;
+    if (old != null) {
+      if (!old.equals(storage) {
+        // check if the storage has been stored
+        int i = findStorageInfo(storage);
+        if (i == -1) {
+          index = findSlot();
+        } else {
+          return true;
+        }
       } else {
-        return true;
+        // over replicated
+        update = false;
       }
     }
-    addStorage(storage, index, blockIndex);
+
+    addStorage(storage, index, blockIndex, update);
     return true;
   }
 
   private void addStorage(DatanodeStorageInfo storage, int index,
-      int blockIndex) {
+      int blockIndex, boolean update) {
     setStorageInfo(index, storage);
-    DatabaseDatablock.addStorage(getBlockId(), index, (byte) blockIndex);
+    if (update) {
+      DatabaseDatablock.addStorage(getBlockId(), index, blockIndex);
+    }
   }
 
   private int findStorageInfoFromEnd(DatanodeStorageInfo storage) {
@@ -197,7 +207,7 @@ public class BlockInfoStriped extends BlockInfo {
     // `getNumBytes` is the total of actual data block size.
     return StripedBlockUtil.spaceConsumedByStripedBlock(getNumBytes(),
         getDataBlockNum(), getParityBlockNum(), getCellSize());
-    }
+  }
 
   @Override
   public final boolean isStriped() {
@@ -281,7 +291,7 @@ public class BlockInfoStriped extends BlockInfo {
               throw new NoSuchElementException();
             }
             int i = index++;
-            return new StorageAndBlockIndex(storages[i], indices[i]);
+            return new StorageAndBlockIndex(storages[i], getStorageBlockIndex(getBlockId(), i));
           }
 
           @Override
