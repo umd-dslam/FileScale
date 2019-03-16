@@ -120,7 +120,7 @@ public class BlockInfoStriped extends BlockInfo {
 
     boolean update = true;
     if (old != null) {
-      if (!old.equals(storage) {
+      if (!old.equals(storage)) {
         // check if the storage has been stored
         int i = findStorageInfo(storage);
         if (i == -1) {
