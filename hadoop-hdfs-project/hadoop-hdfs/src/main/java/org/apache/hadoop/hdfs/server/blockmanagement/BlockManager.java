@@ -310,7 +310,7 @@ public class BlockManager implements BlockStatsMXBean {
    */
   final BlocksMap blocksMap;
 
-  final BlockUCMap blockUcMap = new HashMap<Long, BlockUnderConstructionFeature>();
+  final Map<Long, BlockUnderConstructionFeature> blockUcMap = new HashMap<Long, BlockUnderConstructionFeature>();
 
   /** Redundancy thread. */
   private final Daemon redundancyThread = new Daemon(new RedundancyMonitor());
