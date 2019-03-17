@@ -50,6 +50,15 @@ public class DatabaseConnection {
               + "CREATE TABLE IF NOT EXISTS blockstripes("
               + "   blockId bigint, index int, blockIndex int,"
               + "   PRIMARY KEY(blockId, index)"
+              + ");"
+              + "CREATE TABLE IF NOT EXISTS block2storage("
+              + "   blockId bigint, storageId text"
+              + ");"
+              + "CREATE TABLE IF NOT EXISTS storage("
+              + "   storageId text primary key, storageType int, state int,"
+              + "   capacity bigint, dfsUsed bigint, nonDfsUsed bigint, remaining bigint,"
+              + "   blockPoolUsed bigint, blockReportCount int, heartbeatedSinceFailover boolean,"
+              + "   blockContentsStale boolean, datanodeUuid text"
               + ");";
       Statement st = connection.createStatement();
       st.execute(sql);
