@@ -48,11 +48,8 @@ public abstract class BlockInfo extends Block
   /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
   private LightWeightGSet.LinkedElement nextLinkedElement;
 
-
   // Storages this block is replicated on
   protected DatanodeStorageInfo[] storages;
-
-  private BlockUnderConstructionFeature uc;
 
   /**
    * Construct an entry for blocksmap
@@ -243,10 +240,11 @@ public abstract class BlockInfo extends Block
   /* UnderConstruction Feature related */
 
   public BlockUnderConstructionFeature getUnderConstructionFeature() {
-    return uc;
+    return BlockManager.getInstance().getBlockUC(getBlockId());
   }
 
   public BlockUCState getBlockUCState() {
+    BlockUnderConstructionFeature uc = getUnderConstructionFeature();
     return uc == null ? BlockUCState.COMPLETE : uc.getBlockUCState();
   }
 
@@ -275,10 +273,12 @@ public abstract class BlockInfo extends Block
   public void convertToBlockUnderConstruction(BlockUCState s,
       DatanodeStorageInfo[] targets) {
     if (isComplete()) {
-      uc = new BlockUnderConstructionFeature(this, s, targets,
-          this.getBlockType());
+      BlockUnderConstructionFeature uc = new BlockUnderConstructionFeature(
+        this, s, targets, this.getBlockType());
+      BlockManager.getInstance().setBlockUC(getBlockId(), uc);
     } else {
       // the block is already under construction
+      BlockUnderConstructionFeature uc = getUnderConstructionFeature();
       uc.setBlockUCState(s);
       uc.setExpectedLocations(this, targets, this.getBlockType());
     }
@@ -290,7 +290,7 @@ public abstract class BlockInfo extends Block
   void convertToCompleteBlock() {
     assert getBlockUCState() != BlockUCState.COMPLETE :
         "Trying to convert a COMPLETE block";
-    uc = null;
+    BlockManager.getInstance().removeBlockUC(getBlockId());
   }
 
   /**
@@ -301,6 +301,7 @@ public abstract class BlockInfo extends Block
    */
   public List<ReplicaUnderConstruction> setGenerationStampAndVerifyReplicas(
       long genStamp) {
+    BlockUnderConstructionFeature uc = getUnderConstructionFeature();
     Preconditions.checkState(uc != null && !isComplete());
     // Set the generation stamp for the block.
     setGenerationStamp(genStamp);
@@ -321,6 +322,7 @@ public abstract class BlockInfo extends Block
           + block.getBlockId() + ", expected id = " + getBlockId());
     }
     Preconditions.checkState(!isComplete());
+    BlockUnderConstructionFeature uc = getUnderConstructionFeature();
     uc.commit();
     this.setNumBytes(block.getNumBytes());
     // Sort out invalid replicas.
