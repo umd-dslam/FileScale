@@ -102,8 +102,6 @@ public class BlockInfoStriped extends BlockInfo {
         return i;
       }
     }
-    // need to expand the storage size
-    ensureCapacity(i + 1, true);
     return i;
   }
 
@@ -191,17 +189,6 @@ public class BlockInfoStriped extends BlockInfo {
     return true;
   }
 
-  private void ensureCapacity(int totalSize, boolean keepOld) {
-    if (getCapacity() < totalSize) {
-      DatanodeStorageInfo[] old = storages;
-      storages = new DatanodeStorageInfo[totalSize];
-
-      if (keepOld) {
-        System.arraycopy(old, 0, storages, 0, old.length);
-      }
-    }
-  }
-
   public long spaceConsumed() {
     // In case striped blocks, total usage by this striped blocks should
     // be the total of data blocks and parity blocks because
@@ -222,7 +209,6 @@ public class BlockInfoStriped extends BlockInfo {
 
   @Override
   public int numNodes() {
-    assert this.storages != null : "BlockInfo is not initialized";
     int num = 0;
     for (int idx = getCapacity()-1; idx >= 0; idx--) {
       if (getStorageInfo(idx) != null) {
@@ -277,13 +263,13 @@ public class BlockInfoStriped extends BlockInfo {
       public Iterator<StorageAndBlockIndex> iterator() {
         return new Iterator<StorageAndBlockIndex>() {
           private int index = 0;
-
+          private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
           @Override
           public boolean hasNext() {
-            while (index < getCapacity() && getStorageInfo(index) == null) {
+            while (index < storages.size() && storages[index] == null) {
               index++;
             }
-            return index < getCapacity();
+            return index < storages.size();
           }
 
           @Override

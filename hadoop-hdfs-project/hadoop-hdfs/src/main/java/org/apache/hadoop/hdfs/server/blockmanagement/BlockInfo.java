@@ -48,9 +48,6 @@ public abstract class BlockInfo extends Block
   /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
   private LightWeightGSet.LinkedElement nextLinkedElement;
 
-  // Storages this block is replicated on
-  protected DatanodeStorageInfo[] storages;
-
   /**
    * Construct an entry for blocksmap
    * @param size the block's replication factor, or the total number of blocks
@@ -59,19 +56,19 @@ public abstract class BlockInfo extends Block
   // FIXME: I don't think this function still be used!
   public BlockInfo(short size) {
     super(0, 0, 0);
-    this.storages = new DatanodeStorageInfo[size];
+    BlockManager.getInstance().getStorageMap().put(0, new ArrayList<DatanodeStorageInfo>(size));
     DatabaseDatablock.setReplication(0, isStriped() ? 0 : size);
   }
 
   public BlockInfo(Block blk, short size) {
     super(blk);
-    this.storages = new DatanodeStorageInfo[size];
+    BlockManager.getInstance().getStorageMap().put(blk.getBlockId(), new ArrayList<DatanodeStorageInfo>(size));
     DatabaseDatablock.setReplication(blk.getBlockId(), isStriped() ? 0 : size);
   }
 
   public BlockInfo(long bid, long num, long stamp, short size) {
     super(bid, num, stamp);
-    this.storages = new DatanodeStorageInfo[size];
+    BlockManager.getInstance().getStorageMap().put(bid, new ArrayList<DatanodeStorageInfo>(size));
     DatabaseDatablock.setReplication(bid, isStriped() ? 0 : size);    
   }
 
@@ -103,13 +100,13 @@ public abstract class BlockInfo extends Block
     return new Iterator<DatanodeStorageInfo>() {
 
       private int index = 0;
-
+      private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
       @Override
       public boolean hasNext() {
-        while (index < storages.length && storages[index] == null) {
+        while (index < storages.size() && storages[index] == null) {
           index++;
         }
-        return index < storages.length;
+        return index < storages.size();
       }
 
       @Override
@@ -133,18 +130,26 @@ public abstract class BlockInfo extends Block
   }
 
   DatanodeStorageInfo getStorageInfo(int index) {
-    assert this.storages != null : "BlockInfo is not initialized";
+    List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
+    assert storages != null : "BlockInfo is not initialized";
     return storages[index];
   }
 
   void setStorageInfo(int index, DatanodeStorageInfo storage) {
-    assert this.storages != null : "BlockInfo is not initialized";
-    this.storages[index] = storage;
+    List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
+    assert storages != null : "BlockInfo is not initialized";
+    if (index < storages.size()) {
+      storages.set(index, storage);
+    } else {
+      assert index == storages.size() : "Expand one storage for BlockInfo" 
+      storages.add(storage);
+    }
   }
 
   public int getCapacity() {
-    assert this.storages != null : "BlockInfo is not initialized";
-    return storages.length;
+    List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
+    assert storages != null : "BlockInfo is not initialized";
+    return storages.size();
   }
 
   /**

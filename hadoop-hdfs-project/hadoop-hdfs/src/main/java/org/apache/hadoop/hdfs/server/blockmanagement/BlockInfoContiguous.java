@@ -40,32 +40,13 @@ public class BlockInfoContiguous extends BlockInfo {
     super(bid, num, stamp, size);
   }
 
-  /**
-   * Ensure that there is enough  space to include num more storages.
-   * @return first free storage index.
-   */
-  private int ensureCapacity(int num) {
-    assert this.storages != null : "BlockInfo is not initialized";
-    int last = numNodes();
-    if (storages.length >= (last+num)) {
-      return last;
-    }
-    /* Not enough space left. Create a new array. Should normally
-     * happen only when replication is manually increased by the user. */
-    DatanodeStorageInfo[] old = storages;
-    storages = new DatanodeStorageInfo[(last+num)];
-    System.arraycopy(old, 0, storages, 0, last);
-    return last;
-  }
-
   @Override
   boolean addStorage(DatanodeStorageInfo storage, Block reportedBlock) {
     Preconditions.checkArgument(this.getBlockId() == reportedBlock.getBlockId(),
         "reported blk_%s is different from stored blk_%s",
         reportedBlock.getBlockId(), this.getBlockId());
     // find the last null node
-    int lastNode = ensureCapacity(1);
-    setStorageInfo(lastNode, storage);
+    setStorageInfo(numNodes(), storage);
     return true;
   }
 
@@ -86,8 +67,6 @@ public class BlockInfoContiguous extends BlockInfo {
 
   @Override
   public int numNodes() {
-    assert this.storages != null : "BlockInfo is not initialized";
-
     for (int idx = getCapacity()-1; idx >= 0; idx--) {
       if (getDatanode(idx) != null) {
         return idx + 1;
