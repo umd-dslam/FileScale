@@ -310,6 +310,8 @@ public class BlockManager implements BlockStatsMXBean {
    */
   final BlocksMap blocksMap;
 
+  final BlockUCMap blockUcMap = new HashMap<Long, BlockUnderConstructionFeature>();
+
   /** Redundancy thread. */
   private final Daemon redundancyThread = new Daemon(new RedundancyMonitor());
 
@@ -680,6 +682,18 @@ public class BlockManager implements BlockStatsMXBean {
     if (isBlockTokenEnabled()) {
       blockTokenSecretManager.setBlockPoolId(blockPoolId);
     }
+  }
+
+  public BlockUnderConstructionFeature getBlockUC(long blockId) {
+    return blockUcMap.get(blockId);
+  }
+
+  public void setBlockUC(long blockId, BlockUnderConstructionFeature uc) {
+    blockUcMap.put(blockId, uc);
+  }
+
+  public void removeBlockUC(long blockId) {
+    blockUcMap.remove(blockId);
   }
 
   public String getBlockPoolId() {
