@@ -268,7 +268,7 @@ public class BlockInfoStriped extends BlockInfo {
           private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBlockId());
           @Override
           public boolean hasNext() {
-            while (index < storages.size() && storages[index] == null) {
+            while (index < storages.size() && storages.get(index) == null) {
               index++;
             }
             return index < storages.size();
@@ -280,7 +280,7 @@ public class BlockInfoStriped extends BlockInfo {
               throw new NoSuchElementException();
             }
             int i = index++;
-            return new StorageAndBlockIndex(storages[i], DatabaseDatablock.getStorageBlockIndex(getBlockId(), i));
+            return new StorageAndBlockIndex(storages.get(i), DatabaseDatablock.getStorageBlockIndex(getBlockId(), i));
           }
 
           @Override
