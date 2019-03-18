@@ -97,10 +97,10 @@ public abstract class BlockInfo extends Block
     return new Iterator<DatanodeStorageInfo>() {
 
       private int index = 0;
-      private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
+      private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBlockId());
       @Override
       public boolean hasNext() {
-        while (index < storages.size() && storages[index] == null) {
+        while (index < storages.size() && storages.get(index) == null) {
           index++;
         }
         return index < storages.size();
@@ -111,7 +111,7 @@ public abstract class BlockInfo extends Block
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
-        return storages[index++];
+        return storages.get(index++);
       }
 
       @Override

@@ -27,6 +27,8 @@ import org.apache.hadoop.hdfs.util.StripedBlockUtil;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
 import org.apache.hadoop.hdfs.db.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -263,7 +265,7 @@ public class BlockInfoStriped extends BlockInfo {
       public Iterator<StorageAndBlockIndex> iterator() {
         return new Iterator<StorageAndBlockIndex>() {
           private int index = 0;
-          private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
+          private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBlockId());
           @Override
           public boolean hasNext() {
             while (index < storages.size() && storages[index] == null) {

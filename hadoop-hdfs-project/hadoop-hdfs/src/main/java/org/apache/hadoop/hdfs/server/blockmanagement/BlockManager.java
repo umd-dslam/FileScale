@@ -693,7 +693,7 @@ public class BlockManager implements BlockStatsMXBean {
     return storageMap.get(storageId);
   }
 
-  public List<DatanodeStorageInfo> getBlockStorages(String blockId) {
+  public List<DatanodeStorageInfo> getBlockStorages(long blockId) {
     List<String> storageIds = DatabaseStorage.getStorageIds(blockId);
     List<DatanodeStorageInfo> storages = new ArrayList<DatanodeStorageInfo>();
     for (String storageId : storageIds) {
