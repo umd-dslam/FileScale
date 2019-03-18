@@ -25,7 +25,7 @@ public class DatabaseStorage {
       if (storageId != null) {
         pst.setString(3, storageId);
       } else {
-        pst.setNull(3, Types.STRING);
+        pst.setNull(3, Types.VARCHAR);
       }
       pst.executeUpdate();
       pst.close();
@@ -109,7 +109,7 @@ public class DatabaseStorage {
       if (storageId != null) {
         pst.setString(1, storageId);
       } else {
-        pst.setNull(1, Types.STRING);
+        pst.setNull(1, Types.VARCHAR);
       }
       pst.setLong(2, blockId);
       pst.setInt(3, index);
