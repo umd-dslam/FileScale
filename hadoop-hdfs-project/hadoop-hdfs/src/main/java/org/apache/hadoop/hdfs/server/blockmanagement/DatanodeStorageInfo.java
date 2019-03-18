@@ -92,7 +92,32 @@ public class DatanodeStorageInfo {
   private StorageType storageType;
   private State state;
 
+  private long capacity;	
+  private long dfsUsed;	
+  private long nonDfsUsed;	
+  private volatile long remaining;	
+  private long blockPoolUsed;	
+
   private final FoldedTreeSet<BlockInfo> blocks = new FoldedTreeSet<>();
+
+  /** The number of block reports received */	
+  private int blockReportCount = 0;	
+
+  /**	
+   * Set to false on any NN failover, and reset to true	
+   * whenever a block report is received.	
+   */	
+  private boolean heartbeatedSinceFailover = false;	
+
+  /**	
+   * At startup or at failover, the storages in the cluster may have pending	
+   * block deletions from a previous incarnation of the NameNode. The block	
+   * contents are considered as stale until a block report is received. When a	
+   * storage is considered as stale, the replicas on it are also considered as	
+   * stale. If any block has at least one stale replica, then no invalidations	
+   * will be processed for this block. See HDFS-1972.	
+   */	
+  private boolean blockContentsStale = true;	
 
   DatanodeStorageInfo(DatanodeDescriptor dn, DatanodeStorage s) {
     this(dn, s.getStorageID(), s.getStorageType(), s.getState());
