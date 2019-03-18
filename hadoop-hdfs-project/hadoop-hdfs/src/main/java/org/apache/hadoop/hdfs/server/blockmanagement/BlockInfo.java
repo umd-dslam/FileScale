@@ -56,19 +56,16 @@ public abstract class BlockInfo extends Block
   // FIXME: I don't think this function still be used!
   public BlockInfo(short size) {
     super(0, 0, 0);
-    BlockManager.getInstance().getStorageMap().put(0, new ArrayList<DatanodeStorageInfo>(size));
     DatabaseDatablock.setReplication(0, isStriped() ? 0 : size);
   }
 
   public BlockInfo(Block blk, short size) {
     super(blk);
-    BlockManager.getInstance().getStorageMap().put(blk.getBlockId(), new ArrayList<DatanodeStorageInfo>(size));
     DatabaseDatablock.setReplication(blk.getBlockId(), isStriped() ? 0 : size);
   }
 
   public BlockInfo(long bid, long num, long stamp, short size) {
     super(bid, num, stamp);
-    BlockManager.getInstance().getStorageMap().put(bid, new ArrayList<DatanodeStorageInfo>(size));
     DatabaseDatablock.setReplication(bid, isStriped() ? 0 : size);    
   }
 
@@ -130,26 +127,30 @@ public abstract class BlockInfo extends Block
   }
 
   DatanodeStorageInfo getStorageInfo(int index) {
-    List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
-    assert storages != null : "BlockInfo is not initialized";
-    return storages[index];
+    String storageId = DatabaseStorage.getStorageId(getBlockId(), index);
+    if (storageId == null) {
+      return null;
+    }
+    return BlockManager.getInstance().getBlockStorage(storageId); 
   }
 
   void setStorageInfo(int index, DatanodeStorageInfo storage) {
-    List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
-    assert storages != null : "BlockInfo is not initialized";
-    if (index < storages.size()) {
-      storages.set(index, storage);
+    int size = DatabaseStorage.getNumStorages(getBlockId());
+    String storageId = null;
+    if (storage != null) {
+      storageId = storage.getStorageID();
+      BlockManager.getInstance().setBlockStorage(storageId, storage);
+    } 
+    if (index < size) {
+      DatabaseStorage.setStorage(getBlockId(), index, storageId);
     } else {
-      assert index == storages.size() : "Expand one storage for BlockInfo" 
-      storages.add(storage);
+      assert index == size : "Expand one storage for BlockInfo"; 
+      DatabaseStorage.insertStorage(getBlockId(), index, storageId);
     }
   }
 
   public int getCapacity() {
-    List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBcId());
-    assert storages != null : "BlockInfo is not initialized";
-    return storages.size();
+    return DatabaseStorage.getNumStorages(getBlockId());
   }
 
   /**

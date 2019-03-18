@@ -311,7 +311,7 @@ public class BlockManager implements BlockStatsMXBean {
   final BlocksMap blocksMap;
 
   final Map<Long, BlockUnderConstructionFeature> blockUcMap = new HashMap<Long, BlockUnderConstructionFeature>();
-  final Map<Long, List<DatanodeStorageInfo>> storageMap = new HashMap<Long, List<DatanodeStorageInfo>>();
+  final Map<String, DatanodeStorageInfo> storageMap = new HashMap<String, DatanodeStorageInfo>();
 
   /** Redundancy thread. */
   private final Daemon redundancyThread = new Daemon(new RedundancyMonitor());
@@ -685,12 +685,25 @@ public class BlockManager implements BlockStatsMXBean {
     }
   }
 
-  public Map<Long, List<DatanodeStorageInfo>> getStorageMap() {
+  public Map<String, DatanodeStorageInfo> getStorageMap() {
     return storageMap;
   }
 
-  public List<DatanodeStorageInfo> getBlockStorages(long blockId) {
-    return storageMap.get(blockId);
+  public DatanodeStorageInfo getBlockStorage(String storageId) {
+    return storageMap.get(storageId);
+  }
+
+  public List<DatanodeStorageInfo> getBlockStorages(String blockId) {
+    List<String> storageIds = DatabaseStorage.getStorageIds(blockId);
+    List<DatanodeStorageInfo> storages = new ArrayList<DatanodeStorageInfo>();
+    for (String storageId : storageIds) {
+      storages.add(storageMap.get(storageId));  
+    }   
+    return storages;
+  }
+
+  public void setBlockStorage(String storageId, DatanodeStorageInfo storage) {
+    storageMap.put(storageId, storage);
   }
 
   public BlockUnderConstructionFeature getBlockUC(long blockId) {
