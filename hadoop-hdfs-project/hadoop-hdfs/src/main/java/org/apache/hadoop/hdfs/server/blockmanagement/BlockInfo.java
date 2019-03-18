@@ -48,9 +48,6 @@ public abstract class BlockInfo extends Block
   /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
   private LightWeightGSet.LinkedElement nextLinkedElement;
 
-  // Storages this block is replicated on
-  protected DatanodeStorageInfo[] storages;
-
   /**
    * Construct an entry for blocksmap
    * @param size the block's replication factor, or the total number of blocks
@@ -59,19 +56,16 @@ public abstract class BlockInfo extends Block
   // FIXME: I don't think this function still be used!
   public BlockInfo(short size) {
     super(0, 0, 0);
-    this.storages = new DatanodeStorageInfo[size];
     DatabaseDatablock.setReplication(0, isStriped() ? 0 : size);
   }
 
   public BlockInfo(Block blk, short size) {
     super(blk);
-    this.storages = new DatanodeStorageInfo[size];
     DatabaseDatablock.setReplication(blk.getBlockId(), isStriped() ? 0 : size);
   }
 
   public BlockInfo(long bid, long num, long stamp, short size) {
     super(bid, num, stamp);
-    this.storages = new DatanodeStorageInfo[size];
     DatabaseDatablock.setReplication(bid, isStriped() ? 0 : size);    
   }
 
@@ -103,13 +97,13 @@ public abstract class BlockInfo extends Block
     return new Iterator<DatanodeStorageInfo>() {
 
       private int index = 0;
-
+      private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBlockId());
       @Override
       public boolean hasNext() {
-        while (index < storages.length && storages[index] == null) {
+        while (index < storages.size() && storages.get(index) == null) {
           index++;
         }
-        return index < storages.length;
+        return index < storages.size();
       }
 
       @Override
@@ -117,7 +111,7 @@ public abstract class BlockInfo extends Block
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
-        return storages[index++];
+        return storages.get(index++);
       }
 
       @Override
@@ -133,18 +127,30 @@ public abstract class BlockInfo extends Block
   }
 
   DatanodeStorageInfo getStorageInfo(int index) {
-    assert this.storages != null : "BlockInfo is not initialized";
-    return storages[index];
+    String storageId = DatabaseStorage.getStorageId(getBlockId(), index);
+    if (storageId == null) {
+      return null;
+    }
+    return BlockManager.getInstance().getBlockStorage(storageId); 
   }
 
   void setStorageInfo(int index, DatanodeStorageInfo storage) {
-    assert this.storages != null : "BlockInfo is not initialized";
-    this.storages[index] = storage;
+    int size = DatabaseStorage.getNumStorages(getBlockId());
+    String storageId = null;
+    if (storage != null) {
+      storageId = storage.getStorageID();
+      BlockManager.getInstance().setBlockStorage(storageId, storage);
+    } 
+    if (index < size) {
+      DatabaseStorage.setStorage(getBlockId(), index, storageId);
+    } else {
+      assert index == size : "Expand one storage for BlockInfo"; 
+      DatabaseStorage.insertStorage(getBlockId(), index, storageId);
+    }
   }
 
   public int getCapacity() {
-    assert this.storages != null : "BlockInfo is not initialized";
-    return storages.length;
+    return DatabaseStorage.getNumStorages(getBlockId());
   }
 
   /**
