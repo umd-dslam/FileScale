@@ -48,6 +48,10 @@ public abstract class BlockInfo extends Block
   /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
   private LightWeightGSet.LinkedElement nextLinkedElement;
 
+  public BlockInfo(Block blk) {
+    super(blk);
+  }
+
   /**
    * Construct an entry for blocksmap
    * @param size the block's replication factor, or the total number of blocks

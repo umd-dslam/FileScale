@@ -35,59 +35,28 @@ import org.apache.hadoop.hdfs.db.*;
  */
 class BlocksMap {
 
-  /** Constant {@link LightWeightGSet} capacity. */
-  private final int capacity;
-  
-  private GSet<Block, BlockInfo> blocks;
-
   private final LongAdder totalReplicatedBlocks = new LongAdder();
   private final LongAdder totalECBlockGroups = new LongAdder();
 
   BlocksMap(int capacity) {
-    // Use 2% of total memory to size the GSet capacity
-    this.capacity = capacity;
-    this.blocks = new LightWeightGSet<Block, BlockInfo>(capacity) {
-      @Override
-      public Iterator<BlockInfo> iterator() {
-        SetIterator iterator = new SetIterator();
-        /*
-         * Not tracking any modifications to set. As this set will be used
-         * always under FSNameSystem lock, modifications will not cause any
-         * ConcurrentModificationExceptions. But there is a chance of missing
-         * newly added elements during iteration.
-         */
-        iterator.setTrackModification(false);
-        return iterator;
-      }
-    };
   }
 
 
   void close() {
     clear();
-    blocks = null;
   }
   
   void clear() {
-    if (blocks != null) {
-      blocks.clear();
-      totalReplicatedBlocks.reset();
-      totalECBlockGroups.reset();
-    }
+    totalReplicatedBlocks.reset();
+    totalECBlockGroups.reset();
   }
 
   /**
    * Add block b belonging to the specified block collection to the map.
    */
   BlockInfo addBlockCollection(BlockInfo b, BlockCollection bc) {
-    BlockInfo info = blocks.get(b);
-    if (info != b) {
-      info = b;
-      blocks.put(info);
-      incrementBlockStat(info);
-    }
-    info.setBlockCollectionId(bc.getId());
-    return info;
+    incrementBlockStat(b);
+    return b;
   }
 
   /**
@@ -96,22 +65,21 @@ class BlocksMap {
    * and remove all data-node locations associated with the block.
    */
   void removeBlock(BlockInfo block) {
-    BlockInfo blockInfo = blocks.remove(block);
-    if (blockInfo == null) {
+    if (block == null) {
       return;
     }
     decrementBlockStat(block);
 
-    assert blockInfo.getBlockCollectionId() == 0;
-    final int size = blockInfo.isStriped() ?
-        blockInfo.getCapacity() : blockInfo.numNodes();
+    assert block.getBlockCollectionId() == 0;
+    final int size = block.isStriped() ?
+        block.getCapacity() : block.numNodes();
     for(int idx = size - 1; idx >= 0; idx--) {
-      DatanodeDescriptor dn = blockInfo.getDatanode(idx);
+      DatanodeDescriptor dn = block.getDatanode(idx);
       if (dn != null) {
-        removeBlock(dn, blockInfo); // remove from the list and wipe the location
+        removeBlock(dn, block); // remove from the list and wipe the location
       }
     }
-    DatabaseDatablock.delete(blockInfo.getBlockId());
+    DatabaseDatablock.delete(block.getBlockId());
   }
 
   /**
@@ -121,12 +89,16 @@ class BlocksMap {
    * @return true if block is in the map, otherwise false
    */
   boolean containsBlock(Block b) {
-    return blocks.contains(b);
+    return DatabaseINode2Block.getBcId(b.getBlockId()) == 0 ? false : true;
   }
 
   /** Returns the block object if it exists in the map. */
   BlockInfo getStoredBlock(Block b) {
-    return blocks.get(b);
+    if (containsBlock(b)) {
+      return new BlockInfo(b);
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -134,8 +106,8 @@ class BlocksMap {
    * returns {@link Iterable} of the storages the block belongs to.
    */
   Iterable<DatanodeStorageInfo> getStorages(Block b) {
-    BlockInfo block = blocks.get(b);
-    return block != null ? getStorages(block)
+    BlockInfo info = getStoredBlock(b);
+    return info != null ? getStorages(info)
            : Collections.<DatanodeStorageInfo>emptyList();
   }
 
@@ -158,7 +130,7 @@ class BlocksMap {
 
   /** counts number of containing nodes. Better than using iterator. */
   int numNodes(Block b) {
-    BlockInfo info = blocks.get(b);
+    BlockInfo info = getStoredBlock(b);
     return info == null ? 0 : info.numNodes();
   }
 
@@ -168,7 +140,7 @@ class BlocksMap {
    * only if it does not belong to any file and data-nodes.
    */
   boolean removeNode(Block b, DatanodeDescriptor node) {
-    BlockInfo info = blocks.get(b);
+    BlockInfo info = getStoredBlock(b);
     if (info == null)
       return false;
 
@@ -177,7 +149,7 @@ class BlocksMap {
 
     if (info.hasNoStorage()    // no datanodes left
         && info.isDeleted()) { // does not belong to a file
-      blocks.remove(b);  // remove block from the map
+      DatabaseDatablock.delete(b.getBlockId()); 
       decrementBlockStat(info);
     }
     return removed;
@@ -194,20 +166,11 @@ class BlocksMap {
   }
 
   int size() {
-    if (blocks != null) {
-      return blocks.size();
-    } else {
-      return 0;
-    }
+    return DatabaseINode2Block.getSize();
   }
 
   Iterable<BlockInfo> getBlocks() {
     return blocks;
-  }
-  
-  /** Get the capacity of the HashMap that stores blocks */
-  int getCapacity() {
-    return capacity;
   }
 
   private void incrementBlockStat(BlockInfo block) {
