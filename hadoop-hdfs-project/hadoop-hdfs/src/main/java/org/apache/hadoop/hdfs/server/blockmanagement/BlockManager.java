@@ -467,9 +467,7 @@ public class BlockManager implements BlockStatsMXBean {
         startupDelayBlockDeletionInMs,
         blockIdManager);
 
-    // Compute the map capacity by allocating 2% of total memory
-    blocksMap = new BlocksMap(
-        LightWeightGSet.computeCapacity(2.0, "BlocksMap"));
+    blocksMap = new BlocksMap();
     placementPolicies = new BlockPlacementPolicies(
       conf, datanodeManager.getFSClusterStats(),
       datanodeManager.getNetworkTopology(),

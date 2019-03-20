@@ -38,9 +38,7 @@ class BlocksMap {
   private final LongAdder totalReplicatedBlocks = new LongAdder();
   private final LongAdder totalECBlockGroups = new LongAdder();
 
-  BlocksMap(int capacity) {
-  }
-
+  BlocksMap() {}
 
   void close() {
     clear();
