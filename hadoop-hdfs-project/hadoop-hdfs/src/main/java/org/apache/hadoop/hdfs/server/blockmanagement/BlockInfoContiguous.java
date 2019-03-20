@@ -32,6 +32,10 @@ public class BlockInfoContiguous extends BlockInfo {
     super(size);
   }
 
+  public BlockInfoContiguous(Block blk) {
+    super(blk);
+  }
+
   public BlockInfoContiguous(Block blk, short size) {
     super(blk, size);
   }

@@ -46,13 +46,13 @@ import java.util.NoSuchElementException;
  */
 @InterfaceAudience.Private
 public class BlockInfoStriped extends BlockInfo {
+  public BlockInfoStriped(Block blk) {
+    super(blk);
+  } 
+
   public BlockInfoStriped(Block blk, ErasureCodingPolicy ecPolicy) {
     super(blk, (short) (ecPolicy.getNumDataUnits() + ecPolicy.getNumParityUnits()));
     DatabaseDatablock.setECPolicyId(blk.getBlockId(), ecPolicy.getId());
-  }
-
-  public byte getECPolicyId() {
-    return DatabaseDatablock.getECPolicyId(getBlockId());
   }
 
   public short getTotalBlockNum() {

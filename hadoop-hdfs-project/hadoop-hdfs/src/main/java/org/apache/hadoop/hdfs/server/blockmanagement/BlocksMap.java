@@ -163,12 +163,8 @@ class BlocksMap {
     return s != null && s.removeBlock(b);
   }
 
-  int size() {
+  long size() {
     return DatabaseINode2Block.getSize();
-  }
-
-  Iterable<BlockInfo> getBlocks() {
-    return blocks;
   }
 
   private void incrementBlockStat(BlockInfo block) {

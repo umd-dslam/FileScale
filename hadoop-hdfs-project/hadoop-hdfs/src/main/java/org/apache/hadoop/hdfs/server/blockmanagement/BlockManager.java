@@ -3506,7 +3506,12 @@ public class BlockManager implements BlockStatsMXBean {
       try {
         while (processed < numBlocksPerIteration && blocksItr.hasNext()) {
           long blockId = blocksItr.next();
-          BlockInfo block = new BlockInfo(new Block(blockId));
+          BlockInfo block = new Block(blockId);
+          if (block.getECPolicyId() < 0) {
+            block = new BlockInfoContiguous(block);
+          } else {
+            block = new BlockInfoStriped(block);
+          }
           MisReplicationResult res = processMisReplicatedBlock(block);
           switch (res) {
           case UNDER_REPLICATED:
@@ -4342,7 +4347,7 @@ public class BlockManager implements BlockStatsMXBean {
     return false;
   }
 
-  public int getActiveBlockCount() {
+  public long getActiveBlockCount() {
     return blocksMap.size();
   }
 
@@ -4360,7 +4365,7 @@ public class BlockManager implements BlockStatsMXBean {
     return blocksMap.getStorages(block);
   }
 
-  public int getTotalBlocks() {
+  public long getTotalBlocks() {
     return blocksMap.size();
   }
 
