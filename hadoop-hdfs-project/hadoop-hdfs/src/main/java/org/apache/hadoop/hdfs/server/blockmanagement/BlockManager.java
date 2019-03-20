@@ -3506,11 +3506,12 @@ public class BlockManager implements BlockStatsMXBean {
       try {
         while (processed < numBlocksPerIteration && blocksItr.hasNext()) {
           long blockId = blocksItr.next();
-          BlockInfo block = new Block(blockId);
-          if (block.getECPolicyId() < 0) {
-            block = new BlockInfoContiguous(block);
+          Block b = new Block(blockId);
+          BlockInfo block;
+          if (b.getECPolicyId() < 0) {
+            block = new BlockInfoContiguous(b);
           } else {
-            block = new BlockInfoStriped(block);
+            block = new BlockInfoStriped(b);
           }
           MisReplicationResult res = processMisReplicatedBlock(block);
           switch (res) {
