@@ -178,7 +178,7 @@ public class DatabaseINode2Block {
       }
       rs.close();
       pst.close();
-      LOG.info("getBcId: (" + blockId + "," + bc + ")");
+      LOG.info("getBcId: (" + blockId + "," + id + ")");
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -192,7 +192,7 @@ public class DatabaseINode2Block {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "SELECT COUNT(blockId) FROM inode2block;";
       Statement st = conn.createStatement();
-			ResultSet rs = st.executeQuery(sql);
+      ResultSet rs = st.executeQuery(sql);
       while (rs.next()) {
         size = rs.getLong(1);
       }
@@ -250,7 +250,7 @@ public class DatabaseINode2Block {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "SELECT blockId FROM inode2block;";
-      Statement st = conn.Statement();
+      Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
       while (rs.next()) {
         long id = rs.getLong(1);
