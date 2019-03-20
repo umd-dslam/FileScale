@@ -93,7 +93,13 @@ class BlocksMap {
   /** Returns the block object if it exists in the map. */
   BlockInfo getStoredBlock(Block b) {
     if (containsBlock(b)) {
-      return new BlockInfo(b);
+      BlockInfo block;
+      if (b.getECPolicyId() < 0) {
+        block = new BlockInfoContiguous(b);
+      } else {
+        block = new BlockInfoStriped(b);
+      }
+      return block;
     } else {
       return null;
     }
