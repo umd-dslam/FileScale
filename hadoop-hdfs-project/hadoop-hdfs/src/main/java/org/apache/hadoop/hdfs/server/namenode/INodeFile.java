@@ -45,6 +45,7 @@ import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockCollection;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoStriped;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoContiguous;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockStoragePolicySuite;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeStorageInfo;
@@ -685,10 +686,11 @@ public class INodeFile extends INodeWithAdditionalFields
 
     ArrayList<BlockInfo> blklist = new ArrayList<>();
     for(long blockId : blockIds) {
-      // FIXME: after removing BlocksMap, we can consider return blockIds directly.
-      BlockInfo block = BlockManager.getInstance().getStoredBlock(new Block(blockId));
-      if (block != null) {
-        blklist.add(block);
+      Block b = new Block(blockId);
+      if (b.getECPolicyId() < 0) {
+        blklist.add(new BlockInfoContiguous(b));
+      } else {
+        blklist.add(new BlockInfoStriped(b));
       }
     }
 
@@ -733,11 +735,16 @@ public class INodeFile extends INodeWithAdditionalFields
 
     short repl = getPreferredBlockReplication();
     for(Long blockId : blockIds) {
-      // TODO: remove blocksmap
-      BlockInfo b = BlockManager.getInstance().getStoredBlock(new Block(blockId));
-      short oldRepl = b.getReplication();
+      Block b = new Block(blockId);
+      BlockInfo block;
+      if (b.getECPolicyId() < 0) {
+        block = new BlockInfoContiguous(b);
+      } else {
+        block = new BlockInfoStriped(b);
+      }
+      short oldRepl = block.getReplication();
       if (oldRepl != repl) {
-        bm.setReplication(oldRepl, repl, b);
+        bm.setReplication(oldRepl, repl, block);
       }
     }
   }
@@ -1072,8 +1079,14 @@ public class INodeFile extends INodeWithAdditionalFields
       return null;
     }
 
-    Block block = new Block(DatabaseINode2Block.getBlockId(this.getId(), length - 2));
-    return BlockManager.getInstance().getStoredBlock(block);
+    Block b = new Block(DatabaseINode2Block.getBlockId(this.getId(), length - 2));
+    BlockInfo block;
+    if (b.getECPolicyId() < 0) {
+      block = new BlockInfoContiguous(b);
+    } else {
+      block = new BlockInfoStriped(b);
+    }
+    return block;
   }
 
   @Override
@@ -1083,7 +1096,15 @@ public class INodeFile extends INodeWithAdditionalFields
     if (blockId == -1)
       return null;
 
-    return BlockManager.getInstance().getStoredBlock(new Block(blockId));
+    Block b = new Block(blockId);
+    BlockInfo block;
+    if (b.getECPolicyId() < 0) {
+      block = new BlockInfoContiguous(b);
+    } else {
+      block = new BlockInfoStriped(b);
+    }
+
+    return block;
   }
 
   @Override

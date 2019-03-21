@@ -46,7 +46,7 @@ public class DatabaseDatablock {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
 
-      String sql = "INSERT INTO datablocks(blockId, numBytes, generationStamp) VALUES (?, ?, ?);";
+      String sql = "INSERT INTO datablocks(blockId, numBytes, generationStamp, ecPolicyId) VALUES (?, ?, ?, -1);";
 
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -309,6 +309,7 @@ public class DatabaseDatablock {
       System.err.println(ex.getMessage());
     }
 
+    LOG.info("getECPolicyId [GET]: (" + blockId + "," + ecId + ")");
     return ecId;
   }
 

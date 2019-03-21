@@ -40,13 +40,13 @@ import static org.apache.hadoop.hdfs.server.namenode.INodeId.INVALID_INODE_ID;
  * block group, are stored.
  */
 @InterfaceAudience.Private
-public abstract class BlockInfo extends Block
-    implements LightWeightGSet.LinkedElement {
+public abstract class BlockInfo extends Block {
 
   public static final BlockInfo[] EMPTY_ARRAY = {};
 
-  /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
-  private LightWeightGSet.LinkedElement nextLinkedElement;
+  public BlockInfo(Block blk) {
+    super(blk);
+  }
 
   /**
    * Construct an entry for blocksmap
@@ -231,16 +231,6 @@ public abstract class BlockInfo extends Block
   public boolean equals(Object obj) {
     // Sufficient to rely on super's implementation
     return (this == obj) || super.equals(obj);
-  }
-
-  @Override
-  public LightWeightGSet.LinkedElement getNext() {
-    return nextLinkedElement;
-  }
-
-  @Override
-  public void setNext(LightWeightGSet.LinkedElement next) {
-    this.nextLinkedElement = next;
   }
 
   /* UnderConstruction Feature related */

@@ -467,9 +467,7 @@ public class BlockManager implements BlockStatsMXBean {
         startupDelayBlockDeletionInMs,
         blockIdManager);
 
-    // Compute the map capacity by allocating 2% of total memory
-    blocksMap = new BlocksMap(
-        LightWeightGSet.computeCapacity(2.0, "BlocksMap"));
+    blocksMap = new BlocksMap();
     placementPolicies = new BlockPlacementPolicies(
       conf, datanodeManager.getFSClusterStats(),
       datanodeManager.getNetworkTopology(),
@@ -3495,7 +3493,7 @@ public class BlockManager implements BlockStatsMXBean {
     long nrInvalid = 0, nrOverReplicated = 0;
     long nrUnderReplicated = 0, nrPostponed = 0, nrUnderConstruction = 0;
     long startTimeMisReplicatedScan = Time.monotonicNow();
-    Iterator<BlockInfo> blocksItr = blocksMap.getBlocks().iterator();
+    Iterator<Long> blocksItr = DatabaseINode2Block.getAllBlockIds().iterator();
     long totalBlocks = blocksMap.size();
     reconstructionQueuesInitProgress = 0;
     long totalProcessed = 0;
@@ -3507,7 +3505,14 @@ public class BlockManager implements BlockStatsMXBean {
       namesystem.writeLockInterruptibly();
       try {
         while (processed < numBlocksPerIteration && blocksItr.hasNext()) {
-          BlockInfo block = blocksItr.next();
+          long blockId = blocksItr.next();
+          Block b = new Block(blockId);
+          BlockInfo block;
+          if (b.getECPolicyId() < 0) {
+            block = new BlockInfoContiguous(b);
+          } else {
+            block = new BlockInfoStriped(b);
+          }
           MisReplicationResult res = processMisReplicatedBlock(block);
           switch (res) {
           case UNDER_REPLICATED:
@@ -4343,7 +4348,7 @@ public class BlockManager implements BlockStatsMXBean {
     return false;
   }
 
-  public int getActiveBlockCount() {
+  public long getActiveBlockCount() {
     return blocksMap.size();
   }
 
@@ -4361,7 +4366,7 @@ public class BlockManager implements BlockStatsMXBean {
     return blocksMap.getStorages(block);
   }
 
-  public int getTotalBlocks() {
+  public long getTotalBlocks() {
     return blocksMap.size();
   }
 
@@ -4614,10 +4619,6 @@ public class BlockManager implements BlockStatsMXBean {
     blocksMap.removeBlock(block);
     // If block is removed from blocksMap remove it from corruptReplicasMap
     corruptReplicas.removeFromCorruptReplicasMap(block);
-  }
-
-  public int getCapacity() {
-    return blocksMap.getCapacity();
   }
 
   /**

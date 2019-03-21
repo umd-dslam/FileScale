@@ -5047,11 +5047,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
   }
 
-  @Metric
-  public int getBlockCapacity() {
-    return blockManager.getCapacity();
-  }
-
   public HAServiceState getState() {
     return haContext == null ? null : haContext.getState().getServiceState();
   }

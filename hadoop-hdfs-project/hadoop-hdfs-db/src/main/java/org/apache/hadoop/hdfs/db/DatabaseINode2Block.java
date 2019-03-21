@@ -166,7 +166,44 @@ public class DatabaseINode2Block {
   }
 
   public static long getBcId(final long blockId) {
-    return getAttribute(blockId, "id");
+    long id = 0;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT id FROM inode2block WHERE blockId = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, blockId);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        id = rs.getLong(1);
+      }
+      rs.close();
+      pst.close();
+      LOG.info("getBcId: (" + blockId + "," + id + ")");
+    } catch (SQLException ex) {
+      System.out.println(ex.getMessage());
+    }
+
+    return id;
+  }
+
+  public static long getSize() {
+    long size = 0;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT COUNT(blockId) FROM inode2block;";
+      Statement st = conn.createStatement();
+      ResultSet rs = st.executeQuery(sql);
+      while (rs.next()) {
+        size = rs.getLong(1);
+      }
+      rs.close();
+      st.close();
+      LOG.info("getSize: (" + size + ")");
+    } catch (SQLException ex) {
+      System.out.println(ex.getMessage());
+    }
+
+    return size;    
   }
 
   public static void setBcIdViaBlkId(final long blockId, final long bcId) {
@@ -192,7 +229,6 @@ public class DatabaseINode2Block {
     List<Long> blockIds = new ArrayList<>();
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      // check the existence of node in Postgres
       String sql = "SELECT blockId FROM inode2block WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, inodeId);
@@ -203,7 +239,25 @@ public class DatabaseINode2Block {
       }
       rs.close();
       pst.close();
-      LOG.info("getBlockIds: (" + blockIds + "," + inodeId + ")");
+    } catch (SQLException ex) {
+      System.out.println(ex.getMessage());
+    }
+    return blockIds;
+  }
+
+  public static List<Long> getAllBlockIds() {
+    List<Long> blockIds = new ArrayList<>();
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT blockId FROM inode2block;";
+      Statement st = conn.createStatement();
+      ResultSet rs = st.executeQuery(sql);
+      while (rs.next()) {
+        long id = rs.getLong(1);
+        blockIds.add(id);
+      }
+      rs.close();
+      st.close();
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }

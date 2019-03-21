@@ -117,6 +117,11 @@ public class Block implements Writable, Comparable<Block> {
     blockId = blkid;
     DatabaseDatablock.insertBlock(blkid, len, genStamp); 
   }
+
+  public byte getECPolicyId() {
+    return DatabaseDatablock.getECPolicyId(this.blockId);
+  }
+
   /**
    */
   public long getBlockId() {
