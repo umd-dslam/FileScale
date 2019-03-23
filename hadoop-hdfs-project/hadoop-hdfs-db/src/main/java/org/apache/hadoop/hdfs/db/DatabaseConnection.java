@@ -5,15 +5,17 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.lang.System;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DatabaseConnection {
   private static DatabaseConnection instance;
   private Connection connection;
-  private String url = "jdbc:postgresql://localhost:5432/docker";
-  private String username = "docker";
-  private String password = "docker";
+  private static String postgres = "jdbc:postgresql://localhost:5432/docker";
+  private static String cockroach = "jdbc:postgresql://localhost:26257/docker";;
+  private static String username = "docker";
+  private static String password = "docker";
 
   static final Logger LOG = LoggerFactory.getLogger(DatabaseConnection.class);
 
@@ -22,10 +24,17 @@ public class DatabaseConnection {
       Class.forName("org.postgresql.Driver");
 
       Properties props = new Properties();
-      props.setProperty("user", username);
-      props.setProperty("password", password);
 
-      this.connection = DriverManager.getConnection(url, props);
+      String env = System.getenv("DATABASE");
+      if (env == null || env == "POSTGRES") {
+        props.setProperty("user", username);
+        props.setProperty("password", password);
+        this.connection = DriverManager.getConnection(postgres, props);
+      } else if (env == "COCKROACH") {
+        props.setProperty("user", username);
+        props.setProperty("sslmode", "disable"); 
+        this.connection = DriverManager.getConnection(cockroach, props);
+      }
     } catch (Exception ex) {
       System.err.println("Database Connection Creation Failed : " + ex.getMessage());
       ex.printStackTrace();
