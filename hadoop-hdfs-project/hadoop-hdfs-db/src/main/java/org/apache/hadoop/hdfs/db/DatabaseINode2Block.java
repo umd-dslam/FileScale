@@ -15,16 +15,16 @@ import org.slf4j.LoggerFactory;
 public class DatabaseINode2Block {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode2Block.class);
 
-  public static void insert(final long id, final long blockId, final int index) {
-    LOG.info("INode2Block [insert]: (" + id + "," + blockId + "," + index + ")");
+  public static void insert(final long id, final long blockId, final int idx) {
+    LOG.info("INode2Block [insert]: (" + id + "," + blockId + "," + idx + ")");
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "INSERT INTO inode2block(id, blockId, index) VALUES (?, ?, ?);";
+      String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES (?, ?, ?);";
       PreparedStatement pst = conn.prepareStatement(sql);
 
       pst.setLong(1, id);
       pst.setLong(2, blockId);
-      pst.setInt(3, index);
+      pst.setInt(3, idx);
 
       pst.executeUpdate();
       pst.close();
@@ -40,7 +40,7 @@ public class DatabaseINode2Block {
 
     int idx = index;
     int size = blockIds.size();
-    String sql = "INSERT INTO inode2block(id, blockId, index) VALUES ";
+    String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES ";
     for (int i = 0; i < size; ++i) {
       idx += i;
       sql +=
@@ -147,7 +147,7 @@ public class DatabaseINode2Block {
     int blockId = -1;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT blockId FROM inode2block WHERE id = ? ORDER BY index DESC LIMIT 1;";
+      String sql = "SELECT blockId FROM inode2block WHERE id = ? ORDER BY idx DESC LIMIT 1;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
@@ -278,16 +278,16 @@ public class DatabaseINode2Block {
     }
   }
 
-  public static void delete(final long nodeId, final int index) {
+  public static void delete(final long nodeId, final int idx) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "DELETE FROM inode2block WHERE id = ? and index = ?;";
+      String sql = "DELETE FROM inode2block WHERE id = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, nodeId);
-      pst.setInt(2, index);
+      pst.setInt(2, idx);
       pst.executeUpdate();
       pst.close();
-      LOG.info("delete: (" + nodeId + "," + index + "," + sql + ")");
+      LOG.info("delete: (" + nodeId + "," + idx + "," + sql + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -310,7 +310,7 @@ public class DatabaseINode2Block {
   public static void truncate(final long nodeId, final int n) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "DELETE FROM inode2block WHERE id = ? and index >= ?;";
+      String sql = "DELETE FROM inode2block WHERE id = ? and idx >= ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, nodeId);
       pst.setInt(2, n);
@@ -322,30 +322,30 @@ public class DatabaseINode2Block {
     }
   }
 
-  public static void setBlockId(final long nodeId, final int index, final long blockId) {
+  public static void setBlockId(final long nodeId, final int idx, final long blockId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "UPDATE inode2block SET blockId = ? WHERE id = ? and index = ?;";
+      String sql = "UPDATE inode2block SET blockId = ? WHERE id = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
       pst.setLong(2, nodeId);
-      pst.setInt(3, index);
+      pst.setInt(3, idx);
       pst.executeUpdate();
       pst.close();
-      LOG.info("setBlockId: (" + nodeId + "," + blockId + "," + index + ")");
+      LOG.info("setBlockId: (" + nodeId + "," + blockId + "," + idx + ")");
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
   }
 
-  public static int getBlockId(final long nodeId, final int index) {
+  public static int getBlockId(final long nodeId, final int idx) {
     int blockId = -1;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT blockId from inode2block WHERE id = ? and index = ?;";
+      String sql = "SELECT blockId from inode2block WHERE id = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, nodeId);
-      pst.setInt(2, index);
+      pst.setInt(2, idx);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
         blockId = rs.getInt(1);
