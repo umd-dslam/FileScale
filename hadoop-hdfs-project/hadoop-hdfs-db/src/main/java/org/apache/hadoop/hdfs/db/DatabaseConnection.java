@@ -13,7 +13,7 @@ public class DatabaseConnection {
   private static DatabaseConnection instance;
   private Connection connection;
   private static String postgres = "jdbc:postgresql://localhost:5432/docker";
-  private static String cockroach = "jdbc:postgresql://localhost:26257/docker";;
+  private static String cockroach = "jdbc:postgresql://localhost:26257/docker";
   private static String username = "docker";
   private static String password = "docker";
 
