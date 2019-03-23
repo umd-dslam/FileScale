@@ -12,10 +12,10 @@ import org.slf4j.LoggerFactory;
 public class DatabaseConnection {
   private static DatabaseConnection instance;
   private Connection connection;
-  private static String postgres = "jdbc:postgresql://localhost:5432/docker";
-  private static String cockroach = "jdbc:postgresql://localhost:26257/docker";
-  private static String username = "docker";
-  private static String password = "docker";
+  private String postgres = "jdbc:postgresql://localhost:5432/docker";
+  private String cockroach = "jdbc:postgresql://localhost:26257/docker";
+  private String username = "docker";
+  private String password = "docker";
 
   static final Logger LOG = LoggerFactory.getLogger(DatabaseConnection.class);
 
@@ -23,18 +23,20 @@ public class DatabaseConnection {
     try {
       Class.forName("org.postgresql.Driver");
 
-      Properties props = new Properties();
-
+      String url = "";
       String env = System.getenv("DATABASE");
-      if (env == null || env == "POSTGRES") {
-        props.setProperty("user", username);
-        props.setProperty("password", password);
-        this.connection = DriverManager.getConnection(postgres, props);
-      } else if (env == "COCKROACH") {
+      Properties props = new Properties();
+      if (env.equals("COCKROACH")) {
         props.setProperty("user", username);
         props.setProperty("sslmode", "disable"); 
-        this.connection = DriverManager.getConnection(cockroach, props);
+        url = cockroach;
+      } else {
+        props.setProperty("user", username);
+        props.setProperty("password", password);
+        url = postgres;         
       }
+      LOG.info("DatabaseConnection: [" + env + "] " + url);
+      this.connection = DriverManager.getConnection(url, props);
     } catch (Exception ex) {
       System.err.println("Database Connection Creation Failed : " + ex.getMessage());
       ex.printStackTrace();
@@ -72,9 +74,6 @@ public class DatabaseConnection {
               + ");";
       Statement st = connection.createStatement();
       st.execute(sql);
-
-      LOG.info("DatabaseConnection: [OK] Create inodes, inode2block and datablocks in db.");
-
       st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
