@@ -331,7 +331,6 @@ public abstract class INodeWithAdditionalFields extends INode
    */
   @Override
   public final void setAccessTime(long accessTime) {
-    // ADD(gangliao): set INode's access time in Postgres
     DatabaseINode.setAccessTime(this.getId(), accessTime);
   }
 
