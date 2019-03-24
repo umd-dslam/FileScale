@@ -21,18 +21,13 @@ public class DatabaseINode {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       // check the existence of node in Postgres
-      String sql =
-          "SELECT CASE WHEN EXISTS ("
-              + "   SELECT * FROM inodes WHERE parent = ? AND name = ?"
-              + ") "
-              + "THEN CAST(1 AS BIT) "
-              + "ELSE CAST(0 AS BIT) END";
+      String sql = "SELECT COUNT(id) FROM inodes WHERE parent = ? and name = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, parentId);
       pst.setString(2, childName);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
-        if (rs.getBoolean(1) == true) {
+        if (rs.getInt(1) == 1) {
           exist = true;
         }
       }
@@ -49,17 +44,12 @@ public class DatabaseINode {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       // check the existence of node in Postgres
-      String sql =
-          "SELECT CASE WHEN EXISTS ("
-              + "   SELECT * FROM inodes WHERE id = ?"
-              + ") "
-              + "THEN CAST(1 AS BIT) "
-              + "ELSE CAST(0 AS BIT) END";
+      String sql = "SELECT COUNT(id) FROM inodes WHERE id = ?";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
-        if (rs.getBoolean(1) == true) {
+        if (rs.getInt(1) == 1) {
           exist = true;
         }
       }

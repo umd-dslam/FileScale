@@ -15,13 +15,13 @@ import org.slf4j.LoggerFactory;
 public class DatabaseStorage {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseStorage.class);
 
-  public static void insertStorage(final long blockId, final int index, final String storageId) {
+  public static void insertStorage(final long blockId, final int idx, final String storageId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "INSERT INTO block2storage(blockId, index, storageId) VALUES (?, ?, ?);";
+      String sql = "INSERT INTO block2storage(blockId, idx, storageId) VALUES (?, ?, ?);";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
-      pst.setInt(2, index);
+      pst.setInt(2, idx);
       if (storageId != null) {
         pst.setString(3, storageId);
       } else {
@@ -29,7 +29,7 @@ public class DatabaseStorage {
       }
       pst.executeUpdate();
       pst.close();
-      LOG.info("insertStorage: (" + blockId + "," + index + "," + storageId + "): " + sql);
+      LOG.info("insertStorage: (" + blockId + "," + idx + "," + storageId + "): " + sql);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -61,7 +61,7 @@ public class DatabaseStorage {
     List<String> storageIds = new ArrayList<String>();
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT storageId FROM block2storage WHERE blockId = ? ORDER BY index ASC;";
+      String sql = "SELECT storageId FROM block2storage WHERE blockId = ? ORDER BY idx ASC;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
       ResultSet rs = pst.executeQuery();
@@ -79,21 +79,21 @@ public class DatabaseStorage {
     return storageIds;
   }
 
-  public static String getStorageId(final long blockId, final int index) {
+  public static String getStorageId(final long blockId, final int idx) {
     String storageId = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT storageId FROM block2storage WHERE blockId = ? and index = ?;";
+      String sql = "SELECT storageId FROM block2storage WHERE blockId = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
-      pst.setInt(2, index);
+      pst.setInt(2, idx);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
         storageId = rs.getString(1);
       }
       rs.close();
       pst.close();
-      LOG.info("getStorageId: (" + blockId + "," + index + "," + storageId + "): " + sql);
+      LOG.info("getStorageId: (" + blockId + "," + idx + "," + storageId + "): " + sql);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -101,10 +101,10 @@ public class DatabaseStorage {
     return storageId;
   }
 
-  public static void setStorage(final long blockId, final int index, final String storageId) {
+  public static void setStorage(final long blockId, final int idx, final String storageId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "UPDATE block2storage SET storageId = ? WHERE blockId = ? and index = ?;";
+      String sql = "UPDATE block2storage SET storageId = ? WHERE blockId = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       if (storageId != null) {
         pst.setString(1, storageId);
@@ -112,10 +112,10 @@ public class DatabaseStorage {
         pst.setNull(1, Types.VARCHAR);
       }
       pst.setLong(2, blockId);
-      pst.setInt(3, index);
+      pst.setInt(3, idx);
       pst.executeUpdate();
       pst.close();
-      LOG.info("setStorage: (" + storageId + "," + blockId + "," + index + "): " + sql);
+      LOG.info("setStorage: (" + storageId + "," + blockId + "," + idx + "): " + sql);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
