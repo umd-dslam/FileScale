@@ -4,8 +4,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
-public class HdfsSchemaInDB {
-  private static HdfsSchemaInDB instance;
+public class HdfsMetaInfoSchema {
+  private static HdfsMetaInfoSchema instance;
   private Connection connection;
   private String postgres = "jdbc:postgresql://localhost:5432/docker";
   private String cockroach = "jdbc:postgresql://localhost:26257/docker";
@@ -13,7 +13,7 @@ public class HdfsSchemaInDB {
   private String username = "docker";
   private String password = "docker";
 
-  private HdfsSchemaInDB() throws SQLException {
+  private HdfsMetaInfoSchema() throws SQLException {
     try {
       String url = "";
       String env = System.getenv("DATABASE");
@@ -92,18 +92,18 @@ public class HdfsSchemaInDB {
     return connection;
   }
 
-  public static HdfsSchemaInDB getInstance() throws SQLException {
+  public static HdfsMetaInfoSchema getInstance() throws SQLException {
     if (instance == null) {
-      instance = new HdfsSchemaInDB();
+      instance = new HdfsMetaInfoSchema();
     } else if (instance.getConnection().isClosed()) {
-      instance = new HdfsSchemaInDB();
+      instance = new HdfsMetaInfoSchema();
     }
     return instance;
   }
 
   public static void main(String[] args) {
     try {
-      HdfsSchemaInDB.getInstance();
+      HdfsMetaInfoSchema.getInstance();
     } catch (Exception e) {
       e.printStackTrace();
     }
