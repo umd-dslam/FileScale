@@ -16,18 +16,12 @@ public class DatabaseDatablock {
     boolean exist = false;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      // check the existence of node in Postgres
-      String sql =
-          "SELECT CASE WHEN EXISTS ("
-              + "   SELECT * FROM datablocks WHERE blockId = ?"
-              + ") "
-              + "THEN CAST(1 AS BIT) "
-              + "ELSE CAST(0 AS BIT) END";
+      String sql = "SELECT COUNT(blockId) FROM datablocks WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blkid);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
-        if (rs.getBoolean(1) == true) {
+        if (rs.getInt(1) == 1) {
           exist = true;
         }
       }
@@ -216,11 +210,9 @@ public class DatabaseDatablock {
   public static void removeBlock(final long blockId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql =
-          "BEGIN;"
-              + "DELETE FROM inode2block WHERE blockId = ?;"
-              + "DELETE FROM datablocks WHERE blockId = ?;"
-              + "COMMIT;";
+      // TODO: stored procedure
+      String sql = "DELETE FROM inode2block WHERE blockId = ?;"
+              + "DELETE FROM datablocks WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
       pst.setLong(2, blockId);
@@ -234,13 +226,11 @@ public class DatabaseDatablock {
   public static void removeAllBlocks(final long inodeId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql =
-          "BEGIN;"
-              + "DELETE FROM datablocks WHERE blockId = ("
+      // TODO: stored procedure
+      String sql = "DELETE FROM datablocks WHERE blockId = ("
               + "   SELECT blockId from inode2block where id = ?"
               + ");"
-              + "DELETE FROM inode2block where id = ?;"
-              + "COMMIT;";
+              + "DELETE FROM inode2block where id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, inodeId);
       pst.setLong(2, inodeId);
