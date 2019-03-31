@@ -40,6 +40,7 @@ public class DatabaseINode2Block {
 
     int idx = index;
     int size = blockIds.size();
+    // TODO: stored procedure
     String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES ";
     for (int i = 0; i < size; ++i) {
       idx += i;
