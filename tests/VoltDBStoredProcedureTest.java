@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-import java.util.List;
 import org.voltdb.*;
 
 // https://docs.voltdb.com/tutorial/Part5.php
@@ -14,7 +12,7 @@ public class VoltDBStoredProcedureTest extends VoltProcedure {
               + " JOIN inodes d ON cte.id = d.parent"
               + " )"
               + " SELECT id FROM cte;");
-	public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
+  public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
 
   public long run(long id) throws VoltAbortException {
     voltQueueSQL(sql1, id);
@@ -24,7 +22,7 @@ public class VoltDBStoredProcedureTest extends VoltProcedure {
       return -1;
     }
     for (int i = 0; i < results[0].getRowCount(); ++i) {
-			voltQueueSQL(sql2, results[0].fetchRow(i).getLong(0));
+      voltQueueSQL(sql2, results[0].fetchRow(i).getLong(0));
     }
     voltExecuteSQL();
 
