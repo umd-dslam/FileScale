@@ -2,6 +2,7 @@ package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -230,25 +231,39 @@ public class DatabaseINode {
   }
 
   public static void removeChild(final long childId) {
-    try {
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT")) {
+      // call a stored procedure
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      // delete file/directory recusively
-      String sql =
-          "DELETE FROM inodes WHERE id IN ("
-              + "   WITH RECURSIVE cte AS ("
-              + "       SELECT id, parent FROM inodes d WHERE id = ?"
-              + "   UNION ALL"
-              + "       SELECT d.id, d.parent FROM cte"
-              + "       JOIN inodes d ON cte.id = d.parent"
-              + "   )"
-              + "   SELECT id FROM cte"
-              + ");";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, childId);
-      pst.executeUpdate();
-      pst.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
+      CallableStatement proc = conn.prepareCall("{call RemoveChild(?)}");
+      proc.setLong(1, childId);
+      rs = proc.executeUpdate();
+      while (rs.next()) {
+          LOG.info("removeChild Return: " + rs.getLong(1));
+      }
+      rs.close();
+      proc.close();
+    } else {
+      try {
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        // delete file/directory recusively
+        String sql =
+            "DELETE FROM inodes WHERE id IN ("
+                + "   WITH RECURSIVE cte AS ("
+                + "       SELECT id, parent FROM inodes d WHERE id = ?"
+                + "   UNION ALL"
+                + "       SELECT d.id, d.parent FROM cte"
+                + "       JOIN inodes d ON cte.id = d.parent"
+                + "   )"
+                + "   SELECT id FROM cte"
+                + ");";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, childId);
+        pst.executeUpdate();
+        pst.close();
+      } catch (SQLException ex) {
+        System.err.println(ex.getMessage());
+      }      
     }
     LOG.info("removeChild: " + childId);
   }
