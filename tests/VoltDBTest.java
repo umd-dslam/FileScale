@@ -3,6 +3,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
+import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Types;
@@ -42,8 +43,8 @@ public class VoltDBTest {
             VoltDBTest db = VoltDBTest.getInstance();
             Statement st = db.getConnection().createStatement();
 
-            // Select from table
-            ResultSet rs = st.executeQuery("SELECT * FROM dir");
+            // Select inodes from table
+            ResultSet rs = st.executeQuery("SELECT * FROM inodes;");
             ResultSetMetaData rsmd = rs.getMetaData();
             int columnsNumber = rsmd.getColumnCount();
             while (rs.next()) {
@@ -52,8 +53,21 @@ public class VoltDBTest {
                 }
                 System.out.println("");
             }
+
+            // declare the stored procedure in our schema
+            st.executeUpdate("DROP PROCEDURE VoltDBStoredProcedureTest;");
+            st.executeUpdate("CREATE PROCEDURE FROM CLASS VoltDBStoredProcedureTest;");
+            // call a stored procedure
+            CallableStatement proc = db.getConnection().prepareCall("{call VoltDBStoredProcedureTest(?)}");
+            proc.setLong(1, 1);
+            rs = proc.executeQuery();
+            while (rs.next()) {
+                System.out.printf("%s\n", rs.getString(1));
+            }
+
             rs.close();
             st.close();
+            proc.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
