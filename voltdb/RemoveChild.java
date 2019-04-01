@@ -1,7 +1,7 @@
 import org.voltdb.*;
 
 // https://docs.voltdb.com/tutorial/Part5.php
-public class Removechild extends VoltProcedure {
+public class RemoveChild extends VoltProcedure {
 
   public final SQLStmt sql1 =
       new SQLStmt(
