@@ -68,7 +68,15 @@ ENV HOME /home/${USER_NAME}
 RUN sudo apt-get update && sudo apt-get install -y postgresql-client wget net-tools vim ssh
 RUN sudo mkdir -p /home/${USER_NAME}/java 
 RUN sudo wget https://jdbc.postgresql.org/download/postgresql-42.2.5.jar -P /home/${USER_NAME}/java
-ENV CLASSPATH $CLASSPATH:/home/${USER_NAME}/java/postgresql-42.2.5.jar
+
+RUN apt-get update && apt-get install --no-install-recommends -y ant build-essential ccache cmake
+RUN sudo wget https://github.com/DSL-UMD/hadoop/releases/download/voltdb-8.4.2/voltdb-ent-8.4.2.tar.gz -P /home/${USER_NAME}/voltadb
+RUN cd /home/${USER_NAME}/voltadb && tar -xzf voltdb-ent-8.4.2.tar.gz
+ENV PATH ${PATH}:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/bin
+RUN rm -rf /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2.tar.gz 
+
+ENV CLASSPATH $CLASSPATH:/home/${USER_NAME}/java/postgresql-42.2.5.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdb-8.4.2.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdbclient-8.4.2.jar
+
 ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
 ENV HADOOP_HOME /home/${USER_NAME}/hadoop/hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/
 ENV HADOOP_HDFS_HOME /home/${USER_NAME}/hadoop/hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/ 
