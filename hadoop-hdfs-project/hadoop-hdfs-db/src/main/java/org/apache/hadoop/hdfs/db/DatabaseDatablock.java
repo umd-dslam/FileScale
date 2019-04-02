@@ -208,18 +208,31 @@ public class DatabaseDatablock {
   }
 
   public static void removeBlock(final long blockId) {
-    try {
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT")) {
+      // call a stored procedure
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      // TODO: stored procedure
-      String sql = "DELETE FROM inode2block WHERE blockId = ?;"
-              + "DELETE FROM datablocks WHERE blockId = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, blockId);
-      pst.setLong(2, blockId);
-      pst.executeUpdate();
-      pst.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
+      CallableStatement proc = conn.prepareCall("{call RemoveBlock(?)}");
+      proc.setLong(1, blockId);
+      rs = proc.executeQuery();
+      while (rs.next()) {
+          LOG.info("removeBlock Return: " + rs.getLong(1));
+      }
+      rs.close();
+      proc.close();
+    } else {
+      try {
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        String sql = "DELETE FROM inode2block WHERE blockId = ?;"
+                + "DELETE FROM datablocks WHERE blockId = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, blockId);
+        pst.setLong(2, blockId);
+        pst.executeUpdate();
+        pst.close();
+      } catch (SQLException ex) {
+        System.err.println(ex.getMessage());
+      }
     }
   }
 
