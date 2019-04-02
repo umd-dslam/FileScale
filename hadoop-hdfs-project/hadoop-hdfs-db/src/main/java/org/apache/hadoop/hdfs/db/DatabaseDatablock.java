@@ -237,20 +237,33 @@ public class DatabaseDatablock {
   }
 
   public static void removeAllBlocks(final long inodeId) {
-    try {
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT")) {
+      // call a stored procedure
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      // TODO: stored procedure
-      String sql = "DELETE FROM datablocks WHERE blockId = ("
-              + "   SELECT blockId from inode2block where id = ?"
-              + ");"
-              + "DELETE FROM inode2block where id = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, inodeId);
-      pst.setLong(2, inodeId);
-      pst.executeUpdate();
-      pst.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
+      CallableStatement proc = conn.prepareCall("{call RemoveAllBlocks(?)}");
+      proc.setLong(1, inodeId);
+      rs = proc.executeQuery();
+      while (rs.next()) {
+          LOG.info("removeAllBlocks Return: " + rs.getLong(1));
+      }
+      rs.close();
+      proc.close();
+    } else {
+      try {
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        String sql = "DELETE FROM datablocks WHERE blockId IN ("
+                + "   SELECT blockId from inode2block where id = ?"
+                + ");"
+                + "DELETE FROM inode2block where id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, inodeId);
+        pst.setLong(2, inodeId);
+        pst.executeUpdate();
+        pst.close();
+      } catch (SQLException ex) {
+        System.err.println(ex.getMessage());
+      }
     }
   }
 
