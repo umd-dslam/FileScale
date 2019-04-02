@@ -1,15 +1,22 @@
+## declare an array variable
+declare -a VOLTDB_PROCEDURES=("VoltDBStoredProcedureTest" "RemoveChild" "RemoveBlock")
+
 cat <<EOF
 ============================================
 Removing the Exist Stored Procedures ...
 ============================================
+
 EOF
 
-EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd | awk '{print $1}' | sed -n '/VoltDBStoredProcedureTest/,$p')
 
-for procedure in $EXISTS_PRCEDURES
+EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd | awk '{print $1}')
+
+for procedure in ${VOLTDB_PROCEDURES[@]}
 do
-    echo "drop stored procedure: $procedure ... "
-    echo "DROP PROCEDURE $procedure;" | sqlcmd;
+    if [[ $EXISTS_PRCEDURES == *"$procedure"* ]];
+    then
+        echo "DROP PROCEDURE $procedure;" | sqlcmd;
+    fi
 done
 
 cat <<EOF
@@ -18,10 +25,12 @@ Loading Stored Procedures to VoltDB ...
 ============================================
 
 EOF
+
+
 rm -rf *.class
 javac *.java
 jar cvf storedprocs.jar *.class
-echo "load classes storedprocs.jar;" | sqlcmd 
+echo "LOAD CLASSES storedprocs.jar;" | sqlcmd 
 
 cat <<EOF
 ============================================
@@ -30,8 +39,8 @@ Creating New Stored Procedures ...
 
 EOF
 
-for procedure in "VoltDBStoredProcedureTest" "RemoveChild"
+
+for procedure in ${VOLTDB_PROCEDURES[@]}
 do
-    echo "create stored procedure: $procedure ... "
     echo "CREATE PROCEDURE FROM CLASS $procedure;" | sqlcmd;
 done
