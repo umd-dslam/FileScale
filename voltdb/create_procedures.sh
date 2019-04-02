@@ -14,8 +14,9 @@ done
 
 cat <<EOF
 ============================================
-Load Stored Procedures into VoltDB ...
+Loading Stored Procedures to VoltDB ...
 ============================================
+
 EOF
 rm -rf *.class
 javac *.java
@@ -26,6 +27,7 @@ cat <<EOF
 ============================================
 Creating New Stored Procedures ...
 ============================================
+
 EOF
 
 for procedure in "VoltDBStoredProcedureTest" "RemoveChild"
