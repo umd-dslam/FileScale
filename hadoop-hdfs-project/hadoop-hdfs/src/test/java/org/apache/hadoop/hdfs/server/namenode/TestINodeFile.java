@@ -488,7 +488,7 @@ public class TestINodeFile {
 
       // Ensure root has the correct inode ID
       // Last inode ID should be root inode ID and inode map size should be 1
-      int inodeCount = 1;
+      long inodeCount = 1;
       long expectedLastInodeId = INodeId.ROOT_INODE_ID;
       assertEquals(fsn.dir.rootDir.getId(), INodeId.ROOT_INODE_ID);
       assertEquals(expectedLastInodeId, lastId);

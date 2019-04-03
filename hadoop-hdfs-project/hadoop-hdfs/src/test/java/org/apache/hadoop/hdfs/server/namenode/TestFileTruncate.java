@@ -356,7 +356,7 @@ public class TestFileTruncate {
     length[3] = newLength;
 
     // Delete file. Should still be able to read snapshots
-    int numINodes = fsDir.getInodeMapSize();
+    long numINodes = fsDir.getInodeMapSize();
     isReady = fs.delete(src, false);
     assertTrue("Delete failed.", isReady);
     assertFileLength(snapshotFiles[3], length[3]);
@@ -402,7 +402,7 @@ public class TestFileTruncate {
       assertThat(contentSummary.getSpaceConsumed(), is(48L));
     }
     assertEquals("Number of INodes should not change",
-        numINodes, fsDir .getInodeMapSize());
+        numINodes, fsDir.getInodeMapSize());
 
     fs.deleteSnapshot(parent, ss[deleteOrder[2]]);
     assertBlockNotPresent(firstBlk);
