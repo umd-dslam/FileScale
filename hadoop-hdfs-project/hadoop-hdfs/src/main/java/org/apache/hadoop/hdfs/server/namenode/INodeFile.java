@@ -295,7 +295,8 @@ public class INodeFile extends INodeWithAdditionalFields
   
   public INodeFile(INodeFile that) {
     super(that);
-    this.features = that.features;
+    // FIXME: change later
+    // this.features = that.features;
 
     // ADD(gangliao): copy inode's header from Postgres
     long header = DatabaseINode.getHeader(that.getId());

@@ -100,13 +100,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
         child.setParent(this);
       }
     }
-    this.features = featuresToCopy;
-    AclFeature aclFeature = getFeature(AclFeature.class);
-    if (aclFeature != null) {
-      // for the de-duplication of AclFeature
-      removeFeature(aclFeature);
-      addFeature(AclStorage.addAclFeature(aclFeature));
-    }
+    // FIXME: change later
+    // this.features = featuresToCopy;
+    // AclFeature aclFeature = getFeature(AclFeature.class);
+    // if (aclFeature != null) {
+    //   // for the de-duplication of AclFeature
+    //   removeFeature(aclFeature);
+    //   addFeature(AclStorage.addAclFeature(aclFeature));
+    // }
   }
 
   /** @return true unconditionally. */

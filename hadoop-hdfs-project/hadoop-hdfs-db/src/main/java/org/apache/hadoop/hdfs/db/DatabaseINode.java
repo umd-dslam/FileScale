@@ -327,7 +327,7 @@ public class DatabaseINode {
     return true;
   }
 
-  private static long getINodesNum() {
+  public static long getINodesNum() {
     long num = 0;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();

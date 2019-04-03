@@ -542,53 +542,53 @@ public final class FSImageFormatPBINode {
     }
 
     void serializeINodeDirectorySection(OutputStream out) throws IOException {
-      FSDirectory dir = fsn.getFSDirectory();
-      Iterator<INodeWithAdditionalFields> iter = dir.getINodeMap()
-          .getMapIterator();
-      final ArrayList<INodeReference> refList = parent.getSaverContext()
-         .getRefList();
-      int i = 0;
-      while (iter.hasNext()) {
-        INodeWithAdditionalFields n = iter.next();
-        if (!n.isDirectory()) {
-          continue;
-        }
+      // FSDirectory dir = fsn.getFSDirectory();
+      // Iterator<INodeWithAdditionalFields> iter = dir.getINodeMap()
+      //     .getMapIterator();
+      // final ArrayList<INodeReference> refList = parent.getSaverContext()
+      //    .getRefList();
+      // int i = 0;
+      // while (iter.hasNext()) {
+      //   INodeWithAdditionalFields n = iter.next();
+      //   if (!n.isDirectory()) {
+      //     continue;
+      //   }
 
-        ReadOnlyList<INode> children = n.asDirectory().getChildrenList(
-            Snapshot.CURRENT_STATE_ID);
-        if (children.size() > 0) {
-          INodeDirectorySection.DirEntry.Builder b = INodeDirectorySection.
-              DirEntry.newBuilder().setParent(n.getId());
-          for (INode inode : children) {
-            // Error if the child inode doesn't exist in inodeMap
-            if (dir.getInode(inode.getId()) == null) {
-              FSImage.LOG.error(
-                  "FSImageFormatPBINode#serializeINodeDirectorySection: " +
-                      "Dangling child pointer found. Missing INode in " +
-                      "inodeMap: id=" + inode.getId() +
-                      "; path=" + inode.getFullPathName() +
-                      "; parent=" + (inode.getParent() == null ? "null" :
-                      inode.getParent().getFullPathName()));
-              ++numImageErrors;
-            }
-            if (!inode.isReference()) {
-              b.addChildren(inode.getId());
-            } else {
-              refList.add(inode.asReference());
-              b.addRefChildren(refList.size() - 1);
-            }
-          }
-          INodeDirectorySection.DirEntry e = b.build();
-          e.writeDelimitedTo(out);
-        }
+      //   ReadOnlyList<INode> children = n.asDirectory().getChildrenList(
+      //       Snapshot.CURRENT_STATE_ID);
+      //   if (children.size() > 0) {
+      //     INodeDirectorySection.DirEntry.Builder b = INodeDirectorySection.
+      //         DirEntry.newBuilder().setParent(n.getId());
+      //     for (INode inode : children) {
+      //       // Error if the child inode doesn't exist in inodeMap
+      //       if (dir.getInode(inode.getId()) == null) {
+      //         FSImage.LOG.error(
+      //             "FSImageFormatPBINode#serializeINodeDirectorySection: " +
+      //                 "Dangling child pointer found. Missing INode in " +
+      //                 "inodeMap: id=" + inode.getId() +
+      //                 "; path=" + inode.getFullPathName() +
+      //                 "; parent=" + (inode.getParent() == null ? "null" :
+      //                 inode.getParent().getFullPathName()));
+      //         ++numImageErrors;
+      //       }
+      //       if (!inode.isReference()) {
+      //         b.addChildren(inode.getId());
+      //       } else {
+      //         refList.add(inode.asReference());
+      //         b.addRefChildren(refList.size() - 1);
+      //       }
+      //     }
+      //     INodeDirectorySection.DirEntry e = b.build();
+      //     e.writeDelimitedTo(out);
+      //   }
 
-        ++i;
-        if (i % FSImageFormatProtobuf.Saver.CHECK_CANCEL_INTERVAL == 0) {
-          context.checkCancelled();
-        }
-      }
-      parent.commitSection(summary,
-          FSImageFormatProtobuf.SectionName.INODE_DIR);
+      //   ++i;
+      //   if (i % FSImageFormatProtobuf.Saver.CHECK_CANCEL_INTERVAL == 0) {
+      //     context.checkCancelled();
+      //   }
+      // }
+      // parent.commitSection(summary,
+      //     FSImageFormatProtobuf.SectionName.INODE_DIR);
     }
 
     void serializeINodeSection(OutputStream out) throws IOException {
@@ -599,15 +599,20 @@ public final class FSImageFormatPBINode {
       INodeSection s = b.build();
       s.writeDelimitedTo(out);
 
-      int i = 0;
-      Iterator<INodeWithAdditionalFields> iter = inodesMap.getMapIterator();
-      while (iter.hasNext()) {
-        INodeWithAdditionalFields n = iter.next();
-        save(out, n);
-        ++i;
-        if (i % FSImageFormatProtobuf.Saver.CHECK_CANCEL_INTERVAL == 0) {
-          context.checkCancelled();
-        }
+      // int i = 0;
+      // Iterator<INodeWithAdditionalFields> iter = inodesMap.getMapIterator();
+      // while (iter.hasNext()) {
+      //   INodeWithAdditionalFields n = iter.next();
+      //   save(out, n);
+      //   ++i;
+      //   if (i % FSImageFormatProtobuf.Saver.CHECK_CANCEL_INTERVAL == 0) {
+      //     context.checkCancelled();
+      //   }
+      // }
+      INodeDirectory n = inodesMap.getRootDir();
+      save(out, n);
+      if (1 % FSImageFormatProtobuf.Saver.CHECK_CANCEL_INTERVAL == 0) {
+        context.checkCancelled();
       }
       parent.commitSection(summary, FSImageFormatProtobuf.SectionName.INODE);
     }

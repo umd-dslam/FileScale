@@ -41,8 +41,12 @@ public class INodeMap {
     return new INodeMap(rootDir);
   }
 
-  private INodeMap(INodeDirectory rootDir) {
+  public INodeMap(INodeDirectory rootDir) {
     this.rootDir = rootDir;
+  }
+
+  public INodeDirectory getRootDir() {
+    return rootDir;
   }
 
   /**
