@@ -2,6 +2,7 @@ package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -208,20 +209,20 @@ public class DatabaseDatablock {
   }
 
   public static void removeBlock(final long blockId) {
-    String env = System.getenv("DATABASE");
-    if (env.equals("VOLT")) {
-      // call a stored procedure
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      CallableStatement proc = conn.prepareCall("{call RemoveBlock(?)}");
-      proc.setLong(1, blockId);
-      ResultSet rs = proc.executeQuery();
-      while (rs.next()) {
-          LOG.info("removeBlock Return: " + rs.getLong(1));
-      }
-      rs.close();
-      proc.close();
-    } else {
-      try {
+    try {
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        // call a stored procedure
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        CallableStatement proc = conn.prepareCall("{call RemoveBlock(?)}");
+        proc.setLong(1, blockId);
+        ResultSet rs = proc.executeQuery();
+        while (rs.next()) {
+            LOG.info("removeBlock Return: " + rs.getLong(1));
+        }
+        rs.close();
+        proc.close();
+      } else {
         Connection conn = DatabaseConnection.getInstance().getConnection();
         String sql = "DELETE FROM inode2block WHERE blockId = ?;"
                 + "DELETE FROM datablocks WHERE blockId = ?;";
@@ -230,27 +231,27 @@ public class DatabaseDatablock {
         pst.setLong(2, blockId);
         pst.executeUpdate();
         pst.close();
-      } catch (SQLException ex) {
-        System.err.println(ex.getMessage());
       }
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
     }
   }
 
   public static void removeAllBlocks(final long inodeId) {
-    String env = System.getenv("DATABASE");
-    if (env.equals("VOLT")) {
-      // call a stored procedure
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      CallableStatement proc = conn.prepareCall("{call RemoveAllBlocks(?)}");
-      proc.setLong(1, inodeId);
-      ResultSet rs = proc.executeQuery();
-      while (rs.next()) {
-          LOG.info("removeAllBlocks Return: " + rs.getLong(1));
-      }
-      rs.close();
-      proc.close();
-    } else {
-      try {
+    try {
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        // call a stored procedure
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        CallableStatement proc = conn.prepareCall("{call RemoveAllBlocks(?)}");
+        proc.setLong(1, inodeId);
+        ResultSet rs = proc.executeQuery();
+        while (rs.next()) {
+            LOG.info("removeAllBlocks Return: " + rs.getLong(1));
+        }
+        rs.close();
+        proc.close();
+      } else {
         Connection conn = DatabaseConnection.getInstance().getConnection();
         String sql = "DELETE FROM datablocks WHERE blockId IN ("
                 + "   SELECT blockId from inode2block where id = ?"
@@ -261,9 +262,9 @@ public class DatabaseDatablock {
         pst.setLong(2, inodeId);
         pst.executeUpdate();
         pst.close();
-      } catch (SQLException ex) {
-        System.err.println(ex.getMessage());
       }
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
     }
   }
 

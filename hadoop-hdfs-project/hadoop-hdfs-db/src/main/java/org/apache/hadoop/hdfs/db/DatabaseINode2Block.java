@@ -39,52 +39,53 @@ public class DatabaseINode2Block {
       return;
     }
 
-    String env = System.getenv("DATABASE");
-    if (env.equals("VOLT")) {
-      // call a stored procedure
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      CallableStatement proc = conn.prepareCall("{call InsertINode2Block(?, ?, ?)}");
+    try {
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        // call a stored procedure
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        CallableStatement proc = conn.prepareCall("{call InsertINode2Block(?, ?, ?)}");
 
-      proc.setLong(1, id);
-      proc.setArray(2, conn.createArrayOf("BIGINT", blockIds.toArray(new Long[blockIds.size()])));
-      List<Integer> idxs = new ArrayList<Integer>();
-      for (int i = 0; i < blockIds.size(); ++i) {
-        idxs.add(index + i);
-      } 
-      proc.setArray(3, conn.createArrayOf("INT", idxs.toArray(new Integer[blockIds.size()])));
+        proc.setLong(1, id);
+        proc.setArray(2, conn.createArrayOf("BIGINT", blockIds.toArray(new Long[blockIds.size()])));
+        List<Integer> idxs = new ArrayList<Integer>();
+        for (int i = 0; i < blockIds.size(); ++i) {
+          idxs.add(index + i);
+        } 
+        proc.setArray(3, conn.createArrayOf("INT", idxs.toArray(new Integer[blockIds.size()])));
 
-      ResultSet rs = proc.executeQuery();
-      while (rs.next()) {
-        LOG.info("INode2Block Insertion Return: " + rs.getLong(1));
-      }
-      rs.close();
-      proc.close();
-    } else {
-      int idx = index;
-      int size = blockIds.size();
-      String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES ";
-      for (int i = 0; i < size; ++i) {
-        idx += 1;
-        sql +=
-            "("
+        ResultSet rs = proc.executeQuery();
+        while (rs.next()) {
+          LOG.info("INode2Block Insertion Return: " + rs.getLong(1));
+        }
+        rs.close();
+        proc.close();
+      } else {
+        int idx = index;
+        int size = blockIds.size();
+        String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES ";
+        for (int i = 0; i < size; ++i) {
+          idx += 1;
+          sql +=
+              "("
                 + String.valueOf(id)
                 + ","
                 + String.valueOf(blockIds.get(i))
                 + ","
                 + String.valueOf(idx)
                 + "),";
-      }
-      sql = sql.substring(0, sql.length() - 1) + ";";
+        }
+        sql = sql.substring(0, sql.length() - 1) + ";";
 
-      try {
         Connection conn = DatabaseConnection.getInstance().getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
-      } catch (SQLException ex) {
-        System.err.println(ex.getMessage());
+
+        LOG.info("INode2Block [insert]: (" + sql + ")");
       }
-      LOG.info("INode2Block [insert]: (" + sql + ")");
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
     }
   }
 
