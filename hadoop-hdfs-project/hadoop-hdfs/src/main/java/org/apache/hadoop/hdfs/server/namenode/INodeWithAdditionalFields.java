@@ -119,7 +119,7 @@ public abstract class INodeWithAdditionalFields extends INode
   private LinkedElement next = null;
   /** An array {@link Feature}s. */
   private static final Feature[] EMPTY_FEATURE = new Feature[0];
-  protected Feature[] features = EMPTY_FEATURE;
+  // protected Feature[] features = EMPTY_FEATURE;
 
   private INodeWithAdditionalFields(INode parent, long id, byte[] name,
       long permission, long modificationTime, long accessTime) {
@@ -336,47 +336,47 @@ public abstract class INodeWithAdditionalFields extends INode
   }
 
   protected void addFeature(Feature f) {
-    int size = features.length;
-    Feature[] arr = new Feature[size + 1];
-    if (size != 0) {
-      System.arraycopy(features, 0, arr, 0, size);
-    }
-    arr[size] = f;
-    features = arr;
+    // int size = features.length;
+    // Feature[] arr = new Feature[size + 1];
+    // if (size != 0) {
+    //   System.arraycopy(features, 0, arr, 0, size);
+    // }
+    // arr[size] = f;
+    // features = arr;
   }
 
   protected void removeFeature(Feature f) {
-    int size = features.length;
-    if (size == 0) {
-      throwFeatureNotFoundException(f);
-    }
+    // int size = features.length;
+    // if (size == 0) {
+    //   throwFeatureNotFoundException(f);
+    // }
 
-    if (size == 1) {
-      if (features[0] != f) {
-        throwFeatureNotFoundException(f);
-      }
-      features = EMPTY_FEATURE;
-      return;
-    }
+    // if (size == 1) {
+    //   if (features[0] != f) {
+    //     throwFeatureNotFoundException(f);
+    //   }
+    //   features = EMPTY_FEATURE;
+    //   return;
+    // }
 
-    Feature[] arr = new Feature[size - 1];
-    int j = 0;
-    boolean overflow = false;
-    for (Feature f1 : features) {
-      if (f1 != f) {
-        if (j == size - 1) {
-          overflow = true;
-          break;
-        } else {
-          arr[j++] = f1;
-        }
-      }
-    }
+    // Feature[] arr = new Feature[size - 1];
+    // int j = 0;
+    // boolean overflow = false;
+    // for (Feature f1 : features) {
+    //   if (f1 != f) {
+    //     if (j == size - 1) {
+    //       overflow = true;
+    //       break;
+    //     } else {
+    //       arr[j++] = f1;
+    //     }
+    //   }
+    // }
 
-    if (overflow || j != size - 1) {
-      throwFeatureNotFoundException(f);
-    }
-    features = arr;
+    // if (overflow || j != size - 1) {
+    //   throwFeatureNotFoundException(f);
+    // }
+    // features = arr;
   }
 
   private void throwFeatureNotFoundException(Feature f) {
@@ -386,15 +386,15 @@ public abstract class INodeWithAdditionalFields extends INode
 
   protected <T extends Feature> T getFeature(Class<? extends Feature> clazz) {
     Preconditions.checkArgument(clazz != null);
-    final int size = features.length;
-    for (int i=0; i < size; i++) {
-      Feature f = features[i];
-      if (clazz.isAssignableFrom(f.getClass())) {
-        @SuppressWarnings("unchecked")
-        T ret = (T) f;
-        return ret;
-      }
-    }
+    // final int size = features.length;
+    // for (int i=0; i < size; i++) {
+    //   Feature f = features[i];
+    //   if (clazz.isAssignableFrom(f.getClass())) {
+    //     @SuppressWarnings("unchecked")
+    //     T ret = (T) f;
+    //     return ret;
+    //   }
+    // }
     return null;
   }
 
@@ -438,6 +438,7 @@ public abstract class INodeWithAdditionalFields extends INode
   }
 
   public final Feature[] getFeatures() {
-    return features;
+    // return features;
+    return EMPTY_FEATURE;
   }
 }

@@ -231,20 +231,20 @@ public class DatabaseINode {
   }
 
   public static void removeChild(final long childId) {
-    String env = System.getenv("DATABASE");
-    if (env.equals("VOLT")) {
-      // call a stored procedure
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      CallableStatement proc = conn.prepareCall("{call RemoveChild(?)}");
-      proc.setLong(1, childId);
-      rs = proc.executeQuery();
-      while (rs.next()) {
-          LOG.info("removeChild Return: " + rs.getLong(1));
-      }
-      rs.close();
-      proc.close();
-    } else {
-      try {
+    try {
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        // call a stored procedure
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        CallableStatement proc = conn.prepareCall("{call RemoveChild(?)}");
+        proc.setLong(1, childId);
+        ResultSet rs = proc.executeQuery();
+        while (rs.next()) {
+            LOG.info("removeChild Return: " + rs.getLong(1));
+        }
+        rs.close();
+        proc.close();
+      } else {
         Connection conn = DatabaseConnection.getInstance().getConnection();
         // delete file/directory recusively
         String sql =
@@ -261,9 +261,9 @@ public class DatabaseINode {
         pst.setLong(1, childId);
         pst.executeUpdate();
         pst.close();
-      } catch (SQLException ex) {
-        System.err.println(ex.getMessage());
-      }      
+      }
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
     }
     LOG.info("removeChild: " + childId);
   }
