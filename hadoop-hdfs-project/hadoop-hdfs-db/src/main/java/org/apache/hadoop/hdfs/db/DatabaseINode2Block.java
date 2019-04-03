@@ -2,6 +2,7 @@ package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -44,7 +45,7 @@ public class DatabaseINode2Block {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       CallableStatement proc = conn.prepareCall("{call InsertINode2Block(?, ?, ?)}");
 
-      proc.setLong(1, inodeId);
+      proc.setLong(1, id);
       proc.setArray(2, conn.createArrayOf("BIGINT", blockIds.toArray(new Long[blockIds.size()])));
       List<Integer> idxs = new ArrayList<Integer>();
       for (int i = 0; i < blockIds.size(); ++i) {
@@ -52,7 +53,7 @@ public class DatabaseINode2Block {
       } 
       proc.setArray(3, conn.createArrayOf("INT", idxs.toArray(new Integer[blockIds.size()])));
 
-      rs = proc.executeQuery();
+      ResultSet rs = proc.executeQuery();
       while (rs.next()) {
         LOG.info("INode2Block Insertion Return: " + rs.getLong(1));
       }

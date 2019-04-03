@@ -214,7 +214,7 @@ public class DatabaseDatablock {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       CallableStatement proc = conn.prepareCall("{call RemoveBlock(?)}");
       proc.setLong(1, blockId);
-      rs = proc.executeQuery();
+      ResultSet rs = proc.executeQuery();
       while (rs.next()) {
           LOG.info("removeBlock Return: " + rs.getLong(1));
       }
@@ -243,7 +243,7 @@ public class DatabaseDatablock {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       CallableStatement proc = conn.prepareCall("{call RemoveAllBlocks(?)}");
       proc.setLong(1, inodeId);
-      rs = proc.executeQuery();
+      ResultSet rs = proc.executeQuery();
       while (rs.next()) {
           LOG.info("removeAllBlocks Return: " + rs.getLong(1));
       }

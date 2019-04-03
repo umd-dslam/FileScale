@@ -237,7 +237,7 @@ public class DatabaseINode {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       CallableStatement proc = conn.prepareCall("{call RemoveChild(?)}");
       proc.setLong(1, childId);
-      rs = proc.executeQuery();
+      ResultSet rs = proc.executeQuery();
       while (rs.next()) {
           LOG.info("removeChild Return: " + rs.getLong(1));
       }
