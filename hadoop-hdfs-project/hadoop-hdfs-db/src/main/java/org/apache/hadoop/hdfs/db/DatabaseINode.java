@@ -1,6 +1,7 @@
 package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.CallableStatement;
 import java.sql.ResultSet;
@@ -324,5 +325,26 @@ public class DatabaseINode {
     }
 
     return true;
+  }
+
+  private static long getINodesNum() {
+    long num = 0;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT COUNT(id) FROM inodes;";
+      Statement st = conn.createStatement();
+      ResultSet rs = st.executeQuery(sql);
+      while (rs.next()) {
+        num = rs.getLong(1);
+      }
+      rs.close();
+      st.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    LOG.info("getINodesNum [GET]: (" + num + ")");
+
+    return num;
   }
 }

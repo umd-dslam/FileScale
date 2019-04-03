@@ -1517,7 +1517,7 @@ public class FSDirectory implements Closeable {
   }
   
   @VisibleForTesting
-  int getInodeMapSize() {
+  long getInodeMapSize() {
     return inodeMap.size();
   }
 

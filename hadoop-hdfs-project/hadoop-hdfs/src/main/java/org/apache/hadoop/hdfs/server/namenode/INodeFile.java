@@ -277,6 +277,11 @@ public class INodeFile extends INodeWithAdditionalFields
     setBlocks(blklist);
   }
 
+  // Note: used only by inodemap
+  INodeFile(long id) {
+    super(id);
+  }
+
   // Note: used only by the loader of image file
   INodeFile(long id, BlockInfo[] blklist, BlockType blockType) {
     super(id);
