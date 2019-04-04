@@ -361,6 +361,7 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    LOG.info("insertUc [UPDATE]: (" + id + ", " + clientName + ", " + clientMachine + ")");
   }
 
   public static Boolean checkUCExistence(final long id) {
@@ -400,7 +401,23 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    LOG.info("getUcClientName [GET]: (" + id + ", " + name + ")");
     return name;
+  }
+
+  public static void setUcClientName(final long id, final String clientName) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE inodeuc SET clientName = ? WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setString(1, clientName);
+      pst.setLong(2, id);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("setUcClientName [UPDATE]: (" + id + ", " + clientName + ")");
   }
 
   public static String getUcClientMachine(final long id) {
@@ -419,8 +436,24 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    LOG.info("getUcClientMachine [GET]: (" + id + ", " + name + ")"); 
     return name;
   }
+
+  public static void setUcClientMachine(final long id, final String clientMachine) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE inodeuc SET clientMachine = ? WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setString(1, clientMachine);
+      pst.setLong(2, id);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("setUcClientMachine [UPDATE]: (" + id + ", " + clientMachine + ")");
+  }  
 
   public static void removeUc(final long id) {
     try {
@@ -433,5 +466,6 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    LOG.info("removeUc [UPDATE]: (" + id + ")");
   }
 }
