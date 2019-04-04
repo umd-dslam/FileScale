@@ -62,7 +62,7 @@ public class HdfsMetaInfoSchema {
               + "   header bigint, permission bigint"
               + ");"
               + "CREATE TABLE inodeuc("
-              + "   id bigint primary key, clientName varchar(50), clientMachine(50)"
+              + "   id bigint primary key, clientName varchar(50), clientMachine varchar(50)"
               + ");"
               + "CREATE TABLE inode2block("
               + "   blockId bigint primary key, id bigint, idx int"
