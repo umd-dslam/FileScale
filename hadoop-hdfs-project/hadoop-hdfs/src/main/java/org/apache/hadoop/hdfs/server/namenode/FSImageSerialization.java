@@ -190,8 +190,9 @@ public class FSImageSerialization {
     cons.getPermissionStatus().write(out);
 
     FileUnderConstructionFeature uc = cons.getFileUnderConstructionFeature();
-    writeString(uc.getClientName(), out);
-    writeString(uc.getClientMachine(), out);
+    long id = cons.getId();
+    writeString(uc.getClientName(id), out);
+    writeString(uc.getClientMachine(id), out);
 
     out.writeInt(0); //  do not store locations of last block
   }
@@ -218,8 +219,9 @@ public class FSImageSerialization {
       if (file.isUnderConstruction()) {
         out.writeBoolean(true);
         final FileUnderConstructionFeature uc = file.getFileUnderConstructionFeature();
-        writeString(uc.getClientName(), out);
-        writeString(uc.getClientMachine(), out);
+        long id = file.getId();
+        writeString(uc.getClientName(id), out);
+        writeString(uc.getClientMachine(id), out);
       } else {
         out.writeBoolean(false);
       }

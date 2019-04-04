@@ -242,10 +242,11 @@ public class TestFSImage {
     assertEquals(file.getFileReplication(), fileByLoaded.getFileReplication());
 
     if (isUC) {
+      long id = fileByLoaded.getId();
       assertEquals(client,
-          fileByLoaded.getFileUnderConstructionFeature().getClientName());
+          fileByLoaded.getFileUnderConstructionFeature().getClientName(id));
       assertEquals(clientMachine,
-          fileByLoaded.getFileUnderConstructionFeature().getClientMachine());
+          fileByLoaded.getFileUnderConstructionFeature().getClientMachine(id));
     }
   }
 

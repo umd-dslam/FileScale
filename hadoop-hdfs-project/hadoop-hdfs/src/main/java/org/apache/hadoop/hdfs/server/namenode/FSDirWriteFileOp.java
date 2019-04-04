@@ -188,7 +188,7 @@ class FSDirWriteFileOp {
     }
     blockSize = pendingFile.getPreferredBlockSize();
     clientMachine = pendingFile.getFileUnderConstructionFeature()
-        .getClientMachine();
+        .getClientMachine(pendingFile.getId());
     blockType = pendingFile.getBlockType();
     ErasureCodingPolicy ecPolicy = null;
     if (blockType == BlockType.STRIPED) {
@@ -403,7 +403,7 @@ class FSDirWriteFileOp {
       throw new IOException("Unable to add " + src +  " to namespace");
     }
     fsn.leaseManager.addLease(
-        newNode.getFileUnderConstructionFeature().getClientName(),
+        newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()),
         newNode.getId());
     if (feInfo != null) {
       FSDirEncryptionZoneOp.setFileEncryptionInfo(fsd, iip, feInfo,

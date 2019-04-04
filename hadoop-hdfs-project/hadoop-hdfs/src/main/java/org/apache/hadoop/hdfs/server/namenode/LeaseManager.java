@@ -313,9 +313,10 @@ public class LeaseManager {
 
       fullPathName = inodeFile.getFullPathName();
       if (StringUtils.isEmpty(path) || fullPathName.startsWith(path)) {
-        openFileEntries.add(new OpenFileEntry(inodeFile.getId(), fullPathName,
-            inodeFile.getFileUnderConstructionFeature().getClientName(),
-            inodeFile.getFileUnderConstructionFeature().getClientMachine()));
+        long id = inodeFile.getId();
+        openFileEntries.add(new OpenFileEntry(id, fullPathName,
+            inodeFile.getFileUnderConstructionFeature().getClientName(id),
+            inodeFile.getFileUnderConstructionFeature().getClientMachine(id)));
         count++;
       }
 

@@ -788,8 +788,8 @@ public class FSEditLog implements LogsPurgeable {
     FileUnderConstructionFeature uc = file.getFileUnderConstructionFeature();
     assert uc != null;
     AppendOp op = AppendOp.getInstance(cache.get()).setPath(path)
-        .setClientName(uc.getClientName())
-        .setClientMachine(uc.getClientMachine())
+        .setClientName(uc.getClientName(file.getId()))
+        .setClientMachine(uc.getClientMachine(file.getId()))
         .setNewBlock(newBlock);
     logRpcIds(op, toLogRpcIds);
     logEdit(op);
@@ -812,9 +812,9 @@ public class FSEditLog implements LogsPurgeable {
       .setBlockSize(newNode.getPreferredBlockSize())
       .setBlocks(newNode.getBlocks())
       .setPermissionStatus(permissions)
-      .setClientName(newNode.getFileUnderConstructionFeature().getClientName())
+      .setClientName(newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()))
       .setClientMachine(
-          newNode.getFileUnderConstructionFeature().getClientMachine())
+          newNode.getFileUnderConstructionFeature().getClientMachine(newNode.getId()))
       .setOverwrite(overwrite)
       .setStoragePolicyId(newNode.getLocalStoragePolicyID())
       .setErasureCodingPolicyId(newNode.getErasureCodingPolicyID());
