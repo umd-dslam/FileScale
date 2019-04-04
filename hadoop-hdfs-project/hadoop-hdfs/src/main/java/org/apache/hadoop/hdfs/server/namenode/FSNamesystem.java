@@ -2683,12 +2683,12 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             throw new RecoveryInProgressException(
                 op.getExceptionMessage(src, holder, clientMachine,
                     "another recovery is in progress by "
-                        + clientName + " on " + uc.getClientMachine()));
+                        + clientName + " on " + uc.getClientMachine(file.getId())));
           } else {
             throw new AlreadyBeingCreatedException(
                 op.getExceptionMessage(src, holder, clientMachine,
                     "this file lease is currently owned by "
-                        + clientName + " on " + uc.getClientMachine()));
+                        + clientName + " on " + uc.getClientMachine(file.getId())));
           }
         }
       }
