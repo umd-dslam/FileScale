@@ -673,10 +673,11 @@ public final class FSImageFormatPBINode {
 
       FileUnderConstructionFeature uc = n.getFileUnderConstructionFeature();
       if (uc != null) {
+        long id = n.getId();
         INodeSection.FileUnderConstructionFeature f =
             INodeSection.FileUnderConstructionFeature
-            .newBuilder().setClientName(uc.getClientName())
-            .setClientMachine(uc.getClientMachine(n.getId())).build();
+            .newBuilder().setClientName(uc.getClientName(id))
+            .setClientMachine(uc.getClientMachine(id)).build();
         b.setFileUC(f);
       }
 
