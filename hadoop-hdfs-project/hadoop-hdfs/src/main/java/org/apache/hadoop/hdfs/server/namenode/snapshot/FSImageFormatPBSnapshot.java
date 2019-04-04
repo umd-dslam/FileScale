@@ -513,25 +513,26 @@ public class FSImageFormatPBSnapshot {
      */
     public void serializeSnapshotDiffSection(OutputStream out)
         throws IOException {
-      INodeMap inodesMap = fsn.getFSDirectory().getINodeMap();
-      final List<INodeReference> refList = parent.getSaverContext()
-          .getRefList();
-      int i = 0;
-      Iterator<INodeWithAdditionalFields> iter = inodesMap.getMapIterator();
-      while (iter.hasNext()) {
-        INodeWithAdditionalFields inode = iter.next();
-        if (inode.isFile()) {
-          serializeFileDiffList(inode.asFile(), out);
-        } else if (inode.isDirectory()) {
-          serializeDirDiffList(inode.asDirectory(), refList, out);
-        }
-        ++i;
-        if (i % FSImageFormatProtobuf.Saver.CHECK_CANCEL_INTERVAL == 0) {
-          context.checkCancelled();
-        }
-      }
-      parent.commitSection(headers,
-          FSImageFormatProtobuf.SectionName.SNAPSHOT_DIFF);
+      // TODO: enable serialize snapshot after we supprt that.
+      // INodeMap inodesMap = fsn.getFSDirectory().getINodeMap();
+      // final List<INodeReference> refList = parent.getSaverContext()
+      //     .getRefList();
+      // int i = 0;
+      // Iterator<INodeWithAdditionalFields> iter = inodesMap.getMapIterator();
+      // while (iter.hasNext()) {
+      //   INodeWithAdditionalFields inode = iter.next();
+      //   if (inode.isFile()) {
+      //     serializeFileDiffList(inode.asFile(), out);
+      //   } else if (inode.isDirectory()) {
+      //     serializeDirDiffList(inode.asDirectory(), refList, out);
+      //   }
+      //   ++i;
+      //   if (i % FSImageFormatProtobuf.Saver.CHECK_CANCEL_INTERVAL == 0) {
+      //     context.checkCancelled();
+      //   }
+      // }
+      // parent.commitSection(headers,
+      //     FSImageFormatProtobuf.SectionName.SNAPSHOT_DIFF);
     }
 
     private void serializeFileDiffList(INodeFile file, OutputStream out)

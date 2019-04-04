@@ -963,7 +963,8 @@ public class FSImageFormat {
         }
 
         FileUnderConstructionFeature uc = cons.getFileUnderConstructionFeature();
-        oldnode.toUnderConstruction(uc.getClientName(), uc.getClientMachine());
+        long id = oldnode.getId();
+        oldnode.toUnderConstruction(uc.getClientName(id), uc.getClientMachine(id));
         if (oldnode.numBlocks() > 0) {
           BlockInfo ucBlock = cons.getLastBlock();
           // we do not replace the inode, just replace the last block of oldnode
@@ -973,7 +974,7 @@ public class FSImageFormat {
         }
 
         if (!inSnapshot) {
-          namesystem.leaseManager.addLease(uc.getClientName(), oldnode.getId());
+          namesystem.leaseManager.addLease(uc.getClientName(id), oldnode.getId());
         }
       }
     }

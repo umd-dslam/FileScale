@@ -25,7 +25,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockStoragePolicySuite;
 import org.apache.hadoop.util.GSet;
 import org.apache.hadoop.util.LightWeightGSet;
-
+import org.apache.hadoop.hdfs.db.*;
 import com.google.common.base.Preconditions;
 
 /**
@@ -34,53 +34,45 @@ import com.google.common.base.Preconditions;
  */
 public class INodeMap {
   
+  // FIXME: maybe rootDir is useful to only serialize root into FSImage
+  private INodeDirectory rootDir;
+
   static INodeMap newInstance(INodeDirectory rootDir) {
-    // Compute the map capacity by allocating 1% of total memory
-    int capacity = LightWeightGSet.computeCapacity(1, "INodeMap");
-    GSet<INode, INodeWithAdditionalFields> map =
-        new LightWeightGSet<>(capacity);
-    map.put(rootDir);
-    return new INodeMap(map);
+    return new INodeMap(rootDir);
   }
 
-  /** Synchronized by external lock. */
-  private final GSet<INode, INodeWithAdditionalFields> map;
-  
-  public Iterator<INodeWithAdditionalFields> getMapIterator() {
-    return map.iterator();
+  public INodeMap(INodeDirectory rootDir) {
+    this.rootDir = rootDir;
   }
 
-  private INodeMap(GSet<INode, INodeWithAdditionalFields> map) {
-    Preconditions.checkArgument(map != null);
-    this.map = map;
+  public INodeDirectory getRootDir() {
+    return rootDir;
   }
-  
+
   /**
    * Add an {@link INode} into the {@link INode} map. Replace the old value if 
    * necessary. 
    * @param inode The {@link INode} to be added to the map.
    */
   public final void put(INode inode) {
-    if (inode instanceof INodeWithAdditionalFields) {
-      map.put((INodeWithAdditionalFields)inode);
-    }
+    // already in inodes table
   }
-  
+
   /**
    * Remove a {@link INode} from the map.
    * @param inode The {@link INode} to be removed.
    */
   public final void remove(INode inode) {
-    map.remove(inode);
+    // TODO: double check where to delete inode from inodes table
   }
-  
+
   /**
    * @return The size of the map.
    */
-  public int size() {
-    return map.size();
+  public long size() {
+    return DatabaseINode.getINodesNum();
   }
-  
+
   /**
    * Get the {@link INode} with the given id from the map.
    * @param id ID of the {@link INode}.
@@ -88,54 +80,17 @@ public class INodeMap {
    *         such {@link INode} in the map.
    */
   public INode get(long id) {
-    INode inode = new INodeWithAdditionalFields(id, null, new PermissionStatus(
-        "", "", new FsPermission((short) 0)), 0, 0) {
-      
-      @Override
-      void recordModification(int latestSnapshotId) {
-      }
-      
-      @Override
-      public void destroyAndCollectBlocks(ReclaimContext reclaimContext) {
-        // Nothing to do
-      }
-
-      @Override
-      public QuotaCounts computeQuotaUsage(
-          BlockStoragePolicySuite bsps, byte blockStoragePolicyId,
-          boolean useCache, int lastSnapshotId) {
-        return null;
-      }
-
-      @Override
-      public ContentSummaryComputationContext computeContentSummary(
-          int snapshotId, ContentSummaryComputationContext summary) {
-        return null;
-      }
-      
-      @Override
-      public void cleanSubtree(
-          ReclaimContext reclaimContext, int snapshotId, int priorSnapshotId) {
-      }
-
-      @Override
-      public byte getStoragePolicyID(){
-        return HdfsConstants.BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
-      }
-
-      @Override
-      public byte getLocalStoragePolicyID() {
-        return HdfsConstants.BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
-      }
-    };
-      
-    return map.get(inode);
+    long header = DatabaseINode.getHeader(id);
+    if (header == 0) { // directory
+      return new INodeDirectory(id);
+    } else if (header > 0) {
+      return new INodeFile(id);
+    }
+    return null;
   }
-  
+
   /**
    * Clear the {@link #map}
    */
-  public void clear() {
-    map.clear();
-  }
+  public void clear() {}
 }

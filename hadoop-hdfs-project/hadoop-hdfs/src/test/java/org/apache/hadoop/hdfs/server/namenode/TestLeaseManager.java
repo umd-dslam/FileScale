@@ -161,7 +161,7 @@ public class TestLeaseManager {
       FSDirectory dir = cluster.getNamesystem().getFSDirectory();
       INodeFile file = dir.getINode(path).asFile();
       cluster.getNamesystem().leaseManager.removeLease(
-          file.getFileUnderConstructionFeature().getClientName(), file);
+          file.getFileUnderConstructionFeature().getClientName(file.getId()), file);
 
       // Save a fsimage.
       dfs.setSafeMode(SafeModeAction.SAFEMODE_ENTER);

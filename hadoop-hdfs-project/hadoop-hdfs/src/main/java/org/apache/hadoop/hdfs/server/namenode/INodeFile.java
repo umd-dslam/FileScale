@@ -277,6 +277,11 @@ public class INodeFile extends INodeWithAdditionalFields
     setBlocks(blklist);
   }
 
+  // Note: used only by inodemap
+  INodeFile(long id) {
+    super(id);
+  }
+
   // Note: used only by the loader of image file
   INodeFile(long id, BlockInfo[] blklist, BlockType blockType) {
     super(id);
@@ -290,7 +295,8 @@ public class INodeFile extends INodeWithAdditionalFields
   
   public INodeFile(INodeFile that) {
     super(that);
-    this.features = that.features;
+    // FIXME: change later
+    // this.features = that.features;
 
     // ADD(gangliao): copy inode's header from Postgres
     long header = DatabaseINode.getHeader(that.getId());
@@ -333,21 +339,19 @@ public class INodeFile extends INodeWithAdditionalFields
    * otherwise, return null.
    */
   public final FileUnderConstructionFeature getFileUnderConstructionFeature() {
-    return getFeature(FileUnderConstructionFeature.class);
+    return FileUnderConstructionFeature.getInstance();
   }
 
   /** Is this file under construction? */
   @Override // BlockCollection
   public boolean isUnderConstruction() {
-    return getFileUnderConstructionFeature() != null;
+    return FileUnderConstructionFeature.isFileUnderConstruction(getId());
   }
 
   INodeFile toUnderConstruction(String clientName, String clientMachine) {
     Preconditions.checkState(!isUnderConstruction(),
         "file is already under construction");
-    FileUnderConstructionFeature uc = new FileUnderConstructionFeature(
-        clientName, clientMachine);
-    addFeature(uc);
+    FileUnderConstructionFeature.createFileUnderConstruction(getId(), clientName, clientMachine);
     return this;
   }
 
@@ -356,10 +360,9 @@ public class INodeFile extends INodeWithAdditionalFields
    * feature.
    */
   void toCompleteFile(long mtime, int numCommittedAllowed, short minReplication) {
-    final FileUnderConstructionFeature uc = getFileUnderConstructionFeature();
-    Preconditions.checkNotNull(uc, "File %s is not under construction", this);
+    Preconditions.checkState(isUnderConstruction(), "File %s is not under construction", this);
     assertAllBlocksComplete(numCommittedAllowed, minReplication);
-    removeFeature(uc);
+    removeUCFeature(getId());
     setModificationTime(mtime);
   }
 
@@ -803,11 +806,10 @@ public class INodeFile extends INodeWithAdditionalFields
           // in any snapshot
           destroyAndCollectBlocks(reclaimContext);
         } else {
-          FileUnderConstructionFeature uc = getFileUnderConstructionFeature();
           // when deleting the current file and it is in snapshot, we should
           // clean the 0-sized block if the file is UC
-          if (uc != null) {
-            uc.cleanZeroSizeBlock(this, reclaimContext.collectedBlocks);
+          if (isUnderConstruction()) {
+            FileUnderConstructionFeature.cleanZeroSizeBlock(this, reclaimContext.collectedBlocks);
             updateRemovedUnderConstructionFiles(reclaimContext);
           }
         }

@@ -345,6 +345,10 @@ public abstract class INodeWithAdditionalFields extends INode
     // features = arr;
   }
 
+  protected void removeUCFeature(long id) {
+    DatabaseINode.removeUc(id);
+  }
+
   protected void removeFeature(Feature f) {
     // int size = features.length;
     // if (size == 0) {

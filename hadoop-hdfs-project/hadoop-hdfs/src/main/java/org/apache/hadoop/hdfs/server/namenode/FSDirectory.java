@@ -112,13 +112,14 @@ public class FSDirectory implements Closeable {
         INodeDirectory.ROOT_NAME,
         namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)),
         0L);
-    r.addDirectoryWithQuotaFeature(
-        new DirectoryWithQuotaFeature.Builder().
-            nameSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_NAMESPACE_QUOTA).
-            storageSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_STORAGE_SPACE_QUOTA).
-            build());
-    r.addSnapshottableFeature();
-    r.setSnapshotQuota(0);
+    // TODO: enable later
+    // r.addDirectoryWithQuotaFeature(
+    //     new DirectoryWithQuotaFeature.Builder().
+    //         nameSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_NAMESPACE_QUOTA).
+    //         storageSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_STORAGE_SPACE_QUOTA).
+    //         build());
+    // r.addSnapshottableFeature();
+    // r.setSnapshotQuota(0);
     return r;
   }
 
@@ -1517,7 +1518,7 @@ public class FSDirectory implements Closeable {
   }
   
   @VisibleForTesting
-  int getInodeMapSize() {
+  long getInodeMapSize() {
     return inodeMap.size();
   }
 

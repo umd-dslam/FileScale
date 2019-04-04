@@ -1,11 +1,12 @@
 package org.apache.hadoop.hdfs.db;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -240,7 +241,7 @@ public class DatabaseINode {
         proc.setLong(1, childId);
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-            LOG.info("removeChild Return: " + rs.getLong(1));
+          LOG.info("removeChild Return: " + rs.getLong(1));
         }
         rs.close();
         proc.close();
@@ -324,5 +325,147 @@ public class DatabaseINode {
     }
 
     return true;
+  }
+
+  public static long getINodesNum() {
+    long num = 0;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT COUNT(id) FROM inodes;";
+      Statement st = conn.createStatement();
+      ResultSet rs = st.executeQuery(sql);
+      while (rs.next()) {
+        num = rs.getLong(1);
+      }
+      rs.close();
+      st.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    LOG.info("getINodesNum [GET]: (" + num + ")");
+
+    return num;
+  }
+
+  public static void insertUc(final long id, final String clientName, final String clientMachine) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "INSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      pst.setString(2, clientName);
+      pst.setString(3, clientMachine);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("insertUc [UPDATE]: (" + id + ", " + clientName + ", " + clientMachine + ")");
+  }
+
+  public static Boolean checkUCExistence(final long id) {
+    boolean exist = false;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT COUNT(id) FROM inodeuc WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        if (rs.getInt(1) == 1) {
+          exist = true;
+        }
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    return exist;
+  }
+
+  public static String getUcClientName(final long id) {
+    String name = null;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT clientName FROM inodeuc WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        name = rs.getString(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getUcClientName [GET]: (" + id + ", " + name + ")");
+    return name;
+  }
+
+  public static void setUcClientName(final long id, final String clientName) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE inodeuc SET clientName = ? WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setString(1, clientName);
+      pst.setLong(2, id);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("setUcClientName [UPDATE]: (" + id + ", " + clientName + ")");
+  }
+
+  public static String getUcClientMachine(final long id) {
+    String name = null;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT clientMachine FROM inodeuc WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        name = rs.getString(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getUcClientMachine [GET]: (" + id + ", " + name + ")"); 
+    return name;
+  }
+
+  public static void setUcClientMachine(final long id, final String clientMachine) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE inodeuc SET clientMachine = ? WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setString(1, clientMachine);
+      pst.setLong(2, id);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("setUcClientMachine [UPDATE]: (" + id + ", " + clientMachine + ")");
+  }  
+
+  public static void removeUc(final long id) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "DELETE FROM inodeuc WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("removeUc [UPDATE]: (" + id + ")");
   }
 }

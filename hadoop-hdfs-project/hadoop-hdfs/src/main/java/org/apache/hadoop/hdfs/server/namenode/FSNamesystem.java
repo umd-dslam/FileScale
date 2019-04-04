@@ -1856,10 +1856,11 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         String fullPathName = inodeFile.getFullPathName();
         if (org.apache.commons.lang3.StringUtils.isEmpty(path)
             || fullPathName.startsWith(path)) {
-          openFileEntries.add(new OpenFileEntry(inodeFile.getId(),
+          long id = inodeFile.getId();
+          openFileEntries.add(new OpenFileEntry(id,
               inodeFile.getFullPathName(),
-              inodeFile.getFileUnderConstructionFeature().getClientName(),
-              inodeFile.getFileUnderConstructionFeature().getClientMachine()));
+              inodeFile.getFileUnderConstructionFeature().getClientName(id),
+              inodeFile.getFileUnderConstructionFeature().getClientMachine(id)));
         }
 
         if (openFileIds.size() >= this.maxListOpenFilesResponses) {
@@ -2644,7 +2645,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       // Find the original holder.
       //
       FileUnderConstructionFeature uc = file.getFileUnderConstructionFeature();
-      String clientName = uc.getClientName();
+      String clientName = uc.getClientName(file.getId());
       lease = leaseManager.getLease(clientName);
       if (lease == null) {
         throw new AlreadyBeingCreatedException(
@@ -2682,12 +2683,12 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             throw new RecoveryInProgressException(
                 op.getExceptionMessage(src, holder, clientMachine,
                     "another recovery is in progress by "
-                        + clientName + " on " + uc.getClientMachine()));
+                        + clientName + " on " + uc.getClientMachine(file.getId())));
           } else {
             throw new AlreadyBeingCreatedException(
                 op.getExceptionMessage(src, holder, clientMachine,
                     "this file lease is currently owned by "
-                        + clientName + " on " + uc.getClientMachine()));
+                        + clientName + " on " + uc.getClientMachine(file.getId())));
           }
         }
       }
@@ -2832,7 +2833,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
 
       //check lease
       final INodeFile file = checkLease(iip, clientName, fileId);
-      clientMachine = file.getFileUnderConstructionFeature().getClientMachine();
+      clientMachine = file.getFileUnderConstructionFeature().getClientMachine(file.getId());
       clientnode = blockManager.getDatanodeManager().getDatanodeByHost(clientMachine);
       preferredblocksize = file.getPreferredBlockSize();
       storagePolicyID = file.getStoragePolicyID();
@@ -2914,7 +2915,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       throw new FileNotFoundException("File is deleted: "
           + leaseExceptionString(src, fileId, holder));
     }
-    final String owner = file.getFileUnderConstructionFeature().getClientName();
+    final String owner = file.getFileUnderConstructionFeature().getClientName(file.getId());
     if (holder != null && !owner.equals(holder)) {
       throw new LeaseExpiredException("Client (=" + holder
           + ") is not the lease owner (=" + owner + ": "
@@ -3547,7 +3548,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   
   Lease reassignLeaseInternal(Lease lease, String newHolder, INodeFile pendingFile) {
     assert hasWriteLock();
-    pendingFile.getFileUnderConstructionFeature().setClientName(newHolder);
+    pendingFile.getFileUnderConstructionFeature().setClientName(pendingFile.getId(), newHolder);
     return leaseManager.reassignLease(lease, pendingFile, newHolder);
   }
 
@@ -3593,7 +3594,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         allowCommittedBlock? numCommittedAllowed: 0,
         blockManager.getMinReplication());
 
-    leaseManager.removeLease(uc.getClientName(), pendingFile);
+    leaseManager.removeLease(uc.getClientName(pendingFile.getId()), pendingFile);
 
     // close file and persist block allocations for this file
     closeFile(src, pendingFile);
@@ -5340,7 +5341,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     // check lease
     if (clientName == null
         || !clientName.equals(file.getFileUnderConstructionFeature()
-            .getClientName())) {
+            .getClientName(file.getId()))) {
       throw new LeaseExpiredException("Lease mismatch: " + block + 
           " is accessed by a non lease holder " + clientName); 
     }

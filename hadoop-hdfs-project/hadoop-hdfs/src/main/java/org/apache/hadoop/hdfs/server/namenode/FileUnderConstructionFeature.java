@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
 
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
@@ -28,24 +29,40 @@ import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
  */
 @InterfaceAudience.Private
 public class FileUnderConstructionFeature implements INode.Feature {
-  private String clientName; // lease holder
-  private final String clientMachine;
 
-  public FileUnderConstructionFeature(final String clientName, final String clientMachine) {
-    this.clientName = clientName;
-    this.clientMachine = clientMachine;
+  private static FileUnderConstructionFeature instance; 
+
+  public static FileUnderConstructionFeature getInstance() {
+    if (instance == null) {
+      instance = new FileUnderConstructionFeature();
+    }
+    return instance;
   }
 
-  public String getClientName() {
-    return clientName;
+  public FileUnderConstructionFeature() {}
+
+  public FileUnderConstructionFeature(final long id, final String clientName, final String clientMachine) {
+    DatabaseINode.insertUc(id, clientName, clientMachine);
   }
 
-  void setClientName(String clientName) {
-    this.clientName = clientName;
+  public static void createFileUnderConstruction(final long id, final String clientName, final String clientMachine) {
+    DatabaseINode.insertUc(id, clientName, clientMachine);
   }
 
-  public String getClientMachine() {
-    return clientMachine;
+  public static Boolean isFileUnderConstruction(final long id) {
+    return DatabaseINode.checkUCExistence(id);
+  }
+
+  public static String getClientName(final long id) {
+    return DatabaseINode.getUcClientName(id);
+  }
+
+  public static void setClientName(final long id, String clientName) {
+    DatabaseINode.setUcClientName(id, clientName);
+  }
+
+  public static String getClientMachine(final long id) {
+    return DatabaseINode.getUcClientMachine(id);
   }
 
   /**
@@ -55,7 +72,7 @@ public class FileUnderConstructionFeature implements INode.Feature {
    *          The length of the last block reported from client
    * @throws IOException
    */
-  void updateLengthOfLastBlock(INodeFile f, long lastBlockLength)
+  static void updateLengthOfLastBlock(INodeFile f, long lastBlockLength)
       throws IOException {
     BlockInfo lastBlock = f.getLastBlock();
     assert (lastBlock != null) : "The last block for path "
@@ -71,7 +88,7 @@ public class FileUnderConstructionFeature implements INode.Feature {
    * in a snapshot, we should delete the last block if it's under construction
    * and its size is 0.
    */
-  void cleanZeroSizeBlock(final INodeFile f,
+  static void cleanZeroSizeBlock(final INodeFile f,
       final BlocksMapUpdateInfo collectedBlocks) {
     final BlockInfo[] blocks = f.getBlocks();
     if (blocks != null && blocks.length > 0
