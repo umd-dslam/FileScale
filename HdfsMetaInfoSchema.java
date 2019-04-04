@@ -14,9 +14,9 @@ public class HdfsMetaInfoSchema {
   private String password = "docker";
 
   private HdfsMetaInfoSchema() throws SQLException {
+    String env = System.getenv("DATABASE");
     try {
       String url = "";
-      String env = System.getenv("DATABASE");
       Properties props = new Properties();
 
       if (env.equals("VOLT")) {
@@ -45,13 +45,16 @@ public class HdfsMetaInfoSchema {
 
     try {
       // create inode table in Postgres
-      String sql1 =
-          "DROP TABLE inodes IF EXISTS;"
-              + "DROP TABLE inode2block IF EXISTS;"
-              + "DROP TABLE datablocks IF EXISTS;"
-              + "DROP TABLE blockstripes IF EXISTS;"
-              + "DROP TABLE block2storage IF EXISTS;"
-              + "DROP TABLE storage IF EXISTS;";
+      String sql1 = "";
+      String[] tableNames = new String[] {"inodes", "inode2block", "datablocks", "blockstripes", "block2storage", "storage"};
+      for (String tableName : tableNames) {
+        if (env.equals("VOLT")) {
+          sql1 += String.format("DROP TABLE %s IF EXISTS;", tableName);
+        } else {
+          sql1 += String.format("DROP TABLE IF EXISTS %s;", tableName);
+        }
+      }
+
       String sql2 =
           "CREATE TABLE inodes("
               + "   id bigint primary key, parent bigint, name varchar(30),"
