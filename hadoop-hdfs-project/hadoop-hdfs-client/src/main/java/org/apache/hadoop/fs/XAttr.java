@@ -104,7 +104,6 @@ public class XAttr {
     this.ns = ns;
     this.name = name;	
     this.value = value;
-    // DatabaseINode.insertXAttr(id, ns.ordinal(), name, bytes2String(value));
   }
 
   /**
@@ -146,17 +145,14 @@ public class XAttr {
 
   public NameSpace getNameSpace() {
     return ns;
-    // return NameSpace.values()[DatabaseINode.getXAttrNameSpace(id)];
   }
 
   public String getName() {
     return name;
-    // return DatabaseINode.getXAttrName(id);
   }
 
   public byte[] getValue() {
     return value;
-    // return string2Bytes(DatabaseINode.getXAttrValue(id));
   }
 
   @Override

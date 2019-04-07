@@ -529,6 +529,50 @@ public class DatabaseINode {
     return ns;
   }
 
+  public class XAttrInfo {
+    public int namespace;
+    public String name;
+    public String value;
+
+    public XAttrInfo(int ns, String name, String val) {
+      this.namespace = ns;
+      this.name = name;
+      this.value = val;
+    }
+
+    public int getNameSpace() {
+      return namespace;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getValue() {
+      return value;
+    }
+  }
+
+  public static List<XAttrInfo> getXAttrs(final long id) {
+    List<XAttrInfo> xinfo = ArrayList<XAttrInfo>();
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT namespace, name, value FROM inodexattrs WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        xinfo.add(new XAttrInfo(rs.getInt(1), rs.getInt(2), rs.getInt(3)));
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getXAttrs [GET]: (" + id + ")"); 
+    return xinfo;
+  }
+
   public static Boolean checkXAttrExistence(final long id) {
     boolean exist = false;
     try {

@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.XAttrHelper;
+import org.apache.hadoop.hdfs.db.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Preconditions;
@@ -61,7 +62,7 @@ public class XAttrFeature implements INode.Feature {
   }
 
   public Boolean isFileXAttr() {
-    return DatabaseINode.checkXAttrExistence(id);
+    return isFileXAttr(id);
   }
 
   public static Boolean isFileXAttr(long id) {
@@ -73,11 +74,16 @@ public class XAttrFeature implements INode.Feature {
    * @return the XAttrs
    */
   public List<XAttr> getXAttrs() {
-    return DatabaseINode.getXAttrs(id);
+    return getXAttrs(id);
   }
 
   public static List<XAttr> getXAttrs(long id) {
-    return DatabaseINode.getXAttrs(id);
+    List<XAttr> xattrs = new ArrayList<XAttr>();
+    List<DatabaseINode.XAttrInfo> xinfo = DatabaseINode.getXAttrs(id);
+    for (int i = 0; i < xinfo.size(); ++i) {
+      xattrs.add(new XAttr(NameSpace.values()[xinfo[i].getNameSpace()], xinfo[i].getName(), string2Bytes(xinfo[i].getValue())));
+    }
+    return xattrs;
   }
 
   /**
@@ -86,16 +92,7 @@ public class XAttrFeature implements INode.Feature {
    * @return the XAttr
    */
   public XAttr getXAttr(String prefixedName) {
-    XAttr attr = null;
-    XAttr toFind = XAttrHelper.buildXAttr(prefixedName);
-    List<XAttr> xAttrs = getXAttrs(id);
-    for (XAttr a : xAttrs) {
-      if (a.equalsIgnoreValue(toFind)) {
-        attr = a;
-        break;
-      }
-    }
-    return attr;
+    return getXAttr(id, prefixedName);
   }
 
   public static XAttr getXAttr(long id, String prefixedName) {
