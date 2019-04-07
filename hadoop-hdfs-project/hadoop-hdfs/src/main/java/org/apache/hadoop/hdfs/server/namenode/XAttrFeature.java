@@ -83,7 +83,7 @@ public class XAttrFeature implements INode.Feature {
    * @param prefixedName xAttr name with prefix
    * @return the XAttr
    */
-  public XAttr getXAttr(long id, String prefixedName) {
+  public static XAttr getXAttr(long id, String prefixedName) {
     XAttr attr = null;
     XAttr toFind = XAttrHelper.buildXAttr(prefixedName);
     List<XAttr> xAttrs = getXAttrs(id);
