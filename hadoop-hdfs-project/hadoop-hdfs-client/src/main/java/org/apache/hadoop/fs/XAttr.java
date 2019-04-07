@@ -100,7 +100,7 @@ public class XAttr {
   // more efficient due to use of cached encoders/decoders.
   private static final String UTF8_CSN = StandardCharsets.UTF_8.name();
 
-  private XAttr(NameSpace ns, String name, byte[] value) {
+  public XAttr(NameSpace ns, String name, byte[] value) {
     this.ns = ns;
     this.name = name;	
     this.value = value;

@@ -82,7 +82,7 @@ public class XAttrFeature implements INode.Feature {
     List<DatabaseINode.XAttrInfo> xinfo = new DatabaseINode().getXAttrs(id);
     for (int i = 0; i < xinfo.size(); ++i) {
       xattrs.add(new XAttr(XAttr.NameSpace.values()[xinfo.get(i).getNameSpace()],
-        xinfo.get(i).getName(), string2Bytes(xinfo.get(i).getValue())));
+        xinfo.get(i).getName(), XAttr.string2Bytes(xinfo.get(i).getValue())));
     }
     return xattrs;
   }
