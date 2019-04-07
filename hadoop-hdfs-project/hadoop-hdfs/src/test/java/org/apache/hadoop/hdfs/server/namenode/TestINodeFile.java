@@ -1217,7 +1217,7 @@ public class TestINodeFile {
     XAttr xAttr = new XAttr.Builder().setNameSpace(XAttr.NameSpace.USER).
         setName("a1").setValue(new byte[]{0x31, 0x32, 0x33}).build();
     builder.add(xAttr);
-    XAttrFeature f = new XAttrFeature(builder.build());
+    XAttrFeature f = new XAttrFeature(inf.getId(), builder.build());
     inf.addXAttrFeature(f);
     XAttrFeature f1 = inf.getXAttrFeature();
     assertEquals(xAttr, f1.getXAttrs().get(0));

@@ -230,10 +230,6 @@ public class FSImageFormatPBSnapshot {
             acl = new AclFeature(entries);
           }
           XAttrFeature xAttrs = null;
-          if (fileInPb.hasXAttrs()) {
-            xAttrs = new XAttrFeature(FSImageFormatPBINode.Loader.loadXAttrs(
-                fileInPb.getXAttrs(), state.getStringTable()));
-          }
 
           boolean isStriped =
               (fileInPb.getBlockType() == BlockTypeProto .STRIPED);
@@ -362,10 +358,6 @@ public class FSImageFormatPBSnapshot {
             acl = new AclFeature(entries);
           }
           XAttrFeature xAttrs = null;
-          if (dirCopyInPb.hasXAttrs()) {
-            xAttrs = new XAttrFeature(FSImageFormatPBINode.Loader.loadXAttrs(
-                dirCopyInPb.getXAttrs(), state.getStringTable()));
-          }
 
           long modTime = dirCopyInPb.getModificationTime();
           boolean noQuota = dirCopyInPb.getNsQuota() == -1

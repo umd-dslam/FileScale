@@ -18,6 +18,8 @@ public class DatabaseINode {
 
   public static final long LONG_NULL = 0L;
 
+  public DatabaseINode() {}
+
   public static boolean checkInodeExistence(final long parentId, final String childName) {
     boolean exist = false;
     try {
@@ -467,5 +469,199 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     LOG.info("removeUc [UPDATE]: (" + id + ")");
+  }
+
+  public static String getXAttrValue(final long id) {
+    String value = null;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT value FROM inodexattrs WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        value = rs.getString(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getXAttrValue [GET]: (" + id + ", " + value + ")"); 
+    return value;
+  }
+
+  public static String getXAttrName(final long id) {
+    String name = null;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT name FROM inodexattrs WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        name = rs.getString(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getXAttrName [GET]: (" + id + ", " + name + ")"); 
+    return name;
+  }
+
+  public static int getXAttrNameSpace(final long id) {
+    int ns = -1;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT namespace FROM inodexattrs WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        ns = rs.getInt(1);
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getXAttrNameSpace [GET]: (" + id + ", " + ns + ")"); 
+    return ns;
+  }
+
+  public class XAttrInfo {
+    public int namespace;
+    public String name;
+    public String value;
+
+    public XAttrInfo(int ns, String name, String val) {
+      this.namespace = ns;
+      this.name = name;
+      this.value = val;
+    }
+
+    public int getNameSpace() {
+      return namespace;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getValue() {
+      return value;
+    }
+  }
+
+  public List<XAttrInfo> getXAttrs(final long id) {
+    List<XAttrInfo> xinfo = new ArrayList<XAttrInfo>();
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT namespace, name, value FROM inodexattrs WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        xinfo.add(new XAttrInfo(rs.getInt(1), rs.getString(2), rs.getString(3)));
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getXAttrs [GET]: (" + id + ")"); 
+    return xinfo;
+  }
+
+  public static Boolean checkXAttrExistence(final long id) {
+    boolean exist = false;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT COUNT(id) FROM inodexattrs WHERE id = ?";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        if (rs.getInt(1) >= 1) {
+          exist = true;
+        }
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    return exist;
+  }
+
+  public static void insertXAttr(final long id, final int namespace, final String name, final String value) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "INSERT INTO inodexattrs(id, namespace, name, value) VALUES (?, ?, ?, ?);";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      pst.setInt(2, namespace);
+      pst.setString(3, name);
+      pst.setString(4, value);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("insertXAttr [UPDATE]: (" + id + ", " + namespace + ", " + name + ", " + value + ")");
+  }
+
+  public static void removeXAttr(final long id) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "DELETE FROM inodexattrs WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, id);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("removeXAttr [UPDATE]: (" + id + ")");
+  }
+
+  public static void insertXAttrs(final long id, final List<Integer> ns, final List<String> namevals) {
+    try {
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        // call a stored procedure
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        CallableStatement proc = conn.prepareCall("{call InsertXAttrs(?, ?, ?)}");
+        proc.setLong(1, id);
+        proc.setArray(2, conn.createArrayOf("SMALLINT", ns.toArray(new Long[ns.size()])));
+        proc.setArray(3, conn.createArrayOf("VARCHAR", namevals.toArray(new String[namevals.size()])));
+        ResultSet rs = proc.executeQuery();
+        while (rs.next()) {
+          LOG.info("insertXAttrs Return: " + rs.getLong(1));
+        }
+        rs.close();
+        proc.close();
+      } else {
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        String sql = "";
+        for (int i = 0; i < ns.size(); ++i) {
+          sql += "INSERT INTO inodexattrs(id, namespace, name, value) VALUES(?, ?, ?, ?);";
+        }
+        PreparedStatement pst = conn.prepareStatement(sql);
+        for (int i = 0; i < ns.size(); ++i) {
+          pst.setLong(i * 4 + 1, id);
+          pst.setInt(i * 4 + 2, ns.get(i));
+          pst.setString(i * 4 + 3, namevals.get(i * 2));
+          pst.setString(i * 4 + 4, namevals.get(i * 2 + 1));
+        }
+        pst.executeUpdate();
+        pst.close();
+      }
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("insertXAttrs: " + id);
   }
 }

@@ -349,6 +349,10 @@ public abstract class INodeWithAdditionalFields extends INode
     DatabaseINode.removeUc(id);
   }
 
+  protected void removeXAttrFeature(long id) {
+    DatabaseINode.removeXAttr(id);
+  }
+
   protected void removeFeature(Feature f) {
     // int size = features.length;
     // if (size == 0) {
@@ -423,22 +427,23 @@ public abstract class INodeWithAdditionalFields extends INode
       return getSnapshotINode(snapshotId).getXAttrFeature();
     }
 
-    return getFeature(XAttrFeature.class);
+    if(!XAttrFeature.isFileXAttr(getId())) {
+      return null;
+    }
+    return new XAttrFeature(getId());
   }
   
   @Override
   public void removeXAttrFeature() {
-    XAttrFeature f = getXAttrFeature();
-    Preconditions.checkNotNull(f);
-    removeFeature(f);
+    removeXAttrFeature(getId());
   }
   
   @Override
   public void addXAttrFeature(XAttrFeature f) {
-    XAttrFeature f1 = getXAttrFeature();
-    Preconditions.checkState(f1 == null, "Duplicated XAttrFeature");
-    
-    addFeature(f);
+    if (f.getId() != getId()) {
+      Preconditions.checkState(!XAttrFeature.isFileXAttr(getId()), "Duplicated XAttrFeature");
+      XAttrFeature.createXAttrFeature(getId(), f.getXAttrs());
+    }
   }
 
   public final Feature[] getFeatures() {
