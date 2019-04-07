@@ -33,37 +33,45 @@ import com.google.common.base.Preconditions;
 @InterfaceAudience.Private
 public class XAttrFeature implements INode.Feature {
 
-  private static XAttrFeature instance; 
+  // private static XAttrFeature instance; 
 
-  public static XAttrFeature getInstance() {
-    if (instance == null) {
-      instance = new XAttrFeature();
-    }
-    return instance;
-  }
+  // public static XAttrFeature getInstance() {
+  //   if (instance == null) {
+  //     instance = new XAttrFeature();
+  //   }
+  //   return instance;
+  // }
 
-  public XAttrFeature() {}
+  private long id;
+
+  public XAttrFeature(long id) { this.id = id; }
 
   public XAttrFeature(long id, List<XAttr> xAttrs) {
+    createXAttrFeature(id, xAttrs);
+    this.id = id;
+  }
+
+  public static createXAttrFeature(long id, List<XAttr> xAttrs) {
     Preconditions.checkState(!isFileXAttr(id), "Duplicated XAttrFeature");
     List<Long> ids = new ArrayList<Long>();
     if (xAttrs != null && !xAttrs.isEmpty()) {
+      List<Integer> ns = New ArrayList<Integer>();
+      List<String> namevals = New ArrayList<String>();
       for (XAttr attr : xAttrs) {
-         ids.add(attr.getId());
+        ns.add(attr.getNameSpace().ordinal());
+        namevals.add(attr.getName());
+        namevals.add(XAttr.bytes2String(attr.Value()));
       }
-      DatabaseINode.insertXAttrs(id, ids);
+      DatabaseINode.insertXAttrs(id, ns, namevals);
     }
   }
 
-  public static createXAttrFeature(long id, List<XAttr> xAttr) {
-    Preconditions.checkState(!isFileXAttr(id), "Duplicated XAttrFeature");
-    List<Long> ids = new ArrayList<Long>();
-    if (xAttrs != null && !xAttrs.isEmpty()) {
-      for (XAttr attr : xAttrs) {
-         ids.add(attr.getId());
-      }
-      DatabaseINode.insertXAttrs(id, ids);
-    }
+  public long getId() {
+    return this.id;
+  }
+
+  public Boolean isFileXAttr() {
+    return DatabaseINode.checkXAttrExistence(id);
   }
 
   public static Boolean isFileXAttr(long id) {
@@ -74,6 +82,10 @@ public class XAttrFeature implements INode.Feature {
    * Get the XAttrs.
    * @return the XAttrs
    */
+  public List<XAttr> getXAttrs() {
+    return DatabaseINode.getXAttrs(id);
+  }
+
   public static List<XAttr> getXAttrs(long id) {
     return DatabaseINode.getXAttrs(id);
   }
@@ -83,6 +95,19 @@ public class XAttrFeature implements INode.Feature {
    * @param prefixedName xAttr name with prefix
    * @return the XAttr
    */
+  public XAttr getXAttr(String prefixedName) {
+    XAttr attr = null;
+    XAttr toFind = XAttrHelper.buildXAttr(prefixedName);
+    List<XAttr> xAttrs = getXAttrs(id);
+    for (XAttr a : xAttrs) {
+      if (a.equalsIgnoreValue(toFind)) {
+        attr = a;
+        break;
+      }
+    }
+    return attr;
+  }
+
   public static XAttr getXAttr(long id, String prefixedName) {
     XAttr attr = null;
     XAttr toFind = XAttrHelper.buildXAttr(prefixedName);

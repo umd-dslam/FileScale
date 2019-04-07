@@ -67,17 +67,14 @@ public class XAttr {
     RAW
   }
 
-  private final long id;
+  private final NameSpace ns;
+  private final String name;
+  private final byte[] value;
+
   public static class Builder {
     private NameSpace ns = NameSpace.USER;
     private String name;
     private byte[] value;
-    private long id;
-
-    public Builder setId(long id) {
-      this.id = id;
-      return this;
-    }
 
     public Builder setNameSpace(NameSpace ns) {
       this.ns = ns;
@@ -95,7 +92,7 @@ public class XAttr {
     }
 
     public XAttr build() {
-      return new XAttr(id, ns, name, value);
+      return new XAttr(ns, name, value);
     }
   }
 
@@ -103,13 +100,11 @@ public class XAttr {
   // more efficient due to use of cached encoders/decoders.
   private static final String UTF8_CSN = StandardCharsets.UTF_8.name();
 
-  private XAttr(long id) {
-    this.id = id;
-  }
-
-  private XAttr(long id, NameSpace ns, String name, byte[] value) {
-    this.id = id;
-    DatabaseINode.insertXAttr(id, ns.ordinal(), name, bytes2String(value));
+  private XAttr(NameSpace ns, String name, byte[] value) {
+    this.ns = ns;
+    this.name = name;	
+    this.value = value;
+    // DatabaseINode.insertXAttr(id, ns.ordinal(), name, bytes2String(value));
   }
 
   /**
@@ -149,20 +144,19 @@ public class XAttr {
     }
   }
 
-  public long getId() {
-    return id;
-  }
-
   public NameSpace getNameSpace() {
-    return NameSpace.values()[DatabaseINode.getXAttrNameSpace(id)];
+    return ns;
+    // return NameSpace.values()[DatabaseINode.getXAttrNameSpace(id)];
   }
 
   public String getName() {
-    return DatabaseINode.getXAttrName(id);
+    return name;
+    // return DatabaseINode.getXAttrName(id);
   }
 
   public byte[] getValue() {
-    return string2Bytes(DatabaseINode.getXAttrValue(id));
+    return value;
+    // return string2Bytes(DatabaseINode.getXAttrValue(id));
   }
 
   @Override

@@ -159,7 +159,7 @@ public class TestINodeAttributeProvider {
           if (useDefault) {
             x = inode.getXAttrFeature();
           } else {
-            x = new XAttrFeature(ImmutableList.copyOf(
+            x = new XAttrFeature(inode.getId(), ImmutableList.copyOf(
                     Lists.newArrayList(
                             new XAttr.Builder().setName("test")
                                     .setValue(new byte[] {1, 2})

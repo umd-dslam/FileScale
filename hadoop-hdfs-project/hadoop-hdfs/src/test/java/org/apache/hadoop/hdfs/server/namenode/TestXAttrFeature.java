@@ -61,7 +61,7 @@ public class TestXAttrFeature {
   @Test
   public void testXAttrFeature() throws Exception {
     List<XAttr> xAttrs = new ArrayList<>();
-    XAttrFeature feature = new XAttrFeature(xAttrs);
+    XAttrFeature feature = new XAttrFeature(1, xAttrs);
 
     // no XAttrs in the feature
     assertTrue(feature.getXAttrs().isEmpty());
@@ -69,7 +69,7 @@ public class TestXAttrFeature {
     // one XAttr in the feature
     XAttr a1 = XAttrHelper.buildXAttr(name1, value1);
     xAttrs.add(a1);
-    feature = new XAttrFeature(xAttrs);
+    feature = new XAttrFeature(2, xAttrs);
 
     XAttr r1 = feature.getXAttr(name1);
     assertTrue(a1.equals(r1));
@@ -90,7 +90,7 @@ public class TestXAttrFeature {
     xAttrs.add(a6);
     xAttrs.add(a7);
     xAttrs.add(bigXattr);
-    feature = new XAttrFeature(xAttrs);
+    feature = new XAttrFeature(3, xAttrs);
 
     XAttr r2 = feature.getXAttr(name2);
     assertTrue(a2.equals(r2));

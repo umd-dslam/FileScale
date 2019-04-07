@@ -232,8 +232,8 @@ public abstract class INodeReference extends INode {
   }
   
   @Override
-  final void addXAttrFeature(List<XAttr> xAttrs) {
-    referred.addXAttrFeature(xAttrs);
+  final void addXAttrFeature(XAttrFeature xAttrFeature) {
+    referred.addXAttrFeature(xAttrFeature);
   }
   
   @Override

@@ -430,7 +430,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if(!XAttrFeature.isFileXAttr(getId()) {
       return null;
     }
-    return XAttrFeature.getInstance();
+    return new XAttrFeature(getId());
   }
   
   @Override
@@ -439,9 +439,11 @@ public abstract class INodeWithAdditionalFields extends INode
   }
   
   @Override
-  public void addXAttrFeature(List<XAttr> xAttrs) {
-    Preconditions.checkState(!XAttrFeature.isFileXAttr(getId()), "Duplicated XAttrFeature");
-    XAttrFeature.createXAttrFeature(getId(), xAttrs);
+  public void addXAttrFeature(XAttrFeature f) {
+    if (f.getId() != getId()) {
+      Preconditions.checkState(!isFileXAttr(getId()), "Duplicated XAttrFeature");
+      XAttrFeature.createXAttrFeature(getId(), f.getXAttrs());
+    }
   }
 
   public final Feature[] getFeatures() {

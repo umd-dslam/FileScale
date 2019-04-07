@@ -128,7 +128,7 @@ public class INodeSymlink extends INodeWithAdditionalFields {
   }
   
   @Override
-  public void addXAttrFeature(List<XAttr> xAttrs) {
+  public void addXAttrFeature(XAttrFeature f) {
     throw new UnsupportedOperationException("XAttrs are not supported on symlinks");
   }
 

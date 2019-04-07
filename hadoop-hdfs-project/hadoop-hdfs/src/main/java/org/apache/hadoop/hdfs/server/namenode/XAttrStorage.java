@@ -76,6 +76,6 @@ public class XAttrStorage {
     if (xAttrs == null || xAttrs.isEmpty()) {
       return;
     }
-    inode.addXAttrFeature(xAttrs, snapshotId);
+    inode.addXAttrFeature(new XAttrFeature(inode.getId(), xAttrs), snapshotId);
   }
 }
