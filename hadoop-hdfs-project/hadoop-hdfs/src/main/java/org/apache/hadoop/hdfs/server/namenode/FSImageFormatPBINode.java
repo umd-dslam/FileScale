@@ -409,6 +409,7 @@ public final class FSImageFormatPBINode {
         dir.rootDir.addAclFeature(af);
       }
       // root dir supports having extended attributes according to POSIX
+      final XAttrFeature f = root.getXAttrFeature();
       dir.addRootDirToEncryptionZone(f);
     }
   }

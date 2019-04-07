@@ -427,7 +427,7 @@ public abstract class INodeWithAdditionalFields extends INode
       return getSnapshotINode(snapshotId).getXAttrFeature();
     }
 
-    if(!XAttrFeature.isFileXAttr(getId()) {
+    if(!XAttrFeature.isFileXAttr(getId())) {
       return null;
     }
     return new XAttrFeature(getId());

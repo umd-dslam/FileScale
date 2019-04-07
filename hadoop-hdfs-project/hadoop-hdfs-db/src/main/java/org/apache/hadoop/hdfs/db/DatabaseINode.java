@@ -18,6 +18,8 @@ public class DatabaseINode {
 
   public static final long LONG_NULL = 0L;
 
+  public DatabaseINode() {}
+
   public static boolean checkInodeExistence(final long parentId, final String childName) {
     boolean exist = false;
     try {
@@ -553,8 +555,8 @@ public class DatabaseINode {
     }
   }
 
-  public static List<XAttrInfo> getXAttrs(final long id) {
-    List<XAttrInfo> xinfo = ArrayList<XAttrInfo>();
+  public List<XAttrInfo> getXAttrs(final long id) {
+    List<XAttrInfo> xinfo = new ArrayList<XAttrInfo>();
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "SELECT namespace, name, value FROM inodexattrs WHERE id = ?";
@@ -562,7 +564,7 @@ public class DatabaseINode {
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
-        xinfo.add(new XAttrInfo(rs.getInt(1), rs.getInt(2), rs.getInt(3)));
+        xinfo.add(new XAttrInfo(rs.getInt(1), rs.getString(2), rs.getString(3)));
       }
       rs.close();
       pst.close();
@@ -632,7 +634,7 @@ public class DatabaseINode {
         // call a stored procedure
         Connection conn = DatabaseConnection.getInstance().getConnection();
         CallableStatement proc = conn.prepareCall("{call InsertXAttrs(?, ?, ?)}");
-        proc.setLong(1, childId);
+        proc.setLong(1, id);
         proc.setArray(2, conn.createArrayOf("SMALLINT", ns.toArray(new Long[ns.size()])));
         proc.setArray(3, conn.createArrayOf("VARCHAR", namevals.toArray(new String[namevals.size()])));
         ResultSet rs = proc.executeQuery();
@@ -645,14 +647,14 @@ public class DatabaseINode {
         Connection conn = DatabaseConnection.getInstance().getConnection();
         String sql = "";
         for (int i = 0; i < ns.size(); ++i) {
-          String sql += "INSERT INTO inodexattrs(id, namespace, name, value) VALUES(?, ?, ?, ?);";
+          sql += "INSERT INTO inodexattrs(id, namespace, name, value) VALUES(?, ?, ?, ?);";
         }
         PreparedStatement pst = conn.prepareStatement(sql);
         for (int i = 0; i < ns.size(); ++i) {
           pst.setLong(i * 4 + 1, id);
-          pst.setLong(i * 4 + 2, ns[i]);
-          pst.setLong(i * 4 + 3, namevals[i * 2]);
-          pst.setLong(i * 4 + 4, namevals[i * 2 + 1]);
+          pst.setInt(i * 4 + 2, ns.get(i));
+          pst.setString(i * 4 + 3, namevals.get(i * 2));
+          pst.setString(i * 4 + 4, namevals.get(i * 2 + 1));
         }
         pst.executeUpdate();
         pst.close();

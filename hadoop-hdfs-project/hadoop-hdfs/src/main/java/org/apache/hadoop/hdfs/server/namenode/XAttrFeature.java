@@ -42,12 +42,12 @@ public class XAttrFeature implements INode.Feature {
     this.id = id;
   }
 
-  public static createXAttrFeature(long id, List<XAttr> xAttrs) {
+  public static void createXAttrFeature(long id, List<XAttr> xAttrs) {
     Preconditions.checkState(!isFileXAttr(id), "Duplicated XAttrFeature");
     List<Long> ids = new ArrayList<Long>();
     if (xAttrs != null && !xAttrs.isEmpty()) {
-      List<Integer> ns = New ArrayList<Integer>();
-      List<String> namevals = New ArrayList<String>();
+      List<Integer> ns = new ArrayList<Integer>();
+      List<String> namevals = new ArrayList<String>();
       for (XAttr attr : xAttrs) {
         ns.add(attr.getNameSpace().ordinal());
         namevals.add(attr.getName());
@@ -79,7 +79,7 @@ public class XAttrFeature implements INode.Feature {
 
   public static List<XAttr> getXAttrs(long id) {
     List<XAttr> xattrs = new ArrayList<XAttr>();
-    List<DatabaseINode.XAttrInfo> xinfo = DatabaseINode.getXAttrs(id);
+    List<DatabaseINode.XAttrInfo> xinfo = new DatabaseINode().getXAttrs(id);
     for (int i = 0; i < xinfo.size(); ++i) {
       xattrs.add(new XAttr(NameSpace.values()[xinfo[i].getNameSpace()], xinfo[i].getName(), string2Bytes(xinfo[i].getValue())));
     }
