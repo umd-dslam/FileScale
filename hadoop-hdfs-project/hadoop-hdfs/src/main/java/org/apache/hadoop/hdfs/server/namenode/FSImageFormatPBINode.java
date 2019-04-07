@@ -178,10 +178,6 @@ public final class FSImageFormatPBINode {
             d.getAcl(), state.getStringTable()));
         dir.addAclFeature(new AclFeature(entries));
       }
-      if (d.hasXAttrs()) {
-        dir.addXAttrFeature(new XAttrFeature(
-            loadXAttrs(d.getXAttrs(), state.getStringTable())));
-      }
       return dir;
     }
 
@@ -355,11 +351,6 @@ public final class FSImageFormatPBINode {
         file.addAclFeature(new AclFeature(entries));
       }
 
-      if (f.hasXAttrs()) {
-        file.addXAttrFeature(new XAttrFeature(
-            loadXAttrs(f.getXAttrs(), state.getStringTable())));
-      }
-
       // under-construction information
       if (f.hasFileUC()) {
         INodeSection.FileUnderConstructionFeature uc = f.getFileUC();
@@ -418,10 +409,6 @@ public final class FSImageFormatPBINode {
         dir.rootDir.addAclFeature(af);
       }
       // root dir supports having extended attributes according to POSIX
-      final XAttrFeature f = root.getXAttrFeature();
-      if (f != null) {
-        dir.rootDir.addXAttrFeature(f);
-      }
       dir.addRootDirToEncryptionZone(f);
     }
   }

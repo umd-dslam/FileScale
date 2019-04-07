@@ -1218,9 +1218,8 @@ public class TestINodeFile {
         setName("a1").setValue(new byte[]{0x31, 0x32, 0x33}).build();
     builder.add(xAttr);
     XAttrFeature f = new XAttrFeature(builder.build());
-    inf.addXAttrFeature(f);
-    XAttrFeature f1 = inf.getXAttrFeature();
-    assertEquals(xAttr, f1.getXAttrs().get(0));
+    inf.addXAttrFeature(builder.build());
+    assertEquals(xAttr, XAttrFeature.getXAttrs(inf.getId()).get(0));
     inf.removeXAttrFeature();
     f1 = inf.getXAttrFeature();
     assertEquals(f1, null);

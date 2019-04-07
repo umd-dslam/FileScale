@@ -25,63 +25,57 @@ import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.XAttrHelper;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.base.Preconditions;
 
 /**
  * Feature for extended attributes.
  */
 @InterfaceAudience.Private
 public class XAttrFeature implements INode.Feature {
-  static final int PACK_THRESHOLD = 1024;
 
-  /** The packed bytes for small size XAttrs. */
-  private byte[] attrs;
+  private static XAttrFeature instance; 
 
-  /**
-   * List to store large size XAttrs.
-   * Typically XAttr value size is small, so this
-   * list is null usually.
-   */
-  private ImmutableList<XAttr> xAttrs;
-
-  public XAttrFeature(List<XAttr> xAttrs) {
-    if (xAttrs != null && !xAttrs.isEmpty()) {
-      List<XAttr> toPack = new ArrayList<XAttr>();
-      ImmutableList.Builder<XAttr> b = null;
-      for (XAttr attr : xAttrs) {
-        if (attr.getValue() == null ||
-            attr.getValue().length <= PACK_THRESHOLD) {
-          toPack.add(attr);
-        } else {
-          if (b == null) {
-            b = ImmutableList.builder();
-          }
-          b.add(attr);
-        }
-      }
-      this.attrs = XAttrFormat.toBytes(toPack);
-      if (b != null) {
-        this.xAttrs = b.build();
-      }
+  public static XAttrFeature getInstance() {
+    if (instance == null) {
+      instance = new XAttrFeature();
     }
+    return instance;
+  }
+
+  public XAttrFeature() {}
+
+  public XAttrFeature(long id, List<XAttr> xAttrs) {
+    Preconditions.checkState(!isFileXAttr(id), "Duplicated XAttrFeature");
+    List<Long> ids = new ArrayList<Long>();
+    if (xAttrs != null && !xAttrs.isEmpty()) {
+      for (XAttr attr : xAttrs) {
+         ids.add(attr.getId());
+      }
+      DatabaseINode.insertXAttrs(id, ids);
+    }
+  }
+
+  public static createXAttrFeature(long id, List<XAttr> xAttr) {
+    Preconditions.checkState(!isFileXAttr(id), "Duplicated XAttrFeature");
+    List<Long> ids = new ArrayList<Long>();
+    if (xAttrs != null && !xAttrs.isEmpty()) {
+      for (XAttr attr : xAttrs) {
+         ids.add(attr.getId());
+      }
+      DatabaseINode.insertXAttrs(id, ids);
+    }
+  }
+
+  public static Boolean isFileXAttr(long id) {
+    return DatabaseINode.isFileXAttr(id);
   }
 
   /**
    * Get the XAttrs.
    * @return the XAttrs
    */
-  public List<XAttr> getXAttrs() {
-    if (xAttrs == null) {
-      return XAttrFormat.toXAttrs(attrs);
-    } else {
-      if (attrs == null) {
-        return xAttrs;
-      } else {
-        List<XAttr> result = new ArrayList<>();
-        result.addAll(XAttrFormat.toXAttrs(attrs));
-        result.addAll(xAttrs);
-        return result;
-      }
-    }
+  public static List<XAttr> getXAttrs(long id) {
+    return DatabaseINode.getXAttrs(id);
   }
 
   /**
@@ -89,15 +83,14 @@ public class XAttrFeature implements INode.Feature {
    * @param prefixedName xAttr name with prefix
    * @return the XAttr
    */
-  public XAttr getXAttr(String prefixedName) {
-    XAttr attr = XAttrFormat.getXAttr(attrs, prefixedName);
-    if (attr == null && xAttrs != null) {
-      XAttr toFind = XAttrHelper.buildXAttr(prefixedName);
-      for (XAttr a : xAttrs) {
-        if (a.equalsIgnoreValue(toFind)) {
-          attr = a;
-          break;
-        }
+  public XAttr getXAttr(long id, String prefixedName) {
+    XAttr attr = null;
+    XAttr toFind = XAttrHelper.buildXAttr(prefixedName);
+    List<XAttr> xAttrs = getXAttrs(id);
+    for (XAttr a : xAttrs) {
+      if (a.equalsIgnoreValue(toFind)) {
+        attr = a;
+        break;
       }
     }
     return attr;

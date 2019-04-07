@@ -22,6 +22,8 @@ import java.util.Arrays;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.hadoop.classification.InterfaceAudience;
+import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
 
 /**
  * XAttr is the POSIX Extended Attribute model similar to that found in
@@ -65,14 +67,17 @@ public class XAttr {
     RAW
   }
 
-  private final NameSpace ns;
-  private final String name;
-  private final byte[] value;
-
+  private final long id;
   public static class Builder {
     private NameSpace ns = NameSpace.USER;
     private String name;
     private byte[] value;
+    private long id;
+
+    public Builder setId(long id) {
+      this.id = id;
+      return this;
+    }
 
     public Builder setNameSpace(NameSpace ns) {
       this.ns = ns;
@@ -90,34 +95,82 @@ public class XAttr {
     }
 
     public XAttr build() {
-      return new XAttr(ns, name, value);
+      return new XAttr(id, ns, name, value);
     }
   }
 
-  private XAttr(NameSpace ns, String name, byte[] value) {
-    this.ns = ns;
-    this.name = name;
-    this.value = value;
+  // Using the charset canonical name for String/byte[] conversions is much
+  // more efficient due to use of cached encoders/decoders.
+  private static final String UTF8_CSN = StandardCharsets.UTF_8.name();
+
+  private XAttr(long id) {
+    this.id = id;
+  }
+
+  private XAttr(long id, NameSpace ns, String name, byte[] value) {
+    this.id = id;
+    DatabaseINode.insertXAttr(id, ns.ordinal(), name, bytes2String(value));
+  }
+
+  /**
+   * Converts a string to a byte array using UTF8 encoding.
+   */
+  private static byte[] string2Bytes(String str) {
+    try {
+      return str.getBytes(UTF8_CSN);
+    } catch (UnsupportedEncodingException e) {
+      // should never happen!
+      throw new IllegalArgumentException("UTF8 decoding is not supported", e);
+    }
+  }
+
+  /**
+   * Converts a byte array to a string using UTF8 encoding.
+   */
+  private static String bytes2String(byte[] bytes) {
+    return bytes2String(bytes, 0, bytes.length);
+  }
+
+  /**
+   * Decode a specific range of bytes of the given byte array to a string
+   * using UTF8.
+   *
+   * @param bytes The bytes to be decoded into characters
+   * @param offset The index of the first byte to decode
+   * @param length The number of bytes to decode
+   * @return The decoded string
+   */
+  private static String bytes2String(byte[] bytes, int offset, int length) {
+    try {
+      return new String(bytes, offset, length, UTF8_CSN);
+    } catch (UnsupportedEncodingException e) {
+      // should never happen!
+      throw new IllegalArgumentException("UTF8 encoding is not supported", e);
+    }
+  }
+
+  public long getId() {
+    return id;
   }
 
   public NameSpace getNameSpace() {
-    return ns;
+    return NameSpace.values()[DatabaseINode.getXAttrNameSpace(id)];
   }
 
   public String getName() {
-    return name;
+    return DatabaseINode.getXAttrName(id);
   }
 
   public byte[] getValue() {
-    return value;
+    return string2Bytes(DatabaseINode.getXAttrValue(id));
   }
 
   @Override
-  public int hashCode() {
+  public static int hashCode() {
     return new HashCodeBuilder(811, 67)
-        .append(name)
-        .append(ns)
-        .append(value)
+        .append(getName())
+        .append(getNameSpace())
+        .append(getValue())
         .toHashCode();
   }
 
@@ -130,9 +183,9 @@ public class XAttr {
     }
     XAttr rhs = (XAttr) obj;
     return new EqualsBuilder()
-        .append(ns, rhs.ns)
-        .append(name, rhs.name)
-        .append(value, rhs.value)
+        .append(getNameSpace(), rhs.getNameSpace())
+        .append(getName(), rhs.getName())
+        .append(getValue(), rhs.getValue())
         .isEquals();
   }
 
@@ -150,14 +203,14 @@ public class XAttr {
     }
     XAttr rhs = (XAttr) obj;
     return new EqualsBuilder()
-        .append(ns, rhs.ns)
-        .append(name, rhs.name)
+        .append(getNameSpace(), rhs.getNameSpace())
+        .append(getName(), rhs.getName())
         .isEquals();
   }
 
   @Override
   public String toString() {
-    return "XAttr [ns=" + ns + ", name=" + name + ", value="
-        + Arrays.toString(value) + "]";
+    return "XAttr [ns=" + getNameSpace() + ", name=" + getName() + ", value="
+        + Arrays.toString(getValue()) + "]";
   }
 }
