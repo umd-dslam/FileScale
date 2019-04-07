@@ -435,13 +435,13 @@ public abstract class INodeWithAdditionalFields extends INode
   
   @Override
   public void removeXAttrFeature() {
-    removexAttrFeature(getId());
+    removeXAttrFeature(getId());
   }
   
   @Override
   public void addXAttrFeature(XAttrFeature f) {
     if (f.getId() != getId()) {
-      Preconditions.checkState(!isFileXAttr(getId()), "Duplicated XAttrFeature");
+      Preconditions.checkState(!XAttrFeature.isFileXAttr(getId()), "Duplicated XAttrFeature");
       XAttrFeature.createXAttrFeature(getId(), f.getXAttrs());
     }
   }

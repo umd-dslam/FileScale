@@ -109,7 +109,7 @@ public class XAttr {
   /**
    * Converts a string to a byte array using UTF8 encoding.
    */
-  private static byte[] string2Bytes(String str) {
+  public static byte[] string2Bytes(String str) {
     try {
       return str.getBytes(UTF8_CSN);
     } catch (UnsupportedEncodingException e) {
@@ -121,7 +121,7 @@ public class XAttr {
   /**
    * Converts a byte array to a string using UTF8 encoding.
    */
-  private static String bytes2String(byte[] bytes) {
+  public static String bytes2String(byte[] bytes) {
     return bytes2String(bytes, 0, bytes.length);
   }
 
@@ -156,7 +156,7 @@ public class XAttr {
   }
 
   @Override
-  public static int hashCode() {
+  public int hashCode() {
     return new HashCodeBuilder(811, 67)
         .append(getName())
         .append(getNameSpace())

@@ -199,7 +199,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   
   final INode addXAttrFeature(XAttrFeature xAttrFeature, int latestSnapshotId) {
     recordModification(latestSnapshotId);
-    addXAttrFeature(xAttrs);
+    addXAttrFeature(xAttrFeature);
     return this;
   }
   
