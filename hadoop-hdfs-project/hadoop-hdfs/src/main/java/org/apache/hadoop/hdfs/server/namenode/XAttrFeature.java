@@ -67,7 +67,7 @@ public class XAttrFeature implements INode.Feature {
   }
 
   public static Boolean isFileXAttr(long id) {
-    return DatabaseINode.isFileXAttr(id);
+    return DatabaseINode.checkXAttrExistence(id);
   }
 
   /**
