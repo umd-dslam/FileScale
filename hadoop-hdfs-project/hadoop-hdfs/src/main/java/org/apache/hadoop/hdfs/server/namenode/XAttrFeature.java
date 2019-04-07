@@ -32,16 +32,6 @@ import com.google.common.base.Preconditions;
  */
 @InterfaceAudience.Private
 public class XAttrFeature implements INode.Feature {
-
-  // private static XAttrFeature instance; 
-
-  // public static XAttrFeature getInstance() {
-  //   if (instance == null) {
-  //     instance = new XAttrFeature();
-  //   }
-  //   return instance;
-  // }
-
   private long id;
 
   public XAttrFeature(long id) { this.id = id; }

@@ -581,15 +581,16 @@ public class DatabaseINode {
     LOG.info("removeXAttr [UPDATE]: (" + id + ")");
   }
 
-  public static void insertXAttrs(final long id, final List<Long> ids) {
+  public static void insertXAttrs(final long id, final List<Integer> ns, final List<String> namevals) {
     try {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
         Connection conn = DatabaseConnection.getInstance().getConnection();
-        CallableStatement proc = conn.prepareCall("{call InsertXAttrs(?, ?)}");
+        CallableStatement proc = conn.prepareCall("{call InsertXAttrs(?, ?, ?)}");
         proc.setLong(1, childId);
-        proc.setArray(2, conn.createArrayOf("BIGINT", ids.toArray(new Long[ids.size()])));
+        proc.setArray(2, conn.createArrayOf("SMALLINT", ns.toArray(new Long[ns.size()])));
+        proc.setArray(3, conn.createArrayOf("VARCHAR", namevals.toArray(new String[namevals.size()])));
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
           LOG.info("insertXAttrs Return: " + rs.getLong(1));
@@ -599,13 +600,15 @@ public class DatabaseINode {
       } else {
         Connection conn = DatabaseConnection.getInstance().getConnection();
         String sql = "";
-        for (int i = 0; i < ids.size(); ++i) {
-          String sql += "INSERT INTO inodexattrs SELECT ?, namespace, name, value FROM inodexattrs WHERE id = ?;";
+        for (int i = 0; i < ns.size(); ++i) {
+          String sql += "INSERT INTO inodexattrs(id, namespace, name, value) VALUES(?, ?, ?, ?);";
         }
         PreparedStatement pst = conn.prepareStatement(sql);
-        for (int i = 0; i < ids.size(); ++i) {
-          pst.setLong(i * 2 + 1, id);
-          pst.setLong(i * 2 + 2, ids[i]);
+        for (int i = 0; i < ns.size(); ++i) {
+          pst.setLong(i * 4 + 1, id);
+          pst.setLong(i * 4 + 2, ns[i]);
+          pst.setLong(i * 4 + 3, namevals[i * 2]);
+          pst.setLong(i * 4 + 4, namevals[i * 2 + 1]);
         }
         pst.executeUpdate();
         pst.close();

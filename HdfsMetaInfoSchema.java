@@ -57,15 +57,15 @@ public class HdfsMetaInfoSchema {
 
       String sql2 =
           "CREATE TABLE inodes("
-              + "   id bigint primary key, parent bigint, name varchar(30),"
+              + "   id bigint primary key, parent bigint, name varchar,"
               + "   accessTime bigint, modificationTime bigint,"
               + "   header bigint, permission bigint"
               + ");"
               + "CREATE TABLE inodexattrs("
-              + "   id bigint, namespace smallint, name varchar(100), value varchar(100)"
+              + "   id bigint, namespace smallint, name varchar, value varchar"
               + ");"
               + "CREATE TABLE inodeuc("
-              + "   id bigint primary key, clientName varchar(50), clientMachine varchar(50)"
+              + "   id bigint primary key, clientName varchar, clientMachine varchar"
               + ");"
               + "CREATE TABLE inode2block("
               + "   blockId bigint primary key, id bigint, idx int"
@@ -79,14 +79,14 @@ public class HdfsMetaInfoSchema {
               + "   PRIMARY KEY(blockId, idx)"
               + ");"
               + "CREATE TABLE block2storage("
-              + "   blockId bigint, idx int, storageId varchar(64),"
+              + "   blockId bigint, idx int, storageId varchar,"
               + "   PRIMARY KEY(blockId, idx)"
               + ");"
               + "CREATE TABLE storage("
-              + "   storageId varchar(64) primary key, storageType int, state int,"
+              + "   storageId varchar primary key, storageType int, state int,"
               + "   capacity bigint, dfsUsed bigint, nonDfsUsed bigint, remaining bigint,"
               + "   blockPoolUsed bigint, blockReportCount int, heartbeatedSinceFailover smallint,"
-              + "   blockContentsStale smallint, datanodeUuid varchar(128)"
+              + "   blockContentsStale smallint, datanodeUuid varchar"
               + ");";
       Statement st = connection.createStatement();
       st.execute(sql1);
