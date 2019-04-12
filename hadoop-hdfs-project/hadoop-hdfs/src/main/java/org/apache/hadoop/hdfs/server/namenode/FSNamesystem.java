@@ -6469,7 +6469,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(success, operationName, path, null, null);
   }
   
@@ -6488,7 +6488,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(success, operationName, path, null, null);
   }
   
@@ -6518,7 +6518,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(success, operationName, snapshotRoot,
         snapshotPath, null);
     return snapshotPath;
@@ -6555,7 +6555,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(success, operationName, oldSnapshotRoot,
         newSnapshotRoot, null);
   }
@@ -6740,7 +6740,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
 
     // Breaking the pattern as removing blocks have to happen outside of the
     // global lock
@@ -7553,9 +7553,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       success = true;
     } finally {
       writeUnlock(operationName);
-      if (success) {
-        getEditLog().logSync();
-      }
       logAuditEvent(success, operationName, srcArg, null, resultingStat);
     }
   }
@@ -7595,9 +7592,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       return responses.toArray(new AddErasureCodingPolicyResponse[0]);
     } finally {
       writeUnlock(operationName);
-      if (success) {
-        getEditLog().logSync();
-      }
       logAuditEvent(success, operationName, addECPolicyNames.toString(),
           null, null);
     }
@@ -7625,9 +7619,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       success = true;
     } finally {
       writeUnlock(operationName);
-      if (success) {
-        getEditLog().logSync();
-      }
       logAuditEvent(success, operationName, ecPolicyName, null, null);
     }
   }
@@ -7657,7 +7648,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
       if (success) {
-        getEditLog().logSync();
         logAuditEvent(success, operationName, ecPolicyName, null, null);
       }
     }
@@ -7689,7 +7679,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
       if (success) {
-        getEditLog().logSync();
         logAuditEvent(success, operationName, ecPolicyName, null, null);
       }
     }
@@ -7720,9 +7709,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       success = true;
     } finally {
       writeUnlock(operationName);
-      if (success) {
-        getEditLog().logSync();
-      }
       logAuditEvent(success, operationName, srcArg, null, resultingStat);
     }
   }
@@ -7808,7 +7794,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7868,7 +7853,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7892,7 +7876,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock("removeXAttr");
     }
-    getEditLog().logSync();
   }
 
   void checkAccess(String src, FsAction mode) throws IOException {
