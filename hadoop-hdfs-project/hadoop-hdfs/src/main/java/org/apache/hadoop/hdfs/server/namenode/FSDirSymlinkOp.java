@@ -119,8 +119,8 @@ class FSDirSymlinkOp {
       NameNode.stateChangeLog.info("addSymlink: failed to add " + path);
       return null;
     }
-    fsd.getEditLog().logSymlink(path, target, mtime, mtime, newNode,
-        logRetryCache);
+    // fsd.getEditLog().logSymlink(path, target, mtime, mtime, newNode,
+    //     logRetryCache);
 
     if(NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("addSymlink: " + path + " is added");

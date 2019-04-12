@@ -87,7 +87,6 @@ class FSDirXAttrOp {
     } finally {
       fsd.writeUnlock();
     }
-    fsd.getEditLog().logSetXAttrs(src, xAttrs, logRetryCache);
     return fsd.getAuditFileInfo(iip);
   }
 
@@ -180,7 +179,6 @@ class FSDirXAttrOp {
 
       List<XAttr> removedXAttrs = unprotectedRemoveXAttrs(fsd, iip, xAttrs);
       if (removedXAttrs != null && !removedXAttrs.isEmpty()) {
-        fsd.getEditLog().logRemoveXAttrs(src, removedXAttrs, logRetryCache);
       } else {
         throw new IOException(
             "No matching attributes found for remove operation");

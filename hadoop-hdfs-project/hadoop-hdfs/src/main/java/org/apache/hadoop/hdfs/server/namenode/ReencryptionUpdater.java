@@ -462,7 +462,6 @@ public final class ReencryptionUpdater implements Runnable {
 
   private void processTask(ReencryptionTask task)
       throws InterruptedException, ExecutionException, IOException {
-    final List<XAttr> xAttrs;
     final String zonePath;
     dir.writeLock();
     try {
@@ -487,14 +486,11 @@ public final class ReencryptionUpdater implements Runnable {
       EncryptionFaultInjector.getInstance().reencryptUpdaterProcessOneTask();
       processTaskEntries(zonePath, task);
       EncryptionFaultInjector.getInstance().reencryptUpdaterProcessCheckpoint();
-      xAttrs = processCheckpoints(zoneNode, tracker);
+      processCheckpoints(zoneNode, tracker);
     } finally {
       dir.writeUnlock();
     }
     FSDirEncryptionZoneOp.saveFileXAttrsForBatch(dir, task.batch.getBatch());
-    if (!xAttrs.isEmpty()) {
-      dir.getEditLog().logSetXAttrs(zonePath, xAttrs, false);
-    }
   }
 
   private synchronized void checkPauseForTesting() throws InterruptedException {
