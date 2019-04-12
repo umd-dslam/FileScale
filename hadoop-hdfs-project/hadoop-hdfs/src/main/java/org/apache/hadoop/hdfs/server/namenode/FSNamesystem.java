@@ -7233,7 +7233,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7254,7 +7254,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7274,7 +7274,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7294,7 +7294,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7314,7 +7314,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    getEditLog().logSync();
+    // getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7370,7 +7370,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         writeUnlock(operationName);
       }
 
-      getEditLog().logSync();
       logAuditEvent(true, operationName, src, null, resultingStat);
     } catch (AccessControlException e) {
       logAuditEvent(false, operationName, src);
