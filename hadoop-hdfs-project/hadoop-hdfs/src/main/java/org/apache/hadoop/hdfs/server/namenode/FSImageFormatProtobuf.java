@@ -373,14 +373,14 @@ public final class FSImageFormatProtobuf {
 
     private void loadErasureCodingSection(InputStream in)
         throws IOException {
-      ErasureCodingSection s = ErasureCodingSection.parseDelimitedFrom(in);
-      List<ErasureCodingPolicyInfo> ecPolicies = Lists
-          .newArrayListWithCapacity(s.getPoliciesCount());
-      for (int i = 0; i < s.getPoliciesCount(); ++i) {
-        ecPolicies.add(PBHelperClient.convertErasureCodingPolicyInfo(
-            s.getPolicies(i)));
-      }
-      fsn.getErasureCodingPolicyManager().loadPolicies(ecPolicies, conf);
+      // ErasureCodingSection s = ErasureCodingSection.parseDelimitedFrom(in);
+      // List<ErasureCodingPolicyInfo> ecPolicies = Lists
+      //     .newArrayListWithCapacity(s.getPoliciesCount());
+      // for (int i = 0; i < s.getPoliciesCount(); ++i) {
+      //   ecPolicies.add(PBHelperClient.convertErasureCodingPolicyInfo(
+      //       s.getPolicies(i)));
+      // }
+      // fsn.getErasureCodingPolicyManager().loadPolicies(ecPolicies, conf);
     }
   }
 
@@ -599,19 +599,19 @@ public final class FSImageFormatProtobuf {
 
     private void saveErasureCodingSection(
         FileSummary.Builder summary) throws IOException {
-      final FSNamesystem fsn = context.getSourceNamesystem();
-      ErasureCodingPolicyInfo[] ecPolicies =
-          fsn.getErasureCodingPolicyManager().getPersistedPolicies();
-      ArrayList<ErasureCodingPolicyProto> ecPolicyProtoes =
-          new ArrayList<ErasureCodingPolicyProto>();
-      for (ErasureCodingPolicyInfo p : ecPolicies) {
-        ecPolicyProtoes.add(PBHelperClient.convertErasureCodingPolicy(p));
-      }
+      // final FSNamesystem fsn = context.getSourceNamesystem();
+      // ErasureCodingPolicyInfo[] ecPolicies =
+      //     fsn.getErasureCodingPolicyManager().getPersistedPolicies();
+      // ArrayList<ErasureCodingPolicyProto> ecPolicyProtoes =
+      //     new ArrayList<ErasureCodingPolicyProto>();
+      // for (ErasureCodingPolicyInfo p : ecPolicies) {
+      //   ecPolicyProtoes.add(PBHelperClient.convertErasureCodingPolicy(p));
+      // }
 
-      ErasureCodingSection section = ErasureCodingSection.newBuilder().
-          addAllPolicies(ecPolicyProtoes).build();
-      section.writeDelimitedTo(sectionOutputStream);
-      commitSection(summary, SectionName.ERASURE_CODING);
+      // ErasureCodingSection section = ErasureCodingSection.newBuilder().
+      //     addAllPolicies(ecPolicyProtoes).build();
+      // section.writeDelimitedTo(sectionOutputStream);
+      // commitSection(summary, SectionName.ERASURE_CODING);
     }
 
     private void saveNameSystemSection(FileSummary.Builder summary)
