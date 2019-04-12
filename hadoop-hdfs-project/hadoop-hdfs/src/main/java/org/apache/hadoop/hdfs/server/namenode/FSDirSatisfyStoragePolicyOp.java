@@ -99,7 +99,6 @@ final class FSDirSatisfyStoragePolicyOp {
             xAttrs, EnumSet.of(XAttrSetFlag.CREATE));
         XAttrStorage.updateINodeXAttrs(inode, newXAttrs,
             iip.getLatestSnapshotId());
-        fsd.getEditLog().logSetXAttrs(src, xAttrs, logRetryCache);
 
         // Adding directory in the pending queue, so FileInodeIdCollector
         // process directory child in batch and recursively
@@ -149,7 +148,6 @@ final class FSDirSatisfyStoragePolicyOp {
           .fromINode(inode).getLatestSnapshotId());
       List<XAttr> xAttrs = Lists.newArrayListWithCapacity(1);
       xAttrs.add(spsXAttr);
-      fsd.getEditLog().logRemoveXAttrs(inode.getFullPathName(), xAttrs, false);
     } finally {
       fsd.writeUnlock();
     }

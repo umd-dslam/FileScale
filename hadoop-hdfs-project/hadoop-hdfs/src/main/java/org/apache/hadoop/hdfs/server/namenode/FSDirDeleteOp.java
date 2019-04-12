@@ -193,7 +193,6 @@ class FSDirDeleteOp {
     if (filesRemoved < 0) {
       return null;
     }
-    fsd.getEditLog().logDelete(iip.getPath(), mtime, logRetryCache);
     incrDeletedFileCount(filesRemoved);
 
     fsn.removeLeasesAndINodes(removedUCFiles, removedINodes, true);

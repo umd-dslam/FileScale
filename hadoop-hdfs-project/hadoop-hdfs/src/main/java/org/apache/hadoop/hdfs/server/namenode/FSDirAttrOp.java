@@ -65,7 +65,6 @@ public class FSDirAttrOp {
     } finally {
       fsd.writeUnlock();
     }
-    fsd.getEditLog().logSetPermissions(iip.getPath(), permission);
     return fsd.getAuditFileInfo(iip);
   }
 
@@ -94,7 +93,6 @@ public class FSDirAttrOp {
     } finally {
       fsd.writeUnlock();
     }
-    fsd.getEditLog().logSetOwner(iip.getPath(), username, group);
     return fsd.getAuditFileInfo(iip);
   }
 
@@ -114,10 +112,7 @@ public class FSDirAttrOp {
         throw new FileNotFoundException("File/Directory " + iip.getPath() +
                                             " does not exist.");
       }
-      boolean changed = unprotectedSetTimes(fsd, iip, mtime, atime, true);
-      if (changed) {
-        fsd.getEditLog().logTimes(iip.getPath(), mtime, atime);
-      }
+      unprotectedSetTimes(fsd, iip, mtime, atime, true);
     } finally {
       fsd.writeUnlock();
     }
@@ -139,9 +134,6 @@ public class FSDirAttrOp {
       final BlockInfo[] blocks = unprotectedSetReplication(fsd, iip,
                                                            replication);
       isFile = blocks != null;
-      if (isFile) {
-        fsd.getEditLog().logSetReplication(iip.getPath(), replication);
-      }
     } finally {
       fsd.writeUnlock();
     }
@@ -183,7 +175,6 @@ public class FSDirAttrOp {
       }
 
       unprotectedSetStoragePolicy(fsd, bm, iip, policyId);
-      fsd.getEditLog().logSetStoragePolicy(iip.getPath(), policyId);
     } finally {
       fsd.writeUnlock();
     }
@@ -243,13 +234,13 @@ public class FSDirAttrOp {
       INodeDirectory changed =
           unprotectedSetQuota(fsd, iip, nsQuota, ssQuota, type);
       if (changed != null) {
-        final QuotaCounts q = changed.getQuotaCounts();
-        if (type == null) {
-          fsd.getEditLog().logSetQuota(src, q.getNameSpace(), q.getStorageSpace());
-        } else {
-          fsd.getEditLog().logSetQuotaByStorageType(
-              src, q.getTypeSpaces().get(type), type);
-        }
+        // final QuotaCounts q = changed.getQuotaCounts();
+        // if (type == null) {
+        //   fsd.getEditLog().logSetQuota(src, q.getNameSpace(), q.getStorageSpace());
+        // } else {
+        //   fsd.getEditLog().logSetQuotaByStorageType(
+        //       src, q.getTypeSpaces().get(type), type);
+        // }
       }
     } finally {
       fsd.writeUnlock();

@@ -173,7 +173,6 @@ final class FSDirEncryptionZoneOp {
     } finally {
       fsd.writeUnlock();
     }
-    fsd.getEditLog().logSetXAttrs(iip.getPath(), xAttrs, logRetryCache);
     return fsd.getAuditFileInfo(iip);
   }
 
@@ -392,8 +391,6 @@ final class FSDirEncryptionZoneOp {
               + " re-encryption", entry.getInodeId());
           continue;
         }
-        fsd.getEditLog().logSetXAttrs(inode.getFullPathName(),
-            inode.getXAttrFeature().getXAttrs(), false);
       }
     }
   }

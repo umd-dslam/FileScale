@@ -106,7 +106,6 @@ class FSDirWriteFileOp {
       FSDirectory fsd, String path, INodeFile file, boolean logRetryCache) {
     assert fsd.getFSNamesystem().hasWriteLock();
     Preconditions.checkArgument(file.isUnderConstruction());
-    fsd.getEditLog().logUpdateBlocks(path, file, logRetryCache);
     if(NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("persistBlocks: " + path
               + " with " + file.getBlocks().length + " blocks is persisted to" +
@@ -410,7 +409,6 @@ class FSDirWriteFileOp {
           XAttrSetFlag.CREATE);
     }
     setNewINodeStoragePolicy(fsd.getBlockManager(), iip, isLazyPersist);
-    fsd.getEditLog().logOpenFile(src, newNode, overwrite, logRetryEntry);
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.startFile: added " +
           src + " inode " + newNode.getId() + " " + holder);
@@ -753,7 +751,6 @@ class FSDirWriteFileOp {
   private static void persistNewBlock(
       FSNamesystem fsn, String path, INodeFile file) {
     Preconditions.checkArgument(file.isUnderConstruction());
-    fsn.getEditLog().logAddBlock(path, file);
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("persistNewBlock: "
               + path + " with new block " + file.getLastBlock().toString()

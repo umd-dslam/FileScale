@@ -69,3 +69,6 @@ tmp/*
 
 bench/*.class
 bench/*.jar
+
+*.class
+.factorypath

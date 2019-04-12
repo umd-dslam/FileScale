@@ -52,7 +52,7 @@ class FSDirAclOp {
       List<AclEntry> newAcl = AclTransformation.mergeAclEntries(
           existingAcl, aclSpec);
       AclStorage.updateINodeAcl(inode, newAcl, snapshotId);
-      fsd.getEditLog().logSetAcl(src, newAcl);
+      // fsd.getEditLog().logSetAcl(src, newAcl);
     } catch (AclException e){
       throw new AclException(e.getMessage() + " Path: " + src, e);
     } finally {
@@ -78,7 +78,7 @@ class FSDirAclOp {
       List<AclEntry> newAcl = AclTransformation.filterAclEntriesByAclSpec(
         existingAcl, aclSpec);
       AclStorage.updateINodeAcl(inode, newAcl, snapshotId);
-      fsd.getEditLog().logSetAcl(src, newAcl);
+      // fsd.getEditLog().logSetAcl(src, newAcl);
     } catch (AclException e){
       throw new AclException(e.getMessage() + " Path: " + src, e);
     } finally {
@@ -103,7 +103,7 @@ class FSDirAclOp {
       List<AclEntry> newAcl = AclTransformation.filterDefaultAclEntries(
         existingAcl);
       AclStorage.updateINodeAcl(inode, newAcl, snapshotId);
-      fsd.getEditLog().logSetAcl(src, newAcl);
+      // fsd.getEditLog().logSetAcl(src, newAcl);
     } catch (AclException e){
       throw new AclException(e.getMessage() + " Path: " + src, e);
     } finally {
@@ -128,7 +128,7 @@ class FSDirAclOp {
     } finally {
       fsd.writeUnlock();
     }
-    fsd.getEditLog().logSetAcl(src, AclFeature.EMPTY_ENTRY_LIST);
+    // fsd.getEditLog().logSetAcl(src, AclFeature.EMPTY_ENTRY_LIST);
     return fsd.getAuditFileInfo(iip);
   }
 
@@ -143,7 +143,7 @@ class FSDirAclOp {
       iip = fsd.resolvePath(pc, src, DirOp.WRITE);
       fsd.checkOwner(pc, iip);
       List<AclEntry> newAcl = unprotectedSetAcl(fsd, iip, aclSpec, false);
-      fsd.getEditLog().logSetAcl(iip.getPath(), newAcl);
+      // fsd.getEditLog().logSetAcl(iip.getPath(), newAcl);
     } catch (AclException e){
       throw new AclException(e.getMessage() + " Path: " + src, e);
     } finally {

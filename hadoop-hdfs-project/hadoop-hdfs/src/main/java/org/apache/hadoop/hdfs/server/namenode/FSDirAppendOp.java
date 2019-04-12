@@ -212,15 +212,6 @@ final class FSDirAppendOp {
       }
     }
 
-    if (writeToEditLog) {
-      final String path = iip.getPath();
-      if (NameNodeLayoutVersion.supports(Feature.APPEND_NEW_BLOCK,
-          fsn.getEffectiveLayoutVersion())) {
-        fsn.getEditLog().logAppendFile(path, file, newBlock, logRetryCache);
-      } else {
-        fsn.getEditLog().logOpenFile(path, file, false, logRetryCache);
-      }
-    }
     return ret;
   }
 
