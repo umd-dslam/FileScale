@@ -113,7 +113,6 @@ public class FSDirectory implements Closeable {
         INodeDirectory.ROOT_NAME,
         namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)),
         0L);
-    resetLastInodeId(DatabaseINode.getLastInodeId());
     // TODO: enable later
     // r.addDirectoryWithQuotaFeature(
     //     new DirectoryWithQuotaFeature.Builder().
@@ -296,6 +295,11 @@ public class FSDirectory implements Closeable {
     this.dirLock = new ReentrantReadWriteLock(true); // fair
     this.inodeId = new INodeId();
     rootDir = createRoot(ns);
+    try {
+      this.inodeId.skipTo(DatabaseINode.getLastInodeId());
+    } catch(IllegalStateException ise) {
+      throw new IOException(ise);
+    }
     inodeMap = INodeMap.newInstance(rootDir);
     this.isPermissionEnabled = conf.getBoolean(
       DFSConfigKeys.DFS_PERMISSIONS_ENABLED_KEY,
