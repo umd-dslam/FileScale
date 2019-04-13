@@ -541,7 +541,7 @@ public final class FSImageFormatProtobuf {
       prog.beginStep(Phase.SAVING_CHECKPOINT, step);
       // Count number of non-fatal errors when saving inodes and snapshots.
       long numErrors = saveInodes(b);
-      numErrors += saveSnapshots(b);
+      // numErrors += saveSnapshots(b);
       prog.endStep(Phase.SAVING_CHECKPOINT, step);
 
       step = new Step(StepType.DELEGATION_TOKENS, filePath);
