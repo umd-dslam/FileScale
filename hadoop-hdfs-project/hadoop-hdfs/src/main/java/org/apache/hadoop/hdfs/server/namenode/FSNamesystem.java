@@ -5797,10 +5797,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     dtSecretManager.loadSecretManagerStateCompat(in);
   }
 
-  void loadSecretManagerState(SecretManagerSection s,
-      List<SecretManagerSection.DelegationKey> keys,
-      List<SecretManagerSection.PersistToken> tokens) throws IOException {
-    dtSecretManager.loadSecretManagerState(new SecretManagerState(s, keys, tokens));
+  void loadSecretManagerState() throws IOException {
+    dtSecretManager.loadSecretManagerState();
   }
 
   /**
