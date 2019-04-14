@@ -75,6 +75,7 @@ import org.apache.hadoop.util.Time;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.CodedOutputStream;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Utility class to read / write fsimage in protobuf format.
@@ -319,13 +320,13 @@ public final class FSImageFormatProtobuf {
     }
 
     private void loadStringTableSection(InputStream in) throws IOException {
-      StringTableSection s = StringTableSection.parseDelimitedFrom(in);
+      // StringTableSection s = StringTableSection.parseDelimitedFrom(in);
+      Pair<Integer, Integer> s = DatabaseNDExtraInfo.getStringTableSummary();
       ctx.stringTable =
-          SerialNumberManager.newStringTable(s.getNumEntry(), s.getMaskBits());
-      for (int i = 0; i < s.getNumEntry(); ++i) {
-        StringTableSection.Entry e = StringTableSection.Entry
-            .parseDelimitedFrom(in);
-        ctx.stringTable.put(e.getId(), e.getStr());
+          SerialNumberManager.newStringTable(s.getLeft(), s.getRight());
+      List<Pair<Integer, String>> st = DatabaseNDExtraInfo.getStringTable();
+      for (int i = 0; i < st.size(); ++i) {
+        ctx.stringTable.put(st.get(i).getLeft(), st.get(i).getRight());
       }
     }
 
@@ -644,20 +645,15 @@ public final class FSImageFormatProtobuf {
 
     private void saveStringTableSection(FileSummary.Builder summary)
         throws IOException {
-      OutputStream out = sectionOutputStream;
-
-      SerialNumberManager.StringTable stringTable =
-          SerialNumberManager.getStringTable();
-      StringTableSection.Builder b = StringTableSection.newBuilder()
-          .setNumEntry(stringTable.size())
-          .setMaskBits(stringTable.getMaskBits());
-      b.build().writeDelimitedTo(out);
+      SerialNumberManager.StringTable stringTable = SerialNumberManager.getStringTable();
+      DatabaseNDExtraInfo.setStringTableSummary(stringTable.size(), stringTable.getMaskBits());
+      List<Integer> idlst = new ArrayList<>();
+      List<String> strlst = new ArrayList<>();
       for (Entry<Integer, String> e : stringTable) {
-        StringTableSection.Entry.Builder eb = StringTableSection.Entry
-            .newBuilder().setId(e.getKey()).setStr(e.getValue());
-        eb.build().writeDelimitedTo(out);
+        idlst.add(e.getKey());
+        strlst.add(e.getValue());
       }
-      commitSection(summary, SectionName.STRING_TABLE);
+      DatabaseNDExtraInfo.setStringTable(idlst.toArray(new Integer[idlst.size()]), strlst.toArray(new String[strlst.size()]));
     }
   }
 
