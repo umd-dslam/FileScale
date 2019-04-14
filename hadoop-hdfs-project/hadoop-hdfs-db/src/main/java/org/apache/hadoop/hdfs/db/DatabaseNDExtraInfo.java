@@ -5,6 +5,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,14 +61,14 @@ public class DatabaseNDExtraInfo {
   }
 
   Pair<Integer, Integer> getStringTableSummary() {
-    Pair<Integer, Integer> result;
+    ImmutablePair<Integer, Integer> result = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "SELECT numEntry, maskBits FROM hdfs;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
       while (rs.next()) {
-        result = new Pair<Integer, Integer>(rs.getInt(1), rs.getInt(2));
+        result = new ImmutablePair<>(rs.getInt(1), rs.getInt(2));
       }
       rs.close();
       st.close();
@@ -82,7 +86,7 @@ public class DatabaseNDExtraInfo {
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
       while (rs.next()) {
-        result.add(new Pair<>(rs.getInt(1), rs.getString(2)));
+        result.add(new ImmutablePair<>(rs.getInt(1), rs.getString(2)));
       }
       rs.close();
       st.close();
@@ -92,7 +96,7 @@ public class DatabaseNDExtraInfo {
     return result;
   }
 
-  void setStringTable(int[] ids, String[] strs) {
+  void setStringTable(Integer[] ids, String[] strs) {
     if (ids == null || ids.length == 0 || strs == null || strs.length == 0) {
       return;
     }
@@ -132,14 +136,14 @@ public class DatabaseNDExtraInfo {
   }
 
   Pair<Integer, Integer> getSecretManagerSummary() {
-    Pair<Integer, Integer> result;
+    ImmutablePair<Integer, Integer> result = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "SELECT currentId, tokenSequenceNumber FROM hdfs;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
       while (rs.next()) {
-        result = new Pair<Integer, Integer>(rs.getInt(1), rs.getInt(2));
+        result = new ImmutablePair<>(rs.getInt(1), rs.getInt(2));
       }
       rs.close();
       st.close();
@@ -167,7 +171,7 @@ public class DatabaseNDExtraInfo {
     }
   }
 
-  void setDelegationKeys(int[] ids, long[] dates, String[] keys) {
+  void setDelegationKeys(Integer[] ids, Long[] dates, String[] keys) {
     if (ids == null
         || ids.length == 0
         || dates == null
@@ -198,13 +202,7 @@ public class DatabaseNDExtraInfo {
         String sql = "INSERT INTO delegationkeys(id, expiryDate, key) VALUES ";
         for (int i = 0; i < ids.length; ++i) {
           sql +=
-              "("
-                  + String.valueOf(ids[i])
-                  + ","
-                  + String.valueOf(expiryDate[i])
-                  + ","
-                  + keys[i]
-                  + "),";
+              "(" + String.valueOf(ids[i]) + "," + String.valueOf(dates[i]) + "," + keys[i] + "),";
         }
         sql = sql.substring(0, sql.length() - 1) + " ON CONFLICT DO UPDATE;";
 
@@ -219,11 +217,11 @@ public class DatabaseNDExtraInfo {
   }
 
   void setPersistTokens(
-      int[] seqnumbers,
-      int[] masterkeys,
-      long[] issuedates,
-      long[] maxdates,
-      long[] expirydates,
+      Integer[] seqnumbers,
+      Integer[] masterkeys,
+      Long[] issuedates,
+      Long[] maxdates,
+      Long[] expirydates,
       String[] owners,
       String[] renewers,
       String[] realusers) {
