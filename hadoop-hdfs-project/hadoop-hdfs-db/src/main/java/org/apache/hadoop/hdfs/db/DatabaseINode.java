@@ -350,6 +350,27 @@ public class DatabaseINode {
     return num;
   }
 
+  public static long getLastInodeId() {
+    long num = 0;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT MAX(id) FROM inodes;";
+      Statement st = conn.createStatement();
+      ResultSet rs = st.executeQuery(sql);
+      while (rs.next()) {
+        num = rs.getLong(1);
+      }
+      rs.close();
+      st.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    LOG.info("getLastInodeId [GET]: (" + num + ")");
+
+    return num;
+  }
+
   public static void insertUc(final long id, final String clientName, final String clientMachine) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
