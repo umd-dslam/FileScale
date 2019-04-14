@@ -322,10 +322,11 @@ public final class FSImageFormatProtobuf {
 
     private void loadStringTableSection(InputStream in) throws IOException {
       // StringTableSection s = StringTableSection.parseDelimitedFrom(in);
-      Pair<Integer, Integer> s = DatabaseNDExtraInfo.getStringTableSummary();
+      DatabaseNDExtraInfo db = new DatabaseNDExtraInfo();
+      Pair<Integer, Integer> s = db.getStringTableSummary();
       ctx.stringTable =
           SerialNumberManager.newStringTable(s.getLeft(), s.getRight());
-      List<Pair<Integer, String>> st = DatabaseNDExtraInfo.getStringTable();
+      List<Pair<Integer, String>> st = db.getStringTable(s.getLeft());
       for (int i = 0; i < st.size(); ++i) {
         ctx.stringTable.put(st.get(i).getLeft(), st.get(i).getRight());
       }

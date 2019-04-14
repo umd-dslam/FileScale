@@ -16,7 +16,9 @@ import org.slf4j.LoggerFactory;
 public class DatabaseNDExtraInfo {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseNDExtraInfo.class);
 
-  void setSecretManagerSummary(int currentId, int tokenSequenceNumber, int numKeys, int numTokens) {
+  public DatabaseNDExtraInfo() {}
+
+  public static void setSecretManagerSummary(int currentId, int tokenSequenceNumber, int numKeys, int numTokens) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "";
@@ -40,7 +42,7 @@ public class DatabaseNDExtraInfo {
     }
   }
 
-  void setStringTableSummary(int numEntry, int maskBits) {
+  public static void setStringTableSummary(int numEntry, int maskBits) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "";
@@ -60,7 +62,7 @@ public class DatabaseNDExtraInfo {
     }
   }
 
-  Pair<Integer, Integer> getStringTableSummary() {
+  public Pair<Integer, Integer> getStringTableSummary() {
     ImmutablePair<Integer, Integer> result = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -78,7 +80,7 @@ public class DatabaseNDExtraInfo {
     return result;
   }
 
-  List<Pair<Integer, String>> getStringTable(int size) {
+  public List<Pair<Integer, String>> getStringTable(int size) {
     List<Pair<Integer, String>> result = new ArrayList<>(size);
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -96,7 +98,7 @@ public class DatabaseNDExtraInfo {
     return result;
   }
 
-  void setStringTable(Integer[] ids, String[] strs) {
+  public static void setStringTable(Integer[] ids, String[] strs) {
     if (ids == null || ids.length == 0 || strs == null || strs.length == 0) {
       return;
     }
@@ -135,7 +137,7 @@ public class DatabaseNDExtraInfo {
     }
   }
 
-  Pair<Integer, Integer> getSecretManagerSummary() {
+  public Pair<Integer, Integer> getSecretManagerSummary() {
     ImmutablePair<Integer, Integer> result = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -153,7 +155,7 @@ public class DatabaseNDExtraInfo {
     return result;
   }
 
-  void getDelegationKeys(List<Integer> ids, List<Long> dates, List<String> keys) {
+  public static void getDelegationKeys(List<Integer> ids, List<Long> dates, List<String> keys) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "SELECT id, expiryDate, key FROM delegationkeys;";
@@ -171,7 +173,7 @@ public class DatabaseNDExtraInfo {
     }
   }
 
-  void setDelegationKeys(Integer[] ids, Long[] dates, String[] keys) {
+  public static void setDelegationKeys(Integer[] ids, Long[] dates, String[] keys) {
     if (ids == null
         || ids.length == 0
         || dates == null
@@ -216,7 +218,7 @@ public class DatabaseNDExtraInfo {
     }
   }
 
-  void setPersistTokens(
+  public static void setPersistTokens(
       Integer[] seqnumbers,
       Integer[] masterkeys,
       Long[] issuedates,
@@ -288,7 +290,7 @@ public class DatabaseNDExtraInfo {
     }
   }
 
-  void getPersistTokens(
+  public static void getPersistTokens(
       List<String> owners,
       List<String> renewers,
       List<String> realusers,

@@ -198,7 +198,8 @@ public class DelegationTokenSecretManager
       throws IOException {
     Preconditions.checkState(!running,
         "Can't load state from image in a running SecretManager.");
-    Pair<Integer, Integer> sm = DatabaseNDExtraInfo.getSecretManagerSummary();
+    DatabaseNDExtraInfo db = new DatabaseNDExtraInfo(); 
+    Pair<Integer, Integer> sm = db.getSecretManagerSummary();
     currentId = sm.getLeft();
     delegationTokenSequenceNumber = sm.getRight();
 
@@ -209,7 +210,7 @@ public class DelegationTokenSecretManager
 
     for (int i = 0; i < ids.size(); ++i) {
       addKey(new DelegationKey(ids.get(i), dates.get(i),
-        keys.get(i) == null ? null : DFSUtil.string2Bytes(keys.get(i)));
+        keys.get(i) == null ? null : DFSUtil.string2Bytes(keys.get(i))));
     }
 
     List<String> owners = new ArrayList<>();
@@ -220,7 +221,7 @@ public class DelegationTokenSecretManager
     List<Long> issuedates = new ArrayList<>();
     List<Long> expirydates = new ArrayList<>();
     List<Long> maxdates = new ArrayList<>();    
-    DatabaseNDExtraInfo.getDelegationKeys(owners, renewers, realusers, seqnumbers, masterkeys, issuedates, expirydates, maxdates);
+    DatabaseNDExtraInfo.getPersistTokens(owners, renewers, realusers, seqnumbers, masterkeys, issuedates, expirydates, maxdates);
 
     for (int i = 0; i < owners.size(); ++i) {
       DelegationTokenIdentifier id = new DelegationTokenIdentifier(new Text(
