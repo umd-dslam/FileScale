@@ -48,7 +48,8 @@ public class HdfsMetaInfoSchema {
       String sql1 = "";
       String[] tableNames = new String[] {
         "hdfs", "namespace", "inodes", "stringtable", "inodexattrs", "inodeuc",
-        "inode2block", "datablocks", "blockstripes", "block2storage", "storage"};
+        "inode2block", "datablocks", "blockstripes", "block2storage", "storage",
+        "delegationkeys", "persisttokens"};
       for (String tableName : tableNames) {
         if (env.equals("VOLT")) {
           sql1 += String.format("DROP TABLE %s IF EXISTS;", tableName);
@@ -60,7 +61,7 @@ public class HdfsMetaInfoSchema {
       String sql2 =
           "CREATE TABLE hdfs("
               + "   id int primary key, numEntry int, maskBits int,"
-              + "   currentId int, tokenSequenceNumber int"
+              + "   currentId int, tokenSequenceNumber int, numKeys int, numTokens int"
               + ");"
               + "CREATE TABLE namespace("
               + "   namespaceId int, genstampV1 bigint, genstampV2 bigint,"
@@ -70,6 +71,13 @@ public class HdfsMetaInfoSchema {
               + ");"
               + "CREATE TABLE stringtable("
               + "   id int primary key, str varchar"
+              + ");"
+              + "CREATE TABLE delegationkeys("
+              + "   id int primary key, expiryDate bigint, key varchar"
+              + ");"
+              + "CREATE TABLE persisttokens("
+              + "   version int, owner varchar, renewer varchar, realuser varchar, issueDate bigint,"
+              + "   maxDate bigint, sequenceNumber int, masterKeyId int, expiryDate bigint"
               + ");"
               + "CREATE TABLE inodes("
               + "   id bigint primary key, parent bigint, name varchar,"

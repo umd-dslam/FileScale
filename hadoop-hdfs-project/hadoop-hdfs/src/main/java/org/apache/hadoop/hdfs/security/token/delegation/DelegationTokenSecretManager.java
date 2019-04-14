@@ -52,6 +52,8 @@ import org.apache.hadoop.security.token.delegation.DelegationKey;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+import org.apache.hadoop.hdfs.db.*;
+import org.apache.hadoop.hdfs.DFSUtil;
 
 /**
  * A HDFS specific delegation token secret manager.
@@ -227,39 +229,52 @@ public class DelegationTokenSecretManager
   }
 
   public synchronized SecretManagerState saveSecretManagerState() {
-    SecretManagerSection s = SecretManagerSection.newBuilder()
-        .setCurrentId(currentId)
-        .setTokenSequenceNumber(delegationTokenSequenceNumber)
-        .setNumKeys(allKeys.size()).setNumTokens(currentTokens.size()).build();
-    ArrayList<SecretManagerSection.DelegationKey> keys = Lists
-        .newArrayListWithCapacity(allKeys.size());
-    ArrayList<SecretManagerSection.PersistToken> tokens = Lists
-        .newArrayListWithCapacity(currentTokens.size());
+    DatabaseNDExtraInfo.setSecretManagerSummary(currentId, delegationTokenSequenceNumber,
+        allKeys.size(), currentTokens.size());
 
+    List<Integer> ids = new ArrayList<>();
+    List<Long> dates = new ArrayList<>();
+    List<String> keys = new ArrayList<>();
     for (DelegationKey v : allKeys.values()) {
-      SecretManagerSection.DelegationKey.Builder b = SecretManagerSection.DelegationKey
-          .newBuilder().setId(v.getKeyId()).setExpiryDate(v.getExpiryDate());
-      if (v.getEncodedKey() != null) {
-        b.setKey(ByteString.copyFrom(v.getEncodedKey()));
-      }
-      keys.add(b.build());
+      ids.add(v.getKeyId());
+      dates.add(v.getExpiryDate());
+      keys.add(DFSUtil.bytes2String(v.getEncodedKey()));
     }
+    DatabaseNDExtraInfo.setDelegationKeys(ids.toArray(new Integer[ids.size()]),
+      dates.toArray(new Long[dates.size()]), keys.toArray(new String[keys.size()]));
 
+
+    List<String> owners = new ArrayList<>();
+    List<String> renewers = new ArrayList<>();
+    List<String> realusers = new ArrayList<>();
+    List<Integer> seqnumbers = new ArrayList<>();
+    List<Integer> masterkeys = new ArrayList<>();
+    List<Long> issuedates = new ArrayList<>();
+    List<Long> expirydates = new ArrayList<>();
+    List<Long> maxdates = new ArrayList<>();
     for (Entry<DelegationTokenIdentifier, DelegationTokenInformation> e : currentTokens
         .entrySet()) {
       DelegationTokenIdentifier id = e.getKey();
-      SecretManagerSection.PersistToken.Builder b = SecretManagerSection.PersistToken
-          .newBuilder().setOwner(id.getOwner().toString())
-          .setRenewer(id.getRenewer().toString())
-          .setRealUser(id.getRealUser().toString())
-          .setIssueDate(id.getIssueDate()).setMaxDate(id.getMaxDate())
-          .setSequenceNumber(id.getSequenceNumber())
-          .setMasterKeyId(id.getMasterKeyId())
-          .setExpiryDate(e.getValue().getRenewDate());
-      tokens.add(b.build());
+      seqnumbers.add(id.getSequenceNumber());
+      masterkeys.add(id.getMasterKeyId());
+      issuedates.add(id.getIssueDate());
+      maxdates.add(id.getMaxDate());
+      expirydates.add(e.getValue().getRenewDate());
+      owners.add(id.getOwner().toString());
+      renewers.add(id.getRenewer().toString());
+      realusers.add(id.getRealUser().toString());
     }
+    DatabaseNDExtraInfo.setPersistTokens(
+      seqnumbers.toArray(new Integer[seqnumbers.size()]),
+      masterkeys.toArray(new Integer[masterkeys.size()]),
+      issuedates.toArray(new Long[issuedates.size()]),
+      maxdates.toArray(new Long[maxdates.size()]),
+      expirydates.toArray(new Long[expirydates.size()]),
+      owners.toArray(new String[owners.size()]),
+      renewers.toArray(new String[renewers.size()]),
+      realusers.toArray(new String[realusers.size()]));
 
-    return new SecretManagerState(s, keys, tokens);
+    return null;
   }
 
   /**

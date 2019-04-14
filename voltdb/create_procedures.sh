@@ -1,5 +1,5 @@
 ## declare an array variable
-declare -a VOLTDB_PROCEDURES=("VoltDBStoredProcedureTest" "SetStringTable" "RemoveChild" "RemoveBlock" "RemoveAllBlocks" "InsertINode2Block" "InsertXAttrs")
+declare -a VOLTDB_PROCEDURES=("VoltDBStoredProcedureTest" "SetDelegationKeys" "SetStringTable" "RemoveChild" "RemoveBlock" "RemoveAllBlocks" "InsertINode2Block" "InsertXAttrs")
 
 cat <<EOF
 ============================================

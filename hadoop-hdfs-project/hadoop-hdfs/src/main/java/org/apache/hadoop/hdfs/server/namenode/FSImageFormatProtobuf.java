@@ -76,6 +76,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.CodedOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.db.*;
 
 /**
  * Utility class to read / write fsimage in protobuf format.
@@ -571,16 +572,7 @@ public final class FSImageFormatProtobuf {
     private void saveSecretManagerSection(FileSummary.Builder summary)
         throws IOException {
       final FSNamesystem fsn = context.getSourceNamesystem();
-      DelegationTokenSecretManager.SecretManagerState state = fsn
-          .saveSecretManagerState();
-      state.section.writeDelimitedTo(sectionOutputStream);
-      for (SecretManagerSection.DelegationKey k : state.keys)
-        k.writeDelimitedTo(sectionOutputStream);
-
-      for (SecretManagerSection.PersistToken t : state.tokens)
-        t.writeDelimitedTo(sectionOutputStream);
-
-      commitSection(summary, SectionName.SECRET_MANAGER);
+      fsn.saveSecretManagerState();
     }
 
     private void saveCacheManagerSection(FileSummary.Builder summary)
