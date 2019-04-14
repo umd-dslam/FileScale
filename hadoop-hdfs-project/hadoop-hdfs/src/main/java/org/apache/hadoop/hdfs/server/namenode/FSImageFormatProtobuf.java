@@ -333,24 +333,7 @@ public final class FSImageFormatProtobuf {
 
     private void loadSecretManagerSection(InputStream in, StartupProgress prog,
         Step currentStep) throws IOException {
-      SecretManagerSection s = SecretManagerSection.parseDelimitedFrom(in);
-      int numKeys = s.getNumKeys(), numTokens = s.getNumTokens();
-      ArrayList<SecretManagerSection.DelegationKey> keys = Lists
-          .newArrayListWithCapacity(numKeys);
-      ArrayList<SecretManagerSection.PersistToken> tokens = Lists
-          .newArrayListWithCapacity(numTokens);
-
-      for (int i = 0; i < numKeys; ++i)
-        keys.add(SecretManagerSection.DelegationKey.parseDelimitedFrom(in));
-
-      prog.setTotal(Phase.LOADING_FSIMAGE, currentStep, numTokens);
-      Counter counter = prog.getCounter(Phase.LOADING_FSIMAGE, currentStep);
-      for (int i = 0; i < numTokens; ++i) {
-        tokens.add(SecretManagerSection.PersistToken.parseDelimitedFrom(in));
-        counter.increment();
-      }
-
-      fsn.loadSecretManagerState(s, keys, tokens);
+      fsn.loadSecretManagerState();
     }
 
     private void loadCacheManagerSection(InputStream in, StartupProgress prog,

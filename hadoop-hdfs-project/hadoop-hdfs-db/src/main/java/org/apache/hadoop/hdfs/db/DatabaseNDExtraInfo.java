@@ -149,6 +149,24 @@ public class DatabaseNDExtraInfo {
     return result;
   }
 
+	void getDelegationKeys(List<Integer> ids, List<Long> dates, List<String> keys) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "SELECT id, expiryDate, key FROM delegationkeys;";
+      Statement st = conn.createStatement();
+      ResultSet rs = st.executeQuery(sql);
+      while (rs.next()) {
+				ids.add(rs.getInt(1));
+				dates.add(rs.getLong(2));
+				keys.add(rs.getString(3));
+      }
+      rs.close();
+      st.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+	}
+
   void setDelegationKeys(int[] ids, long[] dates, String[] keys) {
     if (ids == null
         || ids.length == 0
@@ -270,5 +288,31 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-  }
+	}
+
+	void getPersistTokens(List<String> owners, List<String> renewers, List<String> realusers,
+		List<Integer> seqnumbers, List<Integer> masterkeys,
+		List<Long> issuedates, List<Long> expirydates, List<Long> maxdates) {
+			try {
+				Connection conn = DatabaseConnection.getInstance().getConnection();
+				String sql = "SELECT owner, renewer, realuser, issueDate, maxDate, "
+					+ "expiryDate, sequenceNumber, masterKeyId FROM persisttokens;";
+				Statement st = conn.createStatement();
+				ResultSet rs = st.executeQuery(sql);
+				while (rs.next()) {
+					owners.add(rs.getString(1));
+					renewers.add(rs.getString(2));
+					realusers.add(rs.getString(3));
+					issuedates.add(rs.getLong(4));
+					maxdates.add(rs.getLong(5));
+					expirydates.add(rs.getLong(6));
+					seqnumbers.add(rs.getInt(7));
+					masterkeys.add(rs.getInt(8));
+				}
+				rs.close();
+				st.close();
+			} catch (SQLException ex) {
+				System.err.println(ex.getMessage());
+			}
+		}
 }

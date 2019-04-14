@@ -54,6 +54,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * A HDFS specific delegation token secret manager.
@@ -193,26 +194,42 @@ public class DelegationTokenSecretManager
     }
   }
 
-  public synchronized void loadSecretManagerState(SecretManagerState state)
+  public synchronized void loadSecretManagerState()
       throws IOException {
     Preconditions.checkState(!running,
         "Can't load state from image in a running SecretManager.");
+    Pair<Integer, Integer> sm = DatabaseNDExtraInfo.getSecretManagerSummary();
+    currentId = sm.getLeft();
+    delegationTokenSequenceNumber = sm.getRight();
 
-    currentId = state.section.getCurrentId();
-    delegationTokenSequenceNumber = state.section.getTokenSequenceNumber();
-    for (SecretManagerSection.DelegationKey k : state.keys) {
-      addKey(new DelegationKey(k.getId(), k.getExpiryDate(), k.hasKey() ? k
-          .getKey().toByteArray() : null));
+    List<Integer> ids = new ArrayList<>();
+    List<Long> dates = new ArrayList<>();
+    List<String> keys = new ArrayList<>();
+    DatabaseNDExtraInfo.getDelegationKeys(ids, dates, keys);
+
+    for (int i = 0; i < ids.size(); ++i) {
+      addKey(new DelegationKey(ids.get(i), dates.get(i),
+        keys.get(i) == null ? null : DFSUtil.string2Bytes(keys.get(i)));
     }
 
-    for (SecretManagerSection.PersistToken t : state.tokens) {
+    List<String> owners = new ArrayList<>();
+    List<String> renewers = new ArrayList<>();
+    List<String> realusers = new ArrayList<>();
+    List<Integer> seqnumbers = new ArrayList<>();
+    List<Integer> masterkeys = new ArrayList<>();
+    List<Long> issuedates = new ArrayList<>();
+    List<Long> expirydates = new ArrayList<>();
+    List<Long> maxdates = new ArrayList<>();    
+    DatabaseNDExtraInfo.getDelegationKeys(owners, renewers, realusers, seqnumbers, masterkeys, issuedates, expirydates, maxdates);
+
+    for (int i = 0; i < owners.size(); ++i) {
       DelegationTokenIdentifier id = new DelegationTokenIdentifier(new Text(
-          t.getOwner()), new Text(t.getRenewer()), new Text(t.getRealUser()));
-      id.setIssueDate(t.getIssueDate());
-      id.setMaxDate(t.getMaxDate());
-      id.setSequenceNumber(t.getSequenceNumber());
-      id.setMasterKeyId(t.getMasterKeyId());
-      addPersistedDelegationToken(id, t.getExpiryDate());
+        owners.get(i)), new Text(renewers.get(i)), new Text(realusers.get(i)));
+      id.setIssueDate(issuedates.get(i));
+      id.setMaxDate(maxdates.get(i));
+      id.setSequenceNumber(seqnumbers.get(i));
+      id.setMasterKeyId(masterkeys.get(i));
+      addPersistedDelegationToken(id, expirydates.get(i));
     }
   }
 
