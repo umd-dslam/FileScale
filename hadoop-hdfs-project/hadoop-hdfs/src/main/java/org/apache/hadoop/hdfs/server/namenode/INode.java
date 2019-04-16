@@ -60,8 +60,13 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   public static final Logger LOG = LoggerFactory.getLogger(INode.class);
 
   /** parent is either an {@link INodeDirectory} or an {@link INodeReference}.*/
+  long parent = -1L;
 
-  INode(INode parent) {}
+  INode(INode parent) {
+    if (parent != null) {
+      this.parent = parent.getId();
+    }
+  }
 
   /** Get inode id */
   public abstract long getId();
@@ -230,11 +235,11 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     }
     // if parent is a reference node, parent must be a renamed node. We can 
     // stop the check at the reference node.
-    INode parent = getParentINode();
+    INode parent = getParent();
     if (parent != null && parent.isReference()) {
       return true;
     }
-    final INodeDirectory parentDir = getParent();
+    final INodeDirectory parentDir = parent.asDirectory();
     if (parentDir == null) { // root
       return true;
     }
@@ -251,6 +256,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   
   /** @return true if the given inode is an ancestor directory of this inode. */
   public final boolean isAncestorDirectory(final INodeDirectory dir) {
+    // TODO: (gang) optimize this 
     for(INodeDirectory p = getParent(); p != null; p = p.getParent()) {
       if (p == dir) {
         return true;
@@ -470,7 +476,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    * Check and add namespace/storagespace/storagetype consumed to itself and the ancestors.
    */
   public void addSpaceConsumed(QuotaCounts counts) {
-    INode parent = getParentINode();
+    INode parent = getParent();
     if (parent != null) {
       parent.addSpaceConsumed(counts);
     }
@@ -565,6 +571,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    */
   public abstract void setLocalName(byte[] name);
 
+  // TODO: (gang) optimize this by store procedure
   public String getFullPathName() {
     // Get the full path name of this inode.
     if (isRoot()) {
@@ -588,6 +595,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return DFSUtil.bytes2String(path);
   }
 
+  // TODO: (gang) optimize this by store procedure
   public byte[][] getPathComponents() {
     int n = 0;
     for (INode inode = this; inode != null; inode = inode.getParent()) {
@@ -632,18 +640,19 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return toString() + "(" + getObjectString() + "), " + getParentString();
   }
 
-  /** @return the parent inode from inodemap */
-  private final INode getParentINode() {
-    long id = DatabaseINode.getParent(this.getId());
-    return id == DatabaseINode.LONG_NULL ? null : FSDirectory.getInstance().getInode(id);
+  private final long getParentId() {
+    if (parent == -1L) {
+      parent = DatabaseINode.getParent(getId()); 
+    }
+    return parent;
   }
-
 
   /** @return the parent directory */
   public final INodeDirectory getParent() {
-    INode parent = getParentINode();
-    return parent == null? null
-            : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
+    // return parent == null? null
+    //         : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
+    long id = getParentId(); 
+    return id == DatabaseINode.LONG_NULL ? null : new INodeDirectory(id);    
   }
 
   /**
@@ -651,24 +660,33 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    *         otherwise, return null.
    */
   public INodeReference getParentReference() {
-    INode parent = getParentINode();
+    INode parent = getParent();
     return parent == null || !parent.isReference()? null: (INodeReference)parent;
   }
 
   /** Set parent directory */
   public final void setParent(INodeDirectory parent) {
-    DatabaseINode.setParent(this.getId(), parent == null
-      ? DatabaseINode.LONG_NULL : parent.getId());
+    if (parent == null) {
+      this.parent = DatabaseINode.LONG_NULL;
+    } else {
+      this.parent = parent.getId();
+    }    
+    DatabaseINode.setParent(getId(), this.parent);
   }
 
   public final void setParent(long parentId) {
-    DatabaseINode.setParent(this.getId(), parentId);
+    this.parent = parentId;
+    DatabaseINode.setParent(getId(), parentId);
   }
 
   /** Set container. */
   public final void setParentReference(INodeReference parent) {
-    DatabaseINode.setParent(this.getId(), parent == null
-      ? DatabaseINode.LONG_NULL : parent.getId());
+    if (parent == null) {
+      this.parent = DatabaseINode.LONG_NULL;
+    } else {
+      this.parent = parent.getId();
+    }
+    DatabaseINode.setParent(getId(), this.parent);
   }
 
   /** Clear references to other objects. */
