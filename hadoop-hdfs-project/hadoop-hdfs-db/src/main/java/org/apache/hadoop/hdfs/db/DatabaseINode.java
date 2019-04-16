@@ -304,17 +304,14 @@ public class DatabaseINode {
 
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-
-      String sql;
-      if (checkInodeExistence(childId)) {
-        // rename inode
-        sql = "UPDATE inodes SET parent = ?, name = ? WHERE id = ?;";
-        LOG.info("addChild: [OK] UPDATE (" + childId + "," + parentId + "," + childName + ")");
+      String sql = "";
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        sql = "UPSERT INTO inodes(parent, name, id) VALUES (?, ?, ?);";
       } else {
-        // insert inode
-        sql = "INSERT INTO inodes(parent, name, id) VALUES (?,?,?);";
-        LOG.info("addChild: [OK] INSERT (" + childId + "," + parentId + "," + childName + ")");
+        sql = "INSERT INTO inodes(parent, name, id) VALUES (?, ?, ?) ON CONFLICT DO UPDATE;";
       }
+      LOG.info("addChild: [OK] UPSERT (" + childId + "," + parentId + "," + childName + ")");
 
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, parentId);
