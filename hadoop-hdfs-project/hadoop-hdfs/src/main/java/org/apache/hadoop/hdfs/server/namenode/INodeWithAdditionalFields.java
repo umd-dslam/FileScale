@@ -254,7 +254,10 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   @Override
   public long getPermissionLong() {
-    return permission != 0L ? permission : DatabaseINode.getPermission(getId()); 
+    if (permission == 0L) {
+      permission = DatabaseINode.getPermission(getId()); 
+    }
+    return permission;
   }
 
   @Override
