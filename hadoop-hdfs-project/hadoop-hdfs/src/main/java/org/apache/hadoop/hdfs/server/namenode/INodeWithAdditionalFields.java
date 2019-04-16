@@ -33,8 +33,7 @@ import com.google.common.base.Preconditions;
  * access time and modification time.
  */
 @InterfaceAudience.Private
-public abstract class INodeWithAdditionalFields extends INode
-    implements LinkedElement {
+public abstract class INodeWithAdditionalFields extends INode {
   // Note: this format is used both in-memory and on-disk.  Changes will be
   // incompatible.
   enum PermissionStatusFormat implements LongBitFormat.Enum {
@@ -113,10 +112,8 @@ public abstract class INodeWithAdditionalFields extends INode
    * and {@link #updatePermissionStatus(PermissionStatusFormat, long)}
    * should not modify it.
    */
-  // private long permission = 0L;
+  private long permission = 0L;
 
-  /** For implementing {@link LinkedElement}. */
-  private LinkedElement next = null;
   /** An array {@link Feature}s. */
   private static final Feature[] EMPTY_FEATURE = new Feature[0];
   // protected Feature[] features = EMPTY_FEATURE;
@@ -135,6 +132,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if (parent != null) {
         pid = parent.getId();
     }
+    this.permission = permission;
     DatabaseINode.insertInode(id, pid, strName, accessTime, modificationTime, permission, 0L);
   }
 
@@ -147,9 +145,6 @@ public abstract class INodeWithAdditionalFields extends INode
   private INodeWithAdditionalFields(INode parent, long id) {
     super(parent);
     this.id = id;
-
-    // String strName = DatabaseINode.getName(id);
-    // this.name = (strName != null ? DFSUtil.string2Bytes(strName) : null);
   }
 
   // Note: only used by the loader of image file
@@ -161,20 +156,9 @@ public abstract class INodeWithAdditionalFields extends INode
   INodeWithAdditionalFields(INodeWithAdditionalFields other) {
     this(other.getParentReference() != null ? other.getParentReference()
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
-          // TODO(gangliao): performance optimization
-          DatabaseINode.getPermission(other.getId()),
+          other.getPermissionLong(),
           DatabaseINode.getModificationTime(other.getId()),
           DatabaseINode.getAccessTime(other.getId()));
-  }
-
-  @Override
-  public void setNext(LinkedElement next) {
-    this.next = next;
-  }
-  
-  @Override
-  public LinkedElement getNext() {
-    return next;
   }
 
   /** Get inode id */
@@ -200,7 +184,7 @@ public abstract class INodeWithAdditionalFields extends INode
 
   /** Clone the {@link PermissionStatus}. */
   final void clonePermissionStatus(INodeWithAdditionalFields that) {
-    long permission = DatabaseINode.getPermission(that.getId());
+    permission = that.getPermissionLong();
     DatabaseINode.setPermission(this.getId(), permission);
   }
 
@@ -210,14 +194,14 @@ public abstract class INodeWithAdditionalFields extends INode
         getFsPermission(snapshotId));
   }
 
-  private final void setPermission(long permission) {
-    DatabaseINode.setPermission(this.getId(), permission);
+  private final void setPermission(long perm) {
+    permission = perm; 
+    DatabaseINode.setPermission(getId(), permission);
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
-    long permission = DatabaseINode.getPermission(this.getId()); 
-    permission = f.BITS.combine(n, permission);
-    DatabaseINode.setPermission(this.getId(), permission);
+    permission = f.BITS.combine(n, getPermissionLong());
+    DatabaseINode.setPermission(getId(), permission);
   }
 
   @Override
@@ -225,8 +209,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getUserName();
     }
-    return PermissionStatusFormat.getUser(
-      DatabaseINode.getPermission(this.getId()));
+    return PermissionStatusFormat.getUser(getPermissionLong());
   }
 
   @Override
@@ -240,8 +223,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getGroupName();
     }
-    return PermissionStatusFormat.getGroup(
-      DatabaseINode.getPermission(this.getId()));
+    return PermissionStatusFormat.getGroup(getPermissionLong());
   }
 
   @Override
@@ -261,9 +243,9 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public final short getFsPermissionShort() {
-    return PermissionStatusFormat.getMode(
-      DatabaseINode.getPermission(this.getId()));
+    return PermissionStatusFormat.getMode(getPermissionLong());
   }
+
   @Override
   void setPermission(FsPermission permission) {
     final short mode = permission.toShort();
@@ -272,7 +254,7 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public long getPermissionLong() {
-    return DatabaseINode.getPermission(this.getId());
+    return permission != 0L ? permission : DatabaseINode.getPermission(getId()); 
   }
 
   @Override
@@ -290,7 +272,6 @@ public abstract class INodeWithAdditionalFields extends INode
       return getSnapshotINode(snapshotId).getModificationTime();
     }
 
-    // ADD(gangliao): get INode's access time in Postgres
     return DatabaseINode.getModificationTime(this.getId());
   }
 
@@ -312,7 +293,6 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public final void setModificationTime(long modificationTime) {
-    // ADD(gangliao): set INode's modification time in Postgres
     DatabaseINode.setModificationTime(this.getId(), modificationTime);
   }
 
@@ -322,7 +302,6 @@ public abstract class INodeWithAdditionalFields extends INode
       return getSnapshotINode(snapshotId).getAccessTime();
     }
 
-    // ADD(gangliao): get INode's access time in Postgres
     return DatabaseINode.getAccessTime(this.getId());
   }
 
@@ -331,7 +310,6 @@ public abstract class INodeWithAdditionalFields extends INode
    */
   @Override
   public final void setAccessTime(long accessTime) {
-    // ADD(gangliao): set INode's access time in Postgres
     DatabaseINode.setAccessTime(this.getId(), accessTime);
   }
 

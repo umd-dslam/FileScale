@@ -300,7 +300,7 @@ public class FSDirectory implements Closeable {
     } catch(IllegalStateException ise) {
       throw new IOException(ise);
     }
-    inodeMap = INodeMap.newInstance(rootDir);
+    inodeMap = new INodeMap();
     this.isPermissionEnabled = conf.getBoolean(
       DFSConfigKeys.DFS_PERMISSIONS_ENABLED_KEY,
       DFSConfigKeys.DFS_PERMISSIONS_ENABLED_DEFAULT);
