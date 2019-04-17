@@ -256,10 +256,17 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   
   /** @return true if the given inode is an ancestor directory of this inode. */
   public final boolean isAncestorDirectory(final INodeDirectory dir) {
-    // TODO: (gang) optimize this 
-    for(INodeDirectory p = getParent(); p != null; p = p.getParent()) {
-      if (p == dir) {
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<Long> parents = DatabaseINode.getParentIds(getId());
+      if (dir.getId() != getId() && parents.contains(dir.getId())) {
         return true;
+      }
+    } else {
+      for(INodeDirectory p = getParent(); p != null; p = p.getParent()) {
+        if (p == dir) {
+          return true;
+        }
       }
     }
     return false;
@@ -571,7 +578,6 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    */
   public abstract void setLocalName(byte[] name);
 
-  // TODO: (gang) optimize this by store procedure
   public String getFullPathName() {
     // Get the full path name of this inode.
     if (isRoot()) {
