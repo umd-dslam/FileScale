@@ -583,11 +583,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public boolean addChild(INode node) {
-    // ADD(gangliao): insert new inode into Postgres
-    if(!DatabaseINode.addChild(
-      node.getId(), node.getLocalName(), this.getId())){
+    if(!DatabaseINode.addChild(node.getId(), node.getLocalName(), getId())) {
       return false;
     }
+
+    node.setParent(getId());
 
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
@@ -613,6 +613,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if(!DatabaseINode.addChild(node.getId(), name, this.getId())) {
       return false;
     }
+
+    node.setParent(getId());
 
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
