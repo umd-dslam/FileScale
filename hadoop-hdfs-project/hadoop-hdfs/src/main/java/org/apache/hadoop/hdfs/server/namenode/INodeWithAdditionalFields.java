@@ -105,7 +105,7 @@ public abstract class INodeWithAdditionalFields extends INode {
    *  clientProtocol are changed; The decoding at the client
    *  side should change accordingly.
    */
-  // private byte[] name = null;
+  private byte[] name = null;
   /** 
    * Permission encoded using {@link PermissionStatusFormat}.
    * Codes other than {@link #clonePermissionStatus(INodeWithAdditionalFields)}
@@ -125,6 +125,7 @@ public abstract class INodeWithAdditionalFields extends INode {
 
     String strName = null;
     if (name != null && name.length > 0) {
+      this.name = name;
       strName = DFSUtil.bytes2String(name);
     }
 
@@ -169,16 +170,21 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   @Override
   public final byte[] getLocalNameBytes() {
-    String strName = DatabaseINode.getName(getId());
-    return strName != null ? DFSUtil.string2Bytes(strName) : null;
+    if (name == null) {
+      String strName = DatabaseINode.getName(getId());
+      name = (strName != null) ? DFSUtil.string2Bytes(strName) : null;
+    }
+    return name;
   }
   
   @Override
   public final void setLocalName(byte[] name) {
     if (name != null) {
-      DatabaseINode.setName(this.getId(), DFSUtil.bytes2String(name));
+      this.name = name;
+      DatabaseINode.setName(getId(), DFSUtil.bytes2String(name));
     } else {
-      DatabaseINode.setName(this.getId(), null);
+      this.name = null;
+      DatabaseINode.setName(getId(), null);
     }
   }
 
