@@ -271,6 +271,32 @@ public class DatabaseINode {
     LOG.info("removeChild: " + childId);
   }
 
+  public static List<String> getPathComponents(final long childId) {
+    List<String> names = new ArrayList();
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql =
+          "WITH RECURSIVE cte AS ("
+              + "SELECT id, parent, name FROM inodes d WHERE id = ?"
+              + "UNION ALL"
+              + "SELECT d.id, d.parent, d.name FROM cte"
+              + "JOIN inodes d ON cte.parent = d.id"
+              + ") SELECT name FROM cte;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, childId);
+      ResultSet rs = proc.executeQuery();
+      while (rs.next()) {
+        names.add(0, rs.getString(1));
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getPathComponents: " + childId);
+    return names;
+  }
+
   public static List<Long> getChildrenIds(final long parentId) {
     List<Long> childIds = new ArrayList<>();
     try {

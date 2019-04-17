@@ -595,15 +595,24 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return DFSUtil.bytes2String(path);
   }
 
-  // TODO: (gang) optimize this by store procedure
   public byte[][] getPathComponents() {
-    int n = 0;
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      n++;
-    }
-    byte[][] components = new byte[n][];
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      components[--n] = inode.getLocalNameBytes();
+    byte[][] components = null;
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<String> names = DatabaseINode.getPathComponents(getId());
+      components = new byte[names.size()][];
+      for (int i = 0; i < names.size(); ++i) {
+        components[i] = DFSUtil.string2Bytes(names.get(i));
+      }
+    } else {
+      int n = 0;
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        n++;
+      }
+      components = new byte[n][];
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        components[--n] = inode.getLocalNameBytes();
+      }
     }
     return components;
   }
