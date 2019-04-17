@@ -577,22 +577,36 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     if (isRoot()) {
       return Path.SEPARATOR;
     }
-    // compute size of needed bytes for the path
-    int idx = 0;
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      // add component + delimiter (if not tail component)
-      idx += inode.getLocalNameBytes().length + (inode != this ? 1 : 0);
-    }
-    byte[] path = new byte[idx];
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      if (inode != this) {
-        path[--idx] = Path.SEPARATOR_CHAR;
+
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<String> names = DatabaseINode.getPathComponents(getId());
+      String fullname = "";
+      for (int i = 0; i < names.size(); ++i) {
+        fullname += names.get(i);
+        if (i + 1 != names.size()) {
+          fullname += Path.SEPARATOR; 
+        }
       }
-      byte[] name = inode.getLocalNameBytes();
-      idx -= name.length;
-      System.arraycopy(name, 0, path, idx, name.length);
+      return fullname;
+    } else {
+      // compute size of needed bytes for the path
+      int idx = 0;
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        // add component + delimiter (if not tail component)
+        idx += inode.getLocalNameBytes().length + (inode != this ? 1 : 0);
+      }
+      byte[] path = new byte[idx];
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        if (inode != this) {
+          path[--idx] = Path.SEPARATOR_CHAR;
+        }
+        byte[] name = inode.getLocalNameBytes();
+        idx -= name.length;
+        System.arraycopy(name, 0, path, idx, name.length);
+      }
+      return DFSUtil.bytes2String(path);
     }
-    return DFSUtil.bytes2String(path);
   }
 
   public byte[][] getPathComponents() {
