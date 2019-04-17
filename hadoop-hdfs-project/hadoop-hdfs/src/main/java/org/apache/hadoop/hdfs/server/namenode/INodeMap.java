@@ -33,21 +33,7 @@ import com.google.common.base.Preconditions;
  * and INode.  
  */
 public class INodeMap {
-  
-  // FIXME: maybe rootDir is useful to only serialize root into FSImage
-  private INodeDirectory rootDir;
-
-  static INodeMap newInstance(INodeDirectory rootDir) {
-    return new INodeMap(rootDir);
-  }
-
-  public INodeMap(INodeDirectory rootDir) {
-    this.rootDir = rootDir;
-  }
-
-  public INodeDirectory getRootDir() {
-    return rootDir;
-  }
+  public INodeMap() {}
 
   /**
    * Add an {@link INode} into the {@link INode} map. Replace the old value if 
