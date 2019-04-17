@@ -284,7 +284,7 @@ public class DatabaseINode {
               + ") SELECT name FROM cte;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
-      ResultSet rs = proc.executeQuery();
+      ResultSet rs = pst.executeQuery();
       while (rs.next()) {
         names.add(0, rs.getString(1));
       }
@@ -310,7 +310,7 @@ public class DatabaseINode {
               + ") SELECT id FROM cte;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
-      ResultSet rs = proc.executeQuery();
+      ResultSet rs = pst.executeQuery();
       while (rs.next()) {
         parents.add(0, rs.getLong(1));
       }
