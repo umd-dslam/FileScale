@@ -143,6 +143,12 @@ public abstract class INodeWithAdditionalFields extends INode {
         modificationTime, accessTime);
   }
 
+  INodeWithAdditionalFields(INode parent, long id, byte[] name, PermissionStatus permissions,
+      long modificationTime, long accessTime) {
+    this(parent, id, name, PermissionStatusFormat.toLong(permissions),
+        modificationTime, accessTime);
+  }
+
   private INodeWithAdditionalFields(INode parent, long id) {
     super(parent);
     this.id = id;
