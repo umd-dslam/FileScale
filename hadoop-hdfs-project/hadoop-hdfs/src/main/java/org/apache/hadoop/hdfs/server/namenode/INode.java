@@ -710,6 +710,11 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     DatabaseINode.setParent(getId(), this.parent);
   }
 
+  
+  public final void setParentWithoutUpdateDB(long parentId) {
+    this.parent = parentId;
+  }
+
   public final void setParent(long parentId) {
     this.parent = parentId;
     DatabaseINode.setParent(getId(), parentId);

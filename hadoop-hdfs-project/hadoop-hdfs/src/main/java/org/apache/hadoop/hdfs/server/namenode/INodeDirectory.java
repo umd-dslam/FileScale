@@ -586,8 +586,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if(!DatabaseINode.addChild(node.getId(), node.getLocalName(), getId())) {
       return false;
     }
-
-    node.setParent(getId());
+    node.setParentWithoutUpdateDB(getId());
 
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
@@ -614,7 +613,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return false;
     }
 
-    node.setParent(getId());
+    node.setParentWithoutUpdateDB(getId());
 
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());

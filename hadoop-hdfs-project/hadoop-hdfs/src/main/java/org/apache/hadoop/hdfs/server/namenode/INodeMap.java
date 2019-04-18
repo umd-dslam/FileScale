@@ -75,8 +75,5 @@ public class INodeMap {
     return null;
   }
 
-  /**
-   * Clear the {@link #map}
-   */
   public void clear() {}
 }
