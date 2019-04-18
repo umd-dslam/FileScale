@@ -20,6 +20,9 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
@@ -46,6 +49,22 @@ public class INodesInPath {
   private static boolean isDotSnapshotDir(byte[] pathComponent) {
     return pathComponent != null &&
         Arrays.equals(HdfsServerConstants.DOT_SNAPSHOT_DIR_BYTES, pathComponent);
+  }
+
+  private static Pair<INode[], byte[][]> getINodesAndPaths(final INode inode) {
+    Pair<List<Long>, List<String>> pairs = DatabaseINode.getParentIdsAndPaths(inode.getId());
+
+    List<Long> ids = pairs.getLeft();
+    List<String> names = pairs.getRight();
+    INode[] inodes = new INode[ids.size()];
+    byte[][] namebytes = new byte[ids.size()][];
+
+    for (int i = 0; i < ids.size(); ++i) {
+      inodes[i] = FSDirectory.getInstance().getInode(ids.get(i));
+      namebytes[i] = DFSUtil.string2Bytes(names.get(i));
+    }
+
+    return new ImmutablePair<>(inodes, namebytes);
   }
 
   private static INode[] getINodes(final INode inode) {
@@ -83,9 +102,8 @@ public class INodesInPath {
    * @return INodesInPath
    */
   static INodesInPath fromINode(INode inode) {
-    INode[] inodes = getINodes(inode);
-    byte[][] paths = getPaths(inodes);
-    return new INodesInPath(inodes, paths);
+    Pair<INode[], byte[][]> res = getINodesAndPaths(inode);
+    return new INodesInPath(res.getLeft(), res.getRight());
   }
 
   /**
@@ -104,8 +122,7 @@ public class INodesInPath {
    * @return INodesInPath
    */
   static INodesInPath fromINode(final INodeDirectory rootDir, INode inode) {
-    byte[][] paths = getPaths(getINodes(inode));
-    return resolve(rootDir, paths);
+    return resolve(rootDir, getINodesAndPaths(inode).getRight());
   }
 
   static INodesInPath fromComponents(byte[][] components) {
