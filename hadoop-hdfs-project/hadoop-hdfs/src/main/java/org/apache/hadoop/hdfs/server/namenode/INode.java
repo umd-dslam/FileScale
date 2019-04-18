@@ -256,10 +256,17 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   
   /** @return true if the given inode is an ancestor directory of this inode. */
   public final boolean isAncestorDirectory(final INodeDirectory dir) {
-    // TODO: (gang) optimize this 
-    for(INodeDirectory p = getParent(); p != null; p = p.getParent()) {
-      if (p == dir) {
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<Long> parents = DatabaseINode.getParentIds(getId());
+      if (dir.getId() != getId() && parents.contains(dir.getId())) {
         return true;
+      }
+    } else {
+      for(INodeDirectory p = getParent(); p != null; p = p.getParent()) {
+        if (p == dir) {
+          return true;
+        }
       }
     }
     return false;
@@ -571,39 +578,61 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    */
   public abstract void setLocalName(byte[] name);
 
-  // TODO: (gang) optimize this by store procedure
   public String getFullPathName() {
     // Get the full path name of this inode.
     if (isRoot()) {
       return Path.SEPARATOR;
     }
-    // compute size of needed bytes for the path
-    int idx = 0;
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      // add component + delimiter (if not tail component)
-      idx += inode.getLocalNameBytes().length + (inode != this ? 1 : 0);
-    }
-    byte[] path = new byte[idx];
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      if (inode != this) {
-        path[--idx] = Path.SEPARATOR_CHAR;
+
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<String> names = DatabaseINode.getPathComponents(getId());
+      String fullname = "";
+      for (int i = 0; i < names.size(); ++i) {
+        fullname += names.get(i);
+        if (i + 1 != names.size()) {
+          fullname += Path.SEPARATOR; 
+        }
       }
-      byte[] name = inode.getLocalNameBytes();
-      idx -= name.length;
-      System.arraycopy(name, 0, path, idx, name.length);
+      return fullname;
+    } else {
+      // compute size of needed bytes for the path
+      int idx = 0;
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        // add component + delimiter (if not tail component)
+        idx += inode.getLocalNameBytes().length + (inode != this ? 1 : 0);
+      }
+      byte[] path = new byte[idx];
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        if (inode != this) {
+          path[--idx] = Path.SEPARATOR_CHAR;
+        }
+        byte[] name = inode.getLocalNameBytes();
+        idx -= name.length;
+        System.arraycopy(name, 0, path, idx, name.length);
+      }
+      return DFSUtil.bytes2String(path);
     }
-    return DFSUtil.bytes2String(path);
   }
 
-  // TODO: (gang) optimize this by store procedure
   public byte[][] getPathComponents() {
-    int n = 0;
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      n++;
-    }
-    byte[][] components = new byte[n][];
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      components[--n] = inode.getLocalNameBytes();
+    byte[][] components = null;
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<String> names = DatabaseINode.getPathComponents(getId());
+      components = new byte[names.size()][];
+      for (int i = 0; i < names.size(); ++i) {
+        components[i] = DFSUtil.string2Bytes(names.get(i));
+      }
+    } else {
+      int n = 0;
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        n++;
+      }
+      components = new byte[n][];
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        components[--n] = inode.getLocalNameBytes();
+      }
     }
     return components;
   }
