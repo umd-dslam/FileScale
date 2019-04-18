@@ -573,6 +573,13 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return getLocalNameBytes();
   }
 
+  public final boolean isKeyCached() {
+    if (isFile()) {
+      return asFile().isNameCached();
+    }
+    return asDirectory().isNameCached();
+  }
+
   /**
    * Set local file name
    */

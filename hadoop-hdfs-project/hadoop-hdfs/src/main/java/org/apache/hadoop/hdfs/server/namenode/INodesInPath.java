@@ -82,7 +82,7 @@ public class INodesInPath {
     // if inodes[0]'s name already existed in memory, we don't
     // need to query all of them from database.
     byte[][] paths = new byte[inodes.length][];
-    if (inodes[0].isNameCached()) {
+    if (inodes[0].isKeyCached()) {
       for (int i = 0; i < inodes.length; i++) {
         paths[i] = inodes[i].getKey();
       }
