@@ -159,6 +159,7 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    LOG.info("insertInode: (" + id + ")");
   }
 
   public static void setAccessTime(final long id, final long accessTime) {
@@ -307,9 +308,10 @@ public class DatabaseINode {
               + "UNION ALL"
               + "SELECT d.id, d.parent FROM cte"
               + "JOIN inodes d ON cte.parent = d.id"
-              + ") SELECT id FROM cte;";
+              + ") SELECT id FROM cte WHERE id != ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
+      pst.setLong(2, childId);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
         parents.add(0, rs.getLong(1));

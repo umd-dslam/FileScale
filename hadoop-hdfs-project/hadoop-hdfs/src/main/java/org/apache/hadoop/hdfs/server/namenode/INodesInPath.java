@@ -18,10 +18,12 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeature;
@@ -47,27 +49,29 @@ public class INodesInPath {
   }
 
   private static INode[] getINodes(final INode inode) {
-    int depth = 0, index;
-    INode tmp = inode;
-    while (tmp != null) {
-      depth++;
-      tmp = tmp.getParent();
+    int i;
+    List<Long> parents = DatabaseINode.getParentIds(inode.getId());
+    INode[] inodes = new INode[parents.size() + 1];
+    for (i = 0; i < parents.size(); ++i) {
+      inodes[i] = FSDirectory.getInstance().getInode(parents.get(i));
     }
-    INode[] inodes = new INode[depth];
-    tmp = inode;
-    index = depth;
-    while (tmp != null) {
-      index--;
-      inodes[index] = tmp;
-      tmp = tmp.getParent();
-    }
+    inodes[i] = inode;
     return inodes;
   }
 
   private static byte[][] getPaths(final INode[] inodes) {
+    // if inodes[0]'s name already existed in memory, we don't
+    // need to query all of them from database.
     byte[][] paths = new byte[inodes.length][];
-    for (int i = 0; i < inodes.length; i++) {
-      paths[i] = inodes[i].getKey();
+    if (inodes[0].isNameCached()) {
+      for (int i = 0; i < inodes.length; i++) {
+        paths[i] = inodes[i].getKey();
+      }
+    } else {
+      List<String> pathlst = DatabaseINode.getPathComponents(inodes[inodes.length - 1].getId());
+      for (int i = 0; i < inodes.length; i++) {
+        paths[i] = DFSUtil.string2Bytes(pathlst.get(i));
+      }
     }
     return paths;
   }
