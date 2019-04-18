@@ -168,6 +168,10 @@ public abstract class INodeWithAdditionalFields extends INode {
     return this.id;
   }
 
+  public final boolean isNameCached() {
+    return name != null;
+  }
+
   @Override
   public final byte[] getLocalNameBytes() {
     if (name == null) {

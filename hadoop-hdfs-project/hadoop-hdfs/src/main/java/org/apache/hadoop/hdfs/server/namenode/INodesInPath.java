@@ -18,10 +18,15 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeature;
@@ -46,28 +51,46 @@ public class INodesInPath {
         Arrays.equals(HdfsServerConstants.DOT_SNAPSHOT_DIR_BYTES, pathComponent);
   }
 
+  private static Pair<INode[], byte[][]> getINodesAndPaths(final INode inode) {
+    Pair<List<Long>, List<String>> pairs = DatabaseINode.getParentIdsAndPaths(inode.getId());
+
+    List<Long> ids = pairs.getLeft();
+    List<String> names = pairs.getRight();
+    INode[] inodes = new INode[ids.size()];
+    byte[][] namebytes = new byte[ids.size()][];
+
+    for (int i = 0; i < ids.size(); ++i) {
+      inodes[i] = FSDirectory.getInstance().getInode(ids.get(i));
+      namebytes[i] = DFSUtil.string2Bytes(names.get(i));
+    }
+
+    return new ImmutablePair<>(inodes, namebytes);
+  }
+
   private static INode[] getINodes(final INode inode) {
-    int depth = 0, index;
-    INode tmp = inode;
-    while (tmp != null) {
-      depth++;
-      tmp = tmp.getParent();
+    int i;
+    List<Long> parents = DatabaseINode.getParentIds(inode.getId());
+    INode[] inodes = new INode[parents.size() + 1];
+    for (i = 0; i < parents.size(); ++i) {
+      inodes[i] = FSDirectory.getInstance().getInode(parents.get(i));
     }
-    INode[] inodes = new INode[depth];
-    tmp = inode;
-    index = depth;
-    while (tmp != null) {
-      index--;
-      inodes[index] = tmp;
-      tmp = tmp.getParent();
-    }
+    inodes[i] = inode;
     return inodes;
   }
 
   private static byte[][] getPaths(final INode[] inodes) {
+    // if inodes[0]'s name already existed in memory, we don't
+    // need to query all of them from database.
     byte[][] paths = new byte[inodes.length][];
-    for (int i = 0; i < inodes.length; i++) {
-      paths[i] = inodes[i].getKey();
+    if (inodes[0].isNameCached()) {
+      for (int i = 0; i < inodes.length; i++) {
+        paths[i] = inodes[i].getKey();
+      }
+    } else {
+      List<String> pathlst = DatabaseINode.getPathComponents(inodes[inodes.length - 1].getId());
+      for (int i = 0; i < inodes.length; i++) {
+        paths[i] = DFSUtil.string2Bytes(pathlst.get(i));
+      }
     }
     return paths;
   }
@@ -79,9 +102,8 @@ public class INodesInPath {
    * @return INodesInPath
    */
   static INodesInPath fromINode(INode inode) {
-    INode[] inodes = getINodes(inode);
-    byte[][] paths = getPaths(inodes);
-    return new INodesInPath(inodes, paths);
+    Pair<INode[], byte[][]> res = getINodesAndPaths(inode);
+    return new INodesInPath(res.getLeft(), res.getRight());
   }
 
   /**
@@ -100,8 +122,7 @@ public class INodesInPath {
    * @return INodesInPath
    */
   static INodesInPath fromINode(final INodeDirectory rootDir, INode inode) {
-    byte[][] paths = getPaths(getINodes(inode));
-    return resolve(rootDir, paths);
+    return resolve(rootDir, getINodesAndPaths(inode).getRight());
   }
 
   static INodesInPath fromComponents(byte[][] components) {

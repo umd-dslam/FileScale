@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class DatabaseINode {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode.class);
@@ -159,6 +161,7 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    LOG.info("insertInode: (" + id + ")");
   }
 
   public static void setAccessTime(final long id, final long accessTime) {
@@ -297,6 +300,42 @@ public class DatabaseINode {
     return names;
   }
 
+  // Inclusive: childId
+  public static Pair<List<Long>, List<String>> getParentIdsAndPaths(final long childId) {
+    List<Long> ids = new ArrayList();
+    List<String> names = new ArrayList();
+    ImmutablePair result = null;
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql =
+          "WITH RECURSIVE cte AS ("
+              + "SELECT id, parent, name FROM inodes d WHERE id = ?"
+              + "UNION ALL"
+              + "SELECT d.id, d.parent, d.name FROM cte"
+              + "JOIN inodes d ON cte.parent = d.id"
+              + ") SELECT id, name FROM cte;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, childId);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        ids.add(0, rs.getLong(1));
+        names.add(0, rs.getString(2));
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    LOG.info("getParentIdsAndPaths: " + childId);
+
+    if (ids.size() != 0 || names.size() != 0) {
+      result = new ImmutablePair<>(ids, names);
+    }
+    return result;
+  }
+
+  // Exclusive: childId
   public static List<Long> getParentIds(final long childId) {
     List<Long> parents = new ArrayList();
     try {
@@ -307,9 +346,10 @@ public class DatabaseINode {
               + "UNION ALL"
               + "SELECT d.id, d.parent FROM cte"
               + "JOIN inodes d ON cte.parent = d.id"
-              + ") SELECT id FROM cte;";
+              + ") SELECT id FROM cte WHERE id != ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
+      pst.setLong(2, childId);
       ResultSet rs = pst.executeQuery();
       while (rs.next()) {
         parents.add(0, rs.getLong(1));

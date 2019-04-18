@@ -259,7 +259,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     String env = System.getenv("DATABASE");
     if (env.equals("VOLT") || env.equals("POSTGRES")) {
       List<Long> parents = DatabaseINode.getParentIds(getId());
-      if (dir.getId() != getId() && parents.contains(dir.getId())) {
+      if (parents.contains(dir.getId())) {
         return true;
       }
     } else {
