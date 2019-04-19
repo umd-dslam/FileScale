@@ -28,13 +28,20 @@ public class DatabaseNDExtraInfo {
             "UPSERT INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?);";
       } else {
         sql =
-            "INSERT INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?) ON CONFLICT DO UPDATE;";
+            "INSERT INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?) "
+          + "ON CONFLICT(id) DO UPDATE SET currentId = ?, tokenSequenceNumber = ?, numKeys = ?, numTokens = ?;";
       }
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, currentId);
       pst.setInt(2, tokenSequenceNumber);
       pst.setInt(3, numKeys);
       pst.setInt(4, numTokens);
+      if (!env.equals("VOLT")) {
+        pst.setInt(5, currentId);
+        pst.setInt(6, tokenSequenceNumber);
+        pst.setInt(7, numKeys);
+        pst.setInt(8, numTokens);        
+      }
       pst.executeUpdate();
       pst.close();
     } catch (SQLException ex) {
@@ -50,11 +57,16 @@ public class DatabaseNDExtraInfo {
       if (env.equals("VOLT")) {
         sql = "UPSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?);";
       } else {
-        sql = "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) ON CONFLICT DO UPDATE;";
+        sql = "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) "
+            + "ON CONFLICT DO UPDATE SET numEntry = ?, maskBits = ?;";
       }
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, numEntry);
       pst.setInt(2, maskBits);
+      if (!env.equals("VOLT")) {
+        pst.setInt(3, numEntry);
+        pst.setInt(4, maskBits);        
+      }
       pst.executeUpdate();
       pst.close();
     } catch (SQLException ex) {
@@ -120,13 +132,12 @@ public class DatabaseNDExtraInfo {
         rs.close();
         proc.close();
       } else {
-        // INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) ON CONFLICT DO UPDATE;"
-        String sql = "INSERT INTO stringtable(id, str) VALUES ";
+        String sql = "";
         for (int i = 0; i < ids.length; ++i) {
-          sql += "(" + String.valueOf(ids[i]) + "," + strs[i] + "),";
+          sql += "INSERT INTO stringtable(id, str) "
+              +  "VALUES (" + String.valueOf(ids[i]) + "," + strs[i] + ") "
+              +  "ON CONFLICT(id) DO UPDATE SET str = " + strs[i] + ";";
         }
-        sql = sql.substring(0, sql.length() - 1) + " ON CONFLICT DO UPDATE;";
-
         Connection conn = DatabaseConnection.getInstance().getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
@@ -208,6 +219,14 @@ public class DatabaseNDExtraInfo {
         }
         sql = sql.substring(0, sql.length() - 1) + " ON CONFLICT DO UPDATE;";
 
+        String sql = "";
+        for (int i = 0; i < ids.length; ++i) {
+          sql += "INSERT INTO delegationkeys(id, expiryDate, key) "
+              +  "VALUES (" + String.valueOf(ids[i]) + "," + String.valueOf(dates[i]) + "," + keys[i] + ") "
+              +  "ON CONFLICT(id) DO UPDATE SET expiryDate = " + String.valueOf(dates[i]) + ", "
+              +  "key = " + keys[i] + ";";
+        }
+
         Connection conn = DatabaseConnection.getInstance().getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
@@ -255,9 +274,9 @@ public class DatabaseNDExtraInfo {
         rs.close();
         proc.close();
       } else {
-        String sql =
-            "INSERT INTO persisttokens(owner, renewer, realuser, issueDate,"
-                + " maxDate, expiryDate, sequenceNumber, masterKeyId) VALUES ";
+        String sql = "DELETE FROM persisttokens;"
+                + "INSERT INTO persisttokens(owner, renewer, realuser, issueDate, "
+                + "maxDate, expiryDate, sequenceNumber, masterKeyId) VALUES ";
         for (int i = 0; i < owners.length; ++i) {
           sql +=
               "("
@@ -278,7 +297,7 @@ public class DatabaseNDExtraInfo {
                   + String.valueOf(masterkeys[i])
                   + "),";
         }
-        sql = sql.substring(0, sql.length() - 1) + " ON CONFLICT DO UPDATE;";
+        sql = sql.substring(0, sql.length() - 1) + ";";
 
         Connection conn = DatabaseConnection.getInstance().getConnection();
         Statement st = conn.createStatement();

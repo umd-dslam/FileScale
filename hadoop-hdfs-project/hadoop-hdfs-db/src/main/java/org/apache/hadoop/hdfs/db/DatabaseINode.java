@@ -50,7 +50,7 @@ public class DatabaseINode {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       // check the existence of node in Postgres
-      String sql = "SELECT COUNT(id) FROM inodes WHERE id = ?";
+      String sql = "SELECT COUNT(id) FROM inodes WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
       ResultSet rs = pst.executeQuery();
@@ -388,12 +388,6 @@ public class DatabaseINode {
   }
 
   public static boolean addChild(final long childId, final String childName, final long parentId) {
-    // return false if the child with this name already exists
-    if (checkInodeExistence(parentId, childName)) {
-      LOG.info("addChild: [EXIST] (" + parentId + "," + childName + ")");
-      return false;
-    }
-
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "";
@@ -401,7 +395,7 @@ public class DatabaseINode {
       if (env.equals("VOLT")) {
         sql = "UPSERT INTO inodes(parent, name, id) VALUES (?, ?, ?);";
       } else {
-        sql = "INSERT INTO inodes(parent, name, id) VALUES (?, ?, ?) ON CONFLICT DO UPDATE;";
+        sql = "INSERT INTO inodes(parent, name, id) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET parent = ?, name = ?;";
       }
       LOG.info("addChild: [OK] UPSERT (" + childId + "," + parentId + "," + childName + ")");
 
@@ -409,10 +403,15 @@ public class DatabaseINode {
       pst.setLong(1, parentId);
       pst.setString(2, childName);
       pst.setLong(3, childId);
+      if (!env.equals("VOLT")) {
+        pst.setLong(4, parentId);
+        pst.setString(5, childName);
+      }
       pst.executeUpdate();
       pst.close();
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
+      return false;
     }
 
     return true;
@@ -501,7 +500,7 @@ public class DatabaseINode {
     String name = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT clientName FROM inodeuc WHERE id = ?";
+      String sql = "SELECT clientName FROM inodeuc WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
@@ -536,7 +535,7 @@ public class DatabaseINode {
     String name = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT clientMachine FROM inodeuc WHERE id = ?";
+      String sql = "SELECT clientMachine FROM inodeuc WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
@@ -585,7 +584,7 @@ public class DatabaseINode {
     String value = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT value FROM inodexattrs WHERE id = ?";
+      String sql = "SELECT value FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
@@ -605,7 +604,7 @@ public class DatabaseINode {
     String name = null;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT name FROM inodexattrs WHERE id = ?";
+      String sql = "SELECT name FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
@@ -625,7 +624,7 @@ public class DatabaseINode {
     int ns = -1;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT namespace FROM inodexattrs WHERE id = ?";
+      String sql = "SELECT namespace FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
@@ -669,7 +668,7 @@ public class DatabaseINode {
     List<XAttrInfo> xinfo = new ArrayList<XAttrInfo>();
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT namespace, name, value FROM inodexattrs WHERE id = ?";
+      String sql = "SELECT namespace, name, value FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
@@ -689,7 +688,7 @@ public class DatabaseINode {
     boolean exist = false;
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
-      String sql = "SELECT COUNT(id) FROM inodexattrs WHERE id = ?";
+      String sql = "SELECT COUNT(id) FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       ResultSet rs = pst.executeQuery();
