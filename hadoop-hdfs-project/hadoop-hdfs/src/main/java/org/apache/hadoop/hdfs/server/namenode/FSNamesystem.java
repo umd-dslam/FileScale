@@ -3567,6 +3567,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
 
     pendingFile.recordModification(latestSnapshot);
+    // FIXME: getClientName must be called before toCompleteFile 
+    String holder = FileUnderConstructionFeature.getClientName(pendingFile.getId());
 
     // The file is no longer pending.
     // Create permanent INode, update blocks. No need to replace the inode here
@@ -3575,7 +3577,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         allowCommittedBlock? numCommittedAllowed: 0,
         blockManager.getMinReplication());
 
-    leaseManager.removeLease(uc.getClientName(pendingFile.getId()), pendingFile);
+    leaseManager.removeLease(holder, pendingFile);
 
     // close file and persist block allocations for this file
     closeFile(src, pendingFile);
