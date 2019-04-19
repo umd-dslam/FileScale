@@ -1585,13 +1585,7 @@ public class FSDirectory implements Closeable {
    * snapshot.
    */
   public static byte[][] getPathComponents(INode inode) {
-    List<byte[]> components = new ArrayList<byte[]>();
-    components.add(0, inode.getLocalNameBytes());
-    while(inode.getParent() != null) {
-      components.add(0, inode.getParent().getLocalNameBytes());
-      inode = inode.getParent();
-    }
-    return components.toArray(new byte[components.size()][]);
+    return inode.getPathComponents();
   }
 
   /** Check if a given inode name is reserved */
