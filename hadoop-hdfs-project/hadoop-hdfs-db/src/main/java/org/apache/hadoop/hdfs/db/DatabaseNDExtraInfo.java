@@ -212,13 +212,6 @@ public class DatabaseNDExtraInfo {
         rs.close();
         proc.close();
       } else {
-        String sql = "INSERT INTO delegationkeys(id, expiryDate, key) VALUES ";
-        for (int i = 0; i < ids.length; ++i) {
-          sql +=
-              "(" + String.valueOf(ids[i]) + "," + String.valueOf(dates[i]) + "," + keys[i] + "),";
-        }
-        sql = sql.substring(0, sql.length() - 1) + " ON CONFLICT DO UPDATE;";
-
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
           sql += "INSERT INTO delegationkeys(id, expiryDate, key) "
