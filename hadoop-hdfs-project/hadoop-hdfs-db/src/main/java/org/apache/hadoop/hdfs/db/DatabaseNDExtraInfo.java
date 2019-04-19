@@ -134,9 +134,11 @@ public class DatabaseNDExtraInfo {
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
+          String idStr = "'" + String.valueOf(ids[i]) + "'"; 
+          String str = "'" + strs[i] + "'"; 
           sql += "INSERT INTO stringtable(id, str) "
-              +  "VALUES (" + String.valueOf(ids[i]) + "," + strs[i] + ") "
-              +  "ON CONFLICT(id) DO UPDATE SET str = " + strs[i] + ";";
+              +  "VALUES (" + idStr + "," + str + ") "
+              +  "ON CONFLICT(id) DO UPDATE SET str = " + str + ";";
         }
         Connection conn = DatabaseConnection.getInstance().getConnection();
         Statement st = conn.createStatement();
@@ -214,10 +216,13 @@ public class DatabaseNDExtraInfo {
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
+          String idStr = "'" + String.valueOf(ids[i]) + "'"; 
+          String dateStr = "'" + String.valueOf(dates[i]) + "'"; 
+          String keyStr = "'" + String.valueOf(keys[i]) + "'"; 
           sql += "INSERT INTO delegationkeys(id, expiryDate, key) "
-              +  "VALUES (" + String.valueOf(ids[i]) + "," + String.valueOf(dates[i]) + "," + keys[i] + ") "
-              +  "ON CONFLICT(id) DO UPDATE SET expiryDate = " + String.valueOf(dates[i]) + ", "
-              +  "key = " + keys[i] + ";";
+              +  "VALUES (" + idStr + "," + dateStr + "," + keyStr + ") "
+              +  "ON CONFLICT(id) DO UPDATE SET expiryDate = " + dateStr + ", "
+              +  "key = " + keyStr + ";";
         }
 
         Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -273,21 +278,21 @@ public class DatabaseNDExtraInfo {
         for (int i = 0; i < owners.length; ++i) {
           sql +=
               "("
-                  + owners[i]
+                  + "'" + owners[i] + "'"
                   + ","
-                  + renewers[i]
+                  + "'" + renewers[i] + "'"
                   + ","
-                  + realusers[i]
+                  + "'" + realusers[i] + "'"
                   + ","
-                  + String.valueOf(issuedates[i])
+                  + "'" + String.valueOf(issuedates[i]) + "'"
                   + ","
-                  + String.valueOf(maxdates[i])
+                  + "'" + String.valueOf(maxdates[i]) + "'"
                   + ","
-                  + String.valueOf(expirydates[i])
+                  + "'" + String.valueOf(expirydates[i]) + "'"
                   + ","
-                  + String.valueOf(seqnumbers[i])
+                  + "'" + String.valueOf(seqnumbers[i]) + "'"
                   + ","
-                  + String.valueOf(masterkeys[i])
+                  + "'" + String.valueOf(masterkeys[i]) + "'"
                   + "),";
         }
         sql = sql.substring(0, sql.length() - 1) + ";";
