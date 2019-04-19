@@ -140,12 +140,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   @Override
   public byte getStoragePolicyID() {
-    byte id = getLocalStoragePolicyID();
-    if (id != BLOCK_STORAGE_POLICY_ID_UNSPECIFIED) {
-      return id;
-    }
+    // FIXME: only support unspecify policy for now
+    // byte id = getLocalStoragePolicyID();
+    // if (id != BLOCK_STORAGE_POLICY_ID_UNSPECIFIED) {
+    //   return id;
+    // }
     // if it is unspecified, check its parent
-    return getParent() != null ? getParent().getStoragePolicyID() : BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
+    // return getParent() != null ? getParent().getStoragePolicyID() : BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
+    return getLocalStoragePolicyID(); 
   }
 
   void setQuota(BlockStoragePolicySuite bsps, long nsQuota, long ssQuota, StorageType type) {
