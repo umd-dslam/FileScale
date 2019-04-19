@@ -599,10 +599,11 @@ public class INodeFile extends INodeWithAdditionalFields
   @Override
   public byte getStoragePolicyID() {
     byte id = getLocalStoragePolicyID();
-    if (id == BLOCK_STORAGE_POLICY_ID_UNSPECIFIED) {
-      id = this.getParent() != null ?
-          this.getParent().getStoragePolicyID() : id;
-    }
+    // FIXME: For now, only consider unspecified policy
+    // if (id == BLOCK_STORAGE_POLICY_ID_UNSPECIFIED) {
+    //   id = this.getParent() != null ?
+    //       this.getParent().getStoragePolicyID() : id;
+    // }
 
     // For Striped EC files, we support only suitable policies. Current
     // supported policies are HOT, COLD, ALL_SSD.
