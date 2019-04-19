@@ -58,7 +58,7 @@ public class DatabaseNDExtraInfo {
         sql = "UPSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?);";
       } else {
         sql = "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) "
-            + "ON CONFLICT DO UPDATE SET numEntry = ?, maskBits = ?;";
+            + "ON CONFLICT(id) DO UPDATE SET numEntry = ?, maskBits = ?;";
       }
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, numEntry);

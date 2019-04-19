@@ -411,7 +411,6 @@ public class DatabaseINode {
       pst.close();
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
-      return false;
     }
 
     return true;
