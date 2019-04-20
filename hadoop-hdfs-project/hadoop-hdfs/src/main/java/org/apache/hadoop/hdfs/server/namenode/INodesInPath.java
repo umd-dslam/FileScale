@@ -244,7 +244,8 @@ public class INodesInPath {
         // normal case, and also for resolving file/dir under snapshot root
         // curNode = dir.getChild(childName,
         //     isSnapshot ? snapshotId : CURRENT_STATE_ID);
-        if (childName == DFSUtil.string2Bytes(pairs.getRight().get(count))) {
+        if (pairs.getRight().size() > count
+            && childName == DFSUtil.string2Bytes(pairs.getRight().get(count))) {
           curNode = FSDirectory.getInstance().getInode(pairs.getLeft().get(count));
         } else {
           break;

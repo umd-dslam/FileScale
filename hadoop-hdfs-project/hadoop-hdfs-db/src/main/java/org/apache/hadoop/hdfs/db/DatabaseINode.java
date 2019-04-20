@@ -172,7 +172,7 @@ public class DatabaseINode {
     setAttribute(id, "modificationTime", modificationTime);
   }
 
-  public static void setModificationTime(final long id, final long childId) {
+  public static void updateModificationTime(final long id, final long childId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "UPDATE inodes SET modificationTime = ("
@@ -185,7 +185,7 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    LOG.info("setModificationTime [UPDATE]: (" + id + ")");    
+    LOG.info("updateModificationTime [UPDATE]: (" + id + ")");    
   }
 
   public static void setPermission(final long id, final long permission) {
@@ -296,10 +296,10 @@ public class DatabaseINode {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql =
           "WITH RECURSIVE cte AS ("
-              + "SELECT id, parent, name FROM inodes d WHERE id = ?"
-              + "UNION ALL"
-              + "SELECT d.id, d.parent, d.name FROM cte"
-              + "JOIN inodes d ON cte.parent = d.id"
+              + "       SELECT id, parent, name FROM inodes d WHERE id = ?"
+              + "   UNION ALL"
+              + "       SELECT d.id, d.parent, d.name FROM cte"
+              + "   JOIN inodes d ON cte.parent = d.id"
               + ") SELECT name FROM cte;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
@@ -325,10 +325,10 @@ public class DatabaseINode {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql =
           "WITH RECURSIVE cte AS ("
-              + "SELECT id, parent, name FROM inodes d WHERE id = ?"
-              + "UNION ALL"
-              + "SELECT d.id, d.parent, d.name FROM cte"
-              + "JOIN inodes d ON cte.parent = d.id"
+              + "       SELECT id, parent, name FROM inodes d WHERE id = ?"
+              + "   UNION ALL"
+              + "       SELECT d.id, d.parent, d.name FROM cte"
+              + "   JOIN inodes d ON cte.parent = d.id"
               + ") SELECT id, name FROM cte;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
@@ -358,10 +358,10 @@ public class DatabaseINode {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql =
           "WITH RECURSIVE cte AS ("
-              + "SELECT id, parent FROM inodes d WHERE id = ?"
-              + "UNION ALL"
-              + "SELECT d.id, d.parent FROM cte"
-              + "JOIN inodes d ON cte.parent = d.id"
+              + "       SELECT id, parent FROM inodes d WHERE id = ?"
+              + "   UNION ALL"
+              + "       SELECT d.id, d.parent FROM cte"
+              + "   JOIN inodes d ON cte.parent = d.id"
               + ") SELECT id FROM cte WHERE id != ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
