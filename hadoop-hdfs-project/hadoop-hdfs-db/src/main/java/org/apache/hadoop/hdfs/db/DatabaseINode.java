@@ -172,7 +172,7 @@ public class DatabaseINode {
     setAttribute(id, "modificationTime", modificationTime);
   }
 
-  public static void setModificationTime(final long id, final long childId) {
+  public static void updateModificationTime(final long id, final long childId) {
     try {
       Connection conn = DatabaseConnection.getInstance().getConnection();
       String sql = "UPDATE inodes SET modificationTime = ("
@@ -185,7 +185,7 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    LOG.info("setModificationTime [UPDATE]: (" + id + ")");    
+    LOG.info("updateModificationTime [UPDATE]: (" + id + ")");    
   }
 
   public static void setPermission(final long id, final long permission) {
