@@ -166,7 +166,7 @@ public class INodesInPath {
     INode[] inodes = new INode[components.length];
     boolean isSnapshot = false;
     int snapshotId = CURRENT_STATE_ID;
-
+    Pair<List<Long>, List<String>> pairs = DatabaseINode.getParentIdsAndPaths(curNode.getId());
     while (count < components.length && curNode != null) {
       final boolean lastComp = (count == components.length - 1);
       inodes[inodeNum++] = curNode;
@@ -242,8 +242,13 @@ public class INodesInPath {
         inodes = Arrays.copyOf(inodes, components.length);
       } else {
         // normal case, and also for resolving file/dir under snapshot root
-        curNode = dir.getChild(childName,
-            isSnapshot ? snapshotId : CURRENT_STATE_ID);
+        // curNode = dir.getChild(childName,
+        //     isSnapshot ? snapshotId : CURRENT_STATE_ID);
+        if (childName == DFSUtil.string2Bytes(pairs.getRight().get(count))) {
+          curNode = FSDirectory.getInstance().getInode(pairs.getLeft().get(count));
+        } else {
+          break;
+        }
       }
     }
     return new INodesInPath(inodes, components, isRaw, isSnapshot, snapshotId);

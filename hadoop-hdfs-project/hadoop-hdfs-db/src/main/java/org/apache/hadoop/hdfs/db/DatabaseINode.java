@@ -172,6 +172,22 @@ public class DatabaseINode {
     setAttribute(id, "modificationTime", modificationTime);
   }
 
+  public static void setModificationTime(final long id, final long childId) {
+    try {
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      String sql = "UPDATE inodes SET modificationTime = ("
+        + "SELECT modificationTime FROM inodes WHERE id = ?) WHERE id = ?;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, childId);
+      pst.setLong(2, id);
+      pst.executeUpdate();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("setModificationTime [UPDATE]: (" + id + ")");    
+  }
+
   public static void setPermission(final long id, final long permission) {
     setAttribute(id, "permission", permission);
   }

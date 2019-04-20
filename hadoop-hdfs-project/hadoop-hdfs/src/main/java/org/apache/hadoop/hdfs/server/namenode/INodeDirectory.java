@@ -628,7 +628,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
     if (setModTime) {
       // update modification time of the parent directory
-      updateModificationTime(node.getModificationTime(), latestSnapshotId);
+      // updateModificationTime(node.getModificationTime(), latestSnapshotId);
+      DatabaseINode.setModificationTime(getId(), node.getId());
     }
     return true;
   }
