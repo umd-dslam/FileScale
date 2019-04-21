@@ -77,7 +77,7 @@ public class HdfsMetaInfoSchema {
               + ");"
               + "CREATE TABLE persisttokens("
               + "   version int, owner varchar, renewer varchar, realuser varchar, issueDate bigint,"
-              + "   maxDate bigint, sequenceNumber int, masterKeyId int, expiryDate bigint"
+              + "   maxDate bigint, sequenceNumber int primary key, masterKeyId int, expiryDate bigint"
               + ");"
               + "CREATE TABLE inodes("
               + "   id bigint primary key, parent bigint, name varchar,"

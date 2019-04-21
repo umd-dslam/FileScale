@@ -47,7 +47,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
     </dependency>
     <dependency>
       <groupId>org.voltdb</groupId>
-      <artifactId>voltdb</artifactId>
+      <artifactId>voltdbclient</artifactId>
       <version>9.0</version>
       <scope>compile</scope>
     </dependency>
