@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.voltdb.*;
 
 public class DatabaseINode {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode.class);
@@ -252,7 +253,27 @@ public class DatabaseINode {
     return childId;
   }
 
-  public static void removeChild(final long childId) {
+  public static List<Long> getChildIdsByPath(final long id, final String[] components) {
+    try {
+      // call a stored procedure
+      Connection conn = DatabaseConnection.getInstance().getConnection();
+      CallableStatement proc = conn.prepareCall("{call GetChildIdsByPath(?, ?)}");
+      
+      proc.setLong(1, id);
+      proc.setArray(2, conn.createArrayOf("VARCHAR", components));
+      ResultSet rs = proc.executeQuery();
+      while (rs.next()) {
+        LOG.info("getChildIdsByPath Return: " + rs.getLong(1));
+      }
+      rs.close();
+      proc.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getChildIdsByPath: " + childId);
+  }
+
+  public static void removeChild(final long id) {
     try {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
