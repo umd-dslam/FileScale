@@ -72,3 +72,5 @@ bench/*.jar
 
 *.class
 .factorypath
+voltdb-ent-9.0.tar.gz
+voltdb-ent

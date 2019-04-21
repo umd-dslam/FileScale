@@ -1,3 +1,5 @@
+set -xe
+
 ## declare an array variable
 declare -a VOLTDB_PROCEDURES=("VoltDBStoredProcedureTest" "SetPersistTokens" "SetDelegationKeys" "SetStringTable" "RemoveChild" "RemoveBlock" "RemoveAllBlocks" "InsertINode2Block" "InsertXAttrs")
 

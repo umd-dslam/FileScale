@@ -71,7 +71,7 @@ RUN sudo wget https://jdbc.postgresql.org/download/postgresql-42.2.5.jar -P /hom
 
 RUN sudo wget https://github.com/DSL-UMD/hadoop/releases/download/voltdb-8.4.2/voltdb-ent-8.4.2.tar.gz -P /home/${USER_NAME}/voltadb
 RUN cd /home/${USER_NAME}/voltadb && tar -xzf voltdb-ent-8.4.2.tar.gz
-RUN cp /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/bin/sqlcmd /usr/local/bin/ 
+RUN ln -s /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/bin/sqlcmd /usr/local/bin/sqlcmd 
 RUN rm -rf /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2.tar.gz 
 
 ENV CLASSPATH $CLASSPATH:/home/${USER_NAME}/java/postgresql-42.2.5.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdb-8.4.2.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdbclient-8.4.2.jar
