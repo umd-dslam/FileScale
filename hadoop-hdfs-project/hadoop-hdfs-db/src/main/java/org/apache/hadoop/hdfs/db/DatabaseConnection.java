@@ -36,7 +36,7 @@ public class DatabaseConnection {
         this.config = new ClientConfig();
         this.config.setTopologyChangeAware(true);
         this.client = ClientFactory.createClient(config);
-        this.client.createConnection("localhost", 21212)
+        this.client.createConnection("localhost", 21212);
         url = volt;
       } else if (env.equals("COCKROACH")) {
         Class.forName("org.postgresql.Driver");
