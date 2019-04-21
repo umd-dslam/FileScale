@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import java.util.HashMap;
+import java.util.Map;
 import org.voltdb.*;
 
 public class DatabaseINode {
@@ -266,7 +267,7 @@ public class DatabaseINode {
       while (result.advanceRow()) {
         Long val = result.getLong(0);
         String key = result.getString(1);
-        map.add(key, val);
+        map.put(key, val);
       }
     } catch (Exception e) {
       e.printStackTrace();
