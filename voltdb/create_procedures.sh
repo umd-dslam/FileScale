@@ -11,7 +11,7 @@ Removing the Exist Stored Procedures ...
 EOF
 
 
-EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd | awk '{print $1}')
+EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd | sed '1,/^--- User Procedures ------------------------------------------$/d' | awk '{print $1}')
 
 for procedure in ${VOLTDB_PROCEDURES[@]}
 do
