@@ -8,7 +8,7 @@ public class SetDelegationKeys extends VoltProcedure {
 
   public long run(int[] ids, long[] dates, String[] keys) throws VoltAbortException {
     for (int i = 0; i < ids.length; ++i) {
-        voltQueueSQL(sql, ids[i], dates[i], keys[i]);
+      voltQueueSQL(sql, ids[i], dates[i], keys[i]);
     }
     VoltTable[] results = voltExecuteSQL();
 
