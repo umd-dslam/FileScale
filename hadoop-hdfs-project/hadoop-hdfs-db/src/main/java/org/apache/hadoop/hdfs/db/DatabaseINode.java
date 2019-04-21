@@ -267,7 +267,7 @@ public class DatabaseINode {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    LOG.info("getChildIdsByPath: " + childId);
+    LOG.info("getChildIdsByPath: " + id);
     return res;
   }
 
@@ -278,7 +278,7 @@ public class DatabaseINode {
         // call a stored procedure
         Connection conn = DatabaseConnection.getInstance().getConnection();
         CallableStatement proc = conn.prepareCall("{call RemoveChild(?)}");
-        proc.setLong(1, childId);
+        proc.setLong(1, id);
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
           LOG.info("removeChild Return: " + rs.getLong(1));
@@ -299,14 +299,14 @@ public class DatabaseINode {
                 + "   SELECT id FROM cte"
                 + ");";
         PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setLong(1, childId);
+        pst.setLong(1, id);
         pst.executeUpdate();
         pst.close();
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    LOG.info("removeChild: " + childId);
+    LOG.info("removeChild: " + id);
   }
 
   public static List<String> getPathComponents(final long childId) {
