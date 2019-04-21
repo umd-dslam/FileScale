@@ -254,23 +254,21 @@ public class DatabaseINode {
   }
 
   public static List<Long> getChildIdsByPath(final long id, final String[] components) {
+    List<Long> res = new ArrayList();
     try {
       // call a stored procedure
-      Connection conn = DatabaseConnection.getInstance().getConnection();
-      CallableStatement proc = conn.prepareCall("{call GetChildIdsByPath(?, ?)}");
-      
-      proc.setLong(1, id);
-      proc.setArray(2, conn.createArrayOf("VARCHAR", components));
-      ResultSet rs = proc.executeQuery();
-      while (rs.next()) {
-        LOG.info("getChildIdsByPath Return: " + rs.getLong(1));
+      VoltTable[] results = DatabaseConnection.getInstance().getVoltClient().callProcedure(
+          "GetChildIdsByPath", id, components).getResults();
+      VoltTable result = results[0];
+      result.resetRowPosition();
+      while (result.advanceRow()) {
+        res.add(result.getLong(0));
       }
-      rs.close();
-      proc.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
+    } catch (Exception e) {
+      e.printStackTrace();
     }
     LOG.info("getChildIdsByPath: " + childId);
+    return res;
   }
 
   public static void removeChild(final long id) {
