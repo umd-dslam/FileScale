@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -166,7 +167,15 @@ public class INodesInPath {
     INode[] inodes = new INode[components.length];
     boolean isSnapshot = false;
     int snapshotId = CURRENT_STATE_ID;
-    Pair<List<Long>, List<String>> pairs = DatabaseINode.getParentIdsAndPaths(curNode.getId());
+    List<Long> pathIds = null;
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT")) {
+      String[] paths = new String[components.length];
+      for (int i = 0; i < components.length; ++i) {
+        paths[i] = DFSUtil.bytes2String(components[i]);
+      }
+      pathIds = DatabaseINode.getChildIdsByPath(curNode.getId(), paths);
+    }
     while (count < components.length && curNode != null) {
       final boolean lastComp = (count == components.length - 1);
       inodes[inodeNum++] = curNode;
@@ -242,13 +251,15 @@ public class INodesInPath {
         inodes = Arrays.copyOf(inodes, components.length);
       } else {
         // normal case, and also for resolving file/dir under snapshot root
-        // curNode = dir.getChild(childName,
-        //     isSnapshot ? snapshotId : CURRENT_STATE_ID);
-        if (pairs.getRight().size() > count
-            && childName == DFSUtil.string2Bytes(pairs.getRight().get(count))) {
-          curNode = FSDirectory.getInstance().getInode(pairs.getLeft().get(count));
+        if (env.equals("VOLT")) {
+          if (count < pathIds.size()) {
+            curNode = FSDirectory.getInstance().getInode(pathIds.get(count)); 
+          } else {
+            break;
+          }
         } else {
-          break;
+          curNode = dir.getChild(childName,
+              isSnapshot ? snapshotId : CURRENT_STATE_ID);
         }
       }
     }
