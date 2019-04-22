@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import java.util.HashMap;
+import java.util.Map;
 import org.voltdb.*;
 
 public class DatabaseINode {
@@ -254,6 +256,7 @@ public class DatabaseINode {
   }
 
   public static List<Long> getChildIdsByPath(final long id, final String[] components) {
+    Map<String, Long> map = new HashMap<>();
     List<Long> res = new ArrayList();
     try {
       // call a stored procedure
@@ -262,12 +265,18 @@ public class DatabaseINode {
       VoltTable result = results[0];
       result.resetRowPosition();
       while (result.advanceRow()) {
-        res.add(result.getLong(0));
+        Long val = result.getLong(0);
+        String key = result.getString(1);
+        map.put(key, val);
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
     LOG.info("getChildIdsByPath: " + id);
+
+    for (int i = 0; i < map.size(); ++i) {
+      res.add(map.get(components[i]));
+    }
     return res;
   }
 

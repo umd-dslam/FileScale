@@ -7,9 +7,11 @@ public class GetChildIdsByPath extends VoltProcedure {
 
   public VoltTable[] run(long id, String[] components) throws VoltAbortException {
     VoltTable[] r = new VoltTable[1];
-    VoltTable t = new VoltTable(new VoltTable.ColumnInfo("id", VoltType.BIGINT));
+    VoltTable t = new VoltTable(
+				new VoltTable.ColumnInfo("id", VoltType.BIGINT),
+				new VoltTable.ColumnInfo("name", VoltType.STRING));
     // add the id of root (components[0]) into t
-    t.addRow(id);
+    t.addRow(id, components[0]);
 
     long parent = id;
     for (int i = 1; i < components.length; ++i) {
@@ -19,7 +21,7 @@ public class GetChildIdsByPath extends VoltProcedure {
         break;
       }
       parent = results[0].fetchRow(0).getLong(0);
-      t.addRow(parent);
+      t.addRow(parent, components[i]);
     }
 
     r[0] = t;
