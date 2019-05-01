@@ -256,7 +256,6 @@ public class DatabaseINode {
   }
 
   public static List<Long> getChildIdsByPath(final long id, final String[] components) {
-    Map<String, Long> map = new HashMap<>();
     List<Long> res = new ArrayList();
     try {
       // call a stored procedure
@@ -265,18 +264,13 @@ public class DatabaseINode {
       VoltTable result = results[0];
       result.resetRowPosition();
       while (result.advanceRow()) {
-        Long val = result.getLong(0);
-        String key = result.getString(1);
-        map.put(key, val);
+        res.add(result.getLong(0));
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
     LOG.info("getChildIdsByPath: " + id);
 
-    for (int i = 0; i < map.size(); ++i) {
-      res.add(map.get(components[i]));
-    }
     return res;
   }
 
