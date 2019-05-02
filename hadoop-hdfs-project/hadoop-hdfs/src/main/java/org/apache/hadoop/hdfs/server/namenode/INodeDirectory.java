@@ -856,7 +856,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
     // DirectoryWithSnapshotFeature)
     int s = snapshot != Snapshot.CURRENT_STATE_ID
         && prior != Snapshot.NO_SNAPSHOT_ID ? prior : snapshot;
-    for (INode child : getChildrenList(s)) {
+    ReadOnlyList<INode> childs = getChildrenList(s);
+    for (INode child : childs) {
       if (snapshot == Snapshot.CURRENT_STATE_ID || excludedNodes == null ||
           !excludedNodes.containsKey(child)) {
         child.cleanSubtree(reclaimContext, snapshot, prior);
@@ -872,13 +873,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (sf != null) {
       sf.clear(reclaimContext, this);
     }
-    for (INode child : getChildrenList(Snapshot.CURRENT_STATE_ID)) {
+
+    ReadOnlyList<INode> childs = getChildrenList(Snapshot.CURRENT_STATE_ID);
+    for (INode child : childs) {
       child.destroyAndCollectBlocks(reclaimContext);
     }
     if (getAclFeature() != null) {
       AclStorage.removeAclFeature(getAclFeature());
     }
-    clear();
     reclaimContext.removedINodes.add(this);
   }
   
