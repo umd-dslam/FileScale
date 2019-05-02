@@ -838,7 +838,6 @@ public class INodeFile extends INodeWithAdditionalFields
     if (getAclFeature() != null) {
       AclStorage.removeAclFeature(getAclFeature());
     }
-    clear();
     reclaimContext.removedINodes.add(this);
   }
 
