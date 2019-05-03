@@ -1320,7 +1320,7 @@ public class FSDirectory implements Closeable {
     if (checkQuota) {
       final String parentPath = existing.getPath();
       verifyMaxComponentLength(inode.getLocalNameBytes(), parentPath);
-      verifyMaxDirItems(parent, parentPath);
+      // verifyMaxDirItems(parent, parentPath);
     }
     // always verify inode name
     verifyINodeName(inode.getLocalNameBytes());
@@ -1328,7 +1328,7 @@ public class FSDirectory implements Closeable {
     final QuotaCounts counts = inode.computeQuotaUsage(getBlockStoragePolicySuite());
     updateCount(existing, pos, counts, checkQuota);
 
-    boolean isRename = (inode.getParent() != null);
+    // boolean isRename = (inode.getParent() != null);
 
     final boolean added = parent.addChild(inode, name, true,
         existing.getLatestSnapshotId());
@@ -1336,10 +1336,10 @@ public class FSDirectory implements Closeable {
       updateCountNoQuotaCheck(existing, pos, counts.negation());
       return null;
     } else {
-      if (!isRename) {
-        copyINodeDefaultAcl(inode, modes);
-      }
-      addToInodeMap(inode);
+      // if (!isRename) {
+      //   copyINodeDefaultAcl(inode, modes);
+      // }
+      // addToInodeMap(inode);
     }
     return INodesInPath.append(existing, inode, inode.getLocalNameBytes());
   }

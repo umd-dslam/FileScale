@@ -263,12 +263,12 @@ public class INodeFile extends INodeWithAdditionalFields
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
       long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
       long preferredBlockSize, byte storagePolicyID, BlockType blockType) {
-    super(id, name, permissions, mtime, atime);
-    final long layoutRedundancy = HeaderFormat.getBlockLayoutRedundancy(
-        blockType, replication, ecPolicyID);
-    
-    header = HeaderFormat.toLong(preferredBlockSize, layoutRedundancy, storagePolicyID);
-    DatabaseINode.setHeader(id, header);
+    super(id, name, permissions, mtime, atime,
+      HeaderFormat.toLong(preferredBlockSize,
+        HeaderFormat.getBlockLayoutRedundancy(
+          blockType, replication, ecPolicyID), storagePolicyID
+        )
+      );
     
     if (blklist != null && blklist.length > 0) {
       for (BlockInfo b : blklist) {

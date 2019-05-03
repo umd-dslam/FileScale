@@ -119,7 +119,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   // protected Feature[] features = EMPTY_FEATURE;
 
   private INodeWithAdditionalFields(INode parent, long id, byte[] name,
-      long permission, long modificationTime, long accessTime) {
+      long permission, long modificationTime, long accessTime, long header) {
     super(parent);
     this.id = id;
 
@@ -134,19 +134,19 @@ public abstract class INodeWithAdditionalFields extends INode {
         pid = parent.getId();
     }
     this.permission = permission;
-    DatabaseINode.insertInode(id, pid, strName, accessTime, modificationTime, permission, 0L);
+    DatabaseINode.insertInode(id, pid, strName, accessTime, modificationTime, permission, header);
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
-      long modificationTime, long accessTime) {
+      long modificationTime, long accessTime, long header) {
     this(null, id, name, PermissionStatusFormat.toLong(permissions),
-        modificationTime, accessTime);
+        modificationTime, accessTime, header);
   }
 
   INodeWithAdditionalFields(INode parent, long id, byte[] name, PermissionStatus permissions,
       long modificationTime, long accessTime) {
     this(parent, id, name, PermissionStatusFormat.toLong(permissions),
-        modificationTime, accessTime);
+        modificationTime, accessTime, 0L);
   }
 
   private INodeWithAdditionalFields(INode parent, long id) {
@@ -165,7 +165,7 @@ public abstract class INodeWithAdditionalFields extends INode {
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
           other.getPermissionLong(),
           DatabaseINode.getModificationTime(other.getId()),
-          DatabaseINode.getAccessTime(other.getId()));
+          DatabaseINode.getAccessTime(other.getId()), 0L);
   }
 
   /** Get inode id */
