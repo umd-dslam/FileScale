@@ -5,14 +5,12 @@ import java.sql.SQLException;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.voltdb.*;
 import org.voltdb.client.*;
 
 public class DatabaseFactory extends BasePooledObjectFactory<DatabaseConnection> {
 
-  private DatabaseFactory() {
+  public DatabaseFactory() {
     super();
   }
 
@@ -32,12 +30,6 @@ public class DatabaseFactory extends BasePooledObjectFactory<DatabaseConnection>
     return super.makeObject();
   }
 
-  /** When an object is returned to the pool, clear the buffer. */
-  @Override
-  public void passivateObject(PooledObject<DatabaseConnection> pooledObject) {
-    pooledObject.getObject().setLength(0);
-  }
-
   @Override
   public void activateObject(PooledObject<DatabaseConnection> pooledObject) throws Exception {
     super.activateObject(pooledObject);
@@ -47,7 +39,7 @@ public class DatabaseFactory extends BasePooledObjectFactory<DatabaseConnection>
   public boolean validateObject(PooledObject<DatabaseConnection> pooledObject) {
     final DatabaseConnection dbconn = pooledObject.getObject();
     try {
-      if (!dbconn.isClosed()) {
+      if (!dbconn.getConnection().isClosed() || dbconn.getVoltClient() != null) {
         return true;
       }
     } catch (SQLException e) {
@@ -60,9 +52,18 @@ public class DatabaseFactory extends BasePooledObjectFactory<DatabaseConnection>
   public void destroyObject(PooledObject<DatabaseConnection> pooledObject) {
     final DatabaseConnection dbconn = pooledObject.getObject();
     try {
-      if (!dbconn.isClosed()) {
+      Connection conn = dbconn.getConnection();
+      if (!conn.isClosed()) {
         try {
-          dbconn.close();
+          conn.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+      Client client = dbconn.getVoltClient();
+      if (client != null) {
+        try {
+          client.close();
         } catch (Exception e) {
           e.printStackTrace();
         }

@@ -3,9 +3,7 @@ package org.apache.hadoop.hdfs.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Properties;
-import java.lang.System;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
@@ -20,6 +18,8 @@ public class DatabaseConnection {
 
   private Connection connection;
   private Client client = null;
+
+  static final Logger LOG = LoggerFactory.getLogger(DatabaseConnection.class);
 
   DatabaseConnection() throws SQLException {
     try {
