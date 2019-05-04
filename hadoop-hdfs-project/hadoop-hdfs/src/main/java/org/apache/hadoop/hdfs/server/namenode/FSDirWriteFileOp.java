@@ -444,16 +444,15 @@ class FSDirWriteFileOp {
           BlockType.STRIPED : BlockType.CONTIGUOUS;
       final Short replicationFactor = (!isStriped ? replication : null);
       if (underConstruction) {
-        newNode = newINodeFile(id, permissions, modificationTime,
+        newNode = newINodeFile(id, localName, permissions, modificationTime,
             modificationTime, replicationFactor, ecPolicyID, preferredBlockSize,
             storagePolicyId, blockType);
         newNode.toUnderConstruction(clientName, clientMachine);
       } else {
-        newNode = newINodeFile(id, permissions, modificationTime, atime,
+        newNode = newINodeFile(id, localName, permissions, modificationTime, atime,
             replicationFactor, ecPolicyID, preferredBlockSize,
             storagePolicyId, blockType);
       }
-      newNode.setLocalName(localName);
       INodesInPath iip = fsd.addINode(existing, newNode,
           permissions.getPermission());
       if (iip != null) {
@@ -558,10 +557,9 @@ class FSDirWriteFileOp {
           BlockType.STRIPED : BlockType.CONTIGUOUS;
       final Short replicationFactor = (!isStriped ? replication : null);
       final Byte ecPolicyID = (isStriped ? ecPolicy.getId() : null);
-      INodeFile newNode = newINodeFile(fsd.allocateNewInodeId(), permissions,
+      INodeFile newNode = newINodeFile(fsd.allocateNewInodeId(), localName, permissions,
           modTime, modTime, replicationFactor, ecPolicyID, preferredBlockSize,
           blockType);
-      newNode.setLocalName(localName);
       newNode.toUnderConstruction(clientName, clientMachine);
       newiip = fsd.addINode(existing, newNode, permissions.getPermission());
     } finally {
@@ -730,18 +728,18 @@ class FSDirWriteFileOp {
   }
 
   private static INodeFile newINodeFile(
-      long id, PermissionStatus permissions, long mtime, long atime,
+      long id, byte[] localName, PermissionStatus permissions, long mtime, long atime,
       Short replication, Byte ecPolicyID, long preferredBlockSize,
       byte storagePolicyId, BlockType blockType) {
-    return new INodeFile(id, null, permissions, mtime, atime,
+    return new INodeFile(id, localName, permissions, mtime, atime,
         BlockInfo.EMPTY_ARRAY, replication, ecPolicyID, preferredBlockSize,
         storagePolicyId, blockType);
   }
 
-  private static INodeFile newINodeFile(long id, PermissionStatus permissions,
+  private static INodeFile newINodeFile(long id, byte[] localName, PermissionStatus permissions,
       long mtime, long atime, Short replication, Byte ecPolicyID,
       long preferredBlockSize, BlockType blockType) {
-    return newINodeFile(id, permissions, mtime, atime, replication, ecPolicyID,
+    return newINodeFile(id, localName, permissions, mtime, atime, replication, ecPolicyID,
         preferredBlockSize, (byte)0, blockType);
   }
 
