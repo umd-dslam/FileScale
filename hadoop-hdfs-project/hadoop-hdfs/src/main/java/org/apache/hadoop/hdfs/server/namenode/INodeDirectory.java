@@ -75,7 +75,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime) {
-    super(id, name, permissions, mtime, 0L);
+    super(id, name, permissions, mtime, 0L, 0L);
   }
 
   public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
