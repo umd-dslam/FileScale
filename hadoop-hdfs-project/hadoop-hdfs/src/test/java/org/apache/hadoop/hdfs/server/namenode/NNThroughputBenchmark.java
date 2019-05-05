@@ -87,6 +87,8 @@ import org.apache.hadoop.util.VersionInfo;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 
+import org.apache.hadoop.hdfs.db.*;
+
 /**
  * Main class for a series of name-node benchmarks.
  * 
