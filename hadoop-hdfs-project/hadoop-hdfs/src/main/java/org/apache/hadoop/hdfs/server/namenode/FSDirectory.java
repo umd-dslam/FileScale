@@ -296,7 +296,8 @@ public class FSDirectory implements Closeable {
     this.inodeId = new INodeId();
     rootDir = createRoot(ns);
     try {
-      this.inodeId.skipTo(DatabaseINode.getLastInodeId());
+      // FIXME: DatabaseINode.getLastInodeId()
+      this.inodeId.skipTo(16385);
     } catch(IllegalStateException ise) {
       throw new IOException(ise);
     }
