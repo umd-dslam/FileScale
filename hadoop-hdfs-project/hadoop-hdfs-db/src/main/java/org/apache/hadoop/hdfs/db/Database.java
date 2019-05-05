@@ -19,6 +19,10 @@ public class Database {
     }
   }
 
+  public static void init() {
+    getInstance();
+  }
+
   public static Database getInstance() {
     if (instance == null) {
       instance = new Database();
@@ -81,28 +85,23 @@ public class Database {
   // A helper method to initialize the pool using the config and object-factory.
   private void initializePool() throws Exception {
     try {
-      // We confugure the pool using a GenericObjectPoolConfig
-      // Note: In the default implementation of Object Pool, objects are not created at start-up,
-      // but rather are created whenever the first call
-      // to the pool.borrowObject() is made. This object is then cached for future use.
-      // It is recommended to put these settings in a properties file.
-      GenericObjectPoolConfig config = new GenericObjectPoolConfig();
-      String conn = System.getenv("MAXCONNECTION");
-
-      if (conn == null) {
-        config.setMaxTotal(1000);
-      } else {
-        config.setMaxTotal(Integer.parseInt(conn));
-      }
-
-      config.setBlockWhenExhausted(true);
-      config.setMaxWaitMillis(30 * 1000);
-
       // We use the GenericObjectPool implementation of Object Pool as this suffices for most needs.
       // When we create the object pool, we need to pass the Object Factory class that would be
       // responsible for creating the objects.
       // Also pass the config to the pool while creation.
-      pool = new GenericObjectPool<DatabaseConnection>(new DatabaseFactory(), config);
+      pool = new GenericObjectPool<DatabaseConnection>(new DatabaseFactory());
+      String conn = System.getenv("MAXCONNECTION");
+      if (conn == null) {
+        pool.setMaxTotal(2000);
+      } else {
+        pool.setMaxTotal(Integer.parseInt(conn));
+      }
+
+      pool.setMinIdle(50);
+      pool.setMaxIdle(500);
+      pool.setBlockWhenExhausted(true);
+      pool.setMaxWaitMillis(30 * 1000);
+      pool.preparePool();
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(0);
