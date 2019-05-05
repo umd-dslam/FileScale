@@ -75,7 +75,7 @@ RUN ln -s /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/bin/sqlcmd /usr/local/bin/
 RUN rm -rf /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2.tar.gz 
 
 ENV CLASSPATH $CLASSPATH:/home/${USER_NAME}/java/postgresql-42.2.5.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdb-8.4.2.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdbclient-8.4.2.jar
-
+ENV PATH $PATH:/opt/cmake/bin:/opt/protobuf/bin
 ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
 ENV HADOOP_HOME /home/${USER_NAME}/hadoop/hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/
 ENV HADOOP_HDFS_HOME /home/${USER_NAME}/hadoop/hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/ 
