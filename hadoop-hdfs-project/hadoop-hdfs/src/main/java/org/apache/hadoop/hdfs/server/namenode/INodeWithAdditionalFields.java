@@ -17,6 +17,8 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
@@ -113,6 +115,7 @@ public abstract class INodeWithAdditionalFields extends INode {
    * should not modify it.
    */
   private long permission = 0L;
+  private long modificationTime = -1L;
 
   /** An array {@link Feature}s. */
   private static final Feature[] EMPTY_FEATURE = new Feature[0];
@@ -122,19 +125,16 @@ public abstract class INodeWithAdditionalFields extends INode {
       long permission, long modificationTime, long accessTime, long header) {
     super(parent);
     this.id = id;
-
-    String strName = null;
-    if (name != null && name.length > 0) {
-      this.name = name;
-      strName = DFSUtil.bytes2String(name);
-    }
-
-    long pid = DatabaseINode.LONG_NULL; 
-    if (parent != null) {
-        pid = parent.getId();
-    }
+    this.name = name;
     this.permission = permission;
-    DatabaseINode.insertInode(id, pid, strName, accessTime, modificationTime, permission, header);
+    this.modificationTime = modificationTime;
+
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.insertInode(id,
+        parent != null ? parent.getId() : DatabaseINode.LONG_NULL,
+        name != null && name.length > 0 ? DFSUtil.bytes2String(name) : null,
+        accessTime, modificationTime, permission, header);
+    });
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
@@ -164,7 +164,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this(other.getParentReference() != null ? other.getParentReference()
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
           other.getPermissionLong(),
-          DatabaseINode.getModificationTime(other.getId()),
+          other.getModificationTime(),
           DatabaseINode.getAccessTime(other.getId()), 0L);
   }
 
@@ -191,17 +191,23 @@ public abstract class INodeWithAdditionalFields extends INode {
   public final void setLocalName(byte[] name) {
     if (name != null) {
       this.name = name;
-      DatabaseINode.setName(getId(), DFSUtil.bytes2String(name));
+      CompletableFuture.runAsync(() -> {
+        DatabaseINode.setName(getId(), DFSUtil.bytes2String(name));
+      });
     } else {
       this.name = null;
-      DatabaseINode.setName(getId(), null);
+      CompletableFuture.runAsync(() -> {
+        DatabaseINode.setName(getId(), null);
+      });
     }
   }
 
   /** Clone the {@link PermissionStatus}. */
   final void clonePermissionStatus(INodeWithAdditionalFields that) {
     permission = that.getPermissionLong();
-    DatabaseINode.setPermission(this.getId(), permission);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setPermission(getId(), permission);
+    });
   }
 
   @Override
@@ -212,12 +218,16 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   private final void setPermission(long perm) {
     permission = perm; 
-    DatabaseINode.setPermission(getId(), permission);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setPermission(getId(), permission);
+    });
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
     permission = f.BITS.combine(n, getPermissionLong());
-    DatabaseINode.setPermission(getId(), permission);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setPermission(getId(), permission);
+    });
   }
 
   @Override
@@ -291,7 +301,10 @@ public abstract class INodeWithAdditionalFields extends INode {
       return getSnapshotINode(snapshotId).getModificationTime();
     }
 
-    return DatabaseINode.getModificationTime(this.getId());
+    if (modificationTime == -1L) {
+      modificationTime = DatabaseINode.getModificationTime(this.getId());
+    }
+    return modificationTime;
   }
 
 
@@ -299,20 +312,25 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final INode updateModificationTime(long mtime, int latestSnapshotId) {
     Preconditions.checkState(isDirectory());
-    if (mtime <= DatabaseINode.getModificationTime(this.getId())) {
+    if (mtime <= getModificationTime()) {
       return this;
     }
     return setModificationTime(mtime, latestSnapshotId);
   }
 
   final void cloneModificationTime(INodeWithAdditionalFields that) {
-    long mtime = DatabaseINode.getModificationTime(that.getId());
-    DatabaseINode.setModificationTime(this.getId(), mtime);
+    modificationTime = that.getModificationTime(); 
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setModificationTime(getId(), modificationTime);
+    });
   }
 
   @Override
   public final void setModificationTime(long modificationTime) {
-    DatabaseINode.setModificationTime(this.getId(), modificationTime);
+    this.modificationTime = modificationTime;
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setModificationTime(getId(), modificationTime);
+    });
   }
 
   @Override

@@ -23,6 +23,7 @@ import static org.apache.hadoop.hdfs.protocol.BlockType.STRIPED;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.NO_SNAPSHOT_ID;
 
+import java.util.concurrent.CompletableFuture;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -270,6 +271,10 @@ public class INodeFile extends INodeWithAdditionalFields
         )
       );
     
+    header = HeaderFormat.toLong(preferredBlockSize,
+      HeaderFormat.getBlockLayoutRedundancy(
+        blockType, replication, ecPolicyID), storagePolicyID
+      );
     if (blklist != null && blklist.length > 0) {
       for (BlockInfo b : blklist) {
         Preconditions.checkArgument(b.getBlockType() == blockType);
@@ -299,7 +304,9 @@ public class INodeFile extends INodeWithAdditionalFields
     // FIXME: change later
     // this.features = that.features;
     header = that.getHeaderLong(); 
-    DatabaseINode.setHeader(getId(), header);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setHeader(getId(), header);
+    });
     setBlocks(that);
   }
   
@@ -574,7 +581,9 @@ public class INodeFile extends INodeWithAdditionalFields
     header = HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.
         combine(layoutRedundancy, head);
 
-    DatabaseINode.setHeader(getId(), header);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setHeader(getId(), header);
+    });
   }
 
   /** Set the replication factor of this file. */
@@ -626,7 +635,9 @@ public class INodeFile extends INodeWithAdditionalFields
   private void setStoragePolicyID(byte storagePolicyId) {
     header = HeaderFormat.STORAGE_POLICY_ID.BITS.combine(storagePolicyId,
       getHeaderLong());
-    DatabaseINode.setHeader(getId(), header);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setHeader(getId(), header);
+    });
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,

@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
+import java.util.concurrent.CompletableFuture;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -706,8 +707,10 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
       this.parent = DatabaseINode.LONG_NULL;
     } else {
       this.parent = parent.getId();
-    }    
-    DatabaseINode.setParent(getId(), this.parent);
+    }
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setParent(getId(), this.parent);
+    });
   }
 
   
@@ -717,7 +720,9 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   public final void setParent(long parentId) {
     this.parent = parentId;
-    DatabaseINode.setParent(getId(), parentId);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setParent(getId(), this.parent);
+    });
   }
 
   /** Set container. */
@@ -727,7 +732,9 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     } else {
       this.parent = parent.getId();
     }
-    DatabaseINode.setParent(getId(), this.parent);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setParent(getId(), this.parent);
+    });
   }
 
   /** Clear references to other objects. */
