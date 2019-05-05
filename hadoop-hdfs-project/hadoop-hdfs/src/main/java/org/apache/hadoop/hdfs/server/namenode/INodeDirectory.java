@@ -360,7 +360,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
     children.set(i, newChild);
     */
-    DatabaseINode.setParent(newChild.getId(), getId());
+    newChild.setParent(getId());
     
     // replace the instance in the created list of the diff list
     DirectoryWithSnapshotFeature sf = this.getDirectoryWithSnapshotFeature();
