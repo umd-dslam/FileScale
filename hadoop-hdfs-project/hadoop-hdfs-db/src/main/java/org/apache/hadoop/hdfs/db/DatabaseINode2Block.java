@@ -19,7 +19,7 @@ public class DatabaseINode2Block {
   public static void insert(final long id, final long blockId, final int idx) {
     LOG.info("INode2Block [insert]: (" + id + "," + blockId + "," + idx + ")");
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES (?, ?, ?);";
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -43,7 +43,7 @@ public class DatabaseINode2Block {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = DatabaseConnection.getInstance().getConnection();
+        Connection conn = Database.getInstance().getConnection();
         CallableStatement proc = conn.prepareCall("{call InsertINode2Block(?, ?, ?)}");
 
         proc.setLong(1, id);
@@ -77,7 +77,7 @@ public class DatabaseINode2Block {
         }
         sql = sql.substring(0, sql.length() - 1) + ";";
 
-        Connection conn = DatabaseConnection.getInstance().getConnection();
+        Connection conn = Database.getInstance().getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
@@ -91,7 +91,7 @@ public class DatabaseINode2Block {
 
   private static <T> void setAttribute(final long id, final String attrName, final T attrValue) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
 
       String sql = "UPDATE inode2block SET " + attrName + " = ? WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
@@ -121,7 +121,7 @@ public class DatabaseINode2Block {
   private static <T> T getAttribute(final long id, final String attrName) {
     T result = null;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT " + attrName + " FROM inode2block WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -148,7 +148,7 @@ public class DatabaseINode2Block {
   public static int getNumBlocks(final long id) {
     int num = 0;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT COUNT(DISTINCT blockId) FROM inode2block WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -170,7 +170,7 @@ public class DatabaseINode2Block {
   public static int getLastBlockId(final long id) {
     int blockId = -1;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT blockId FROM inode2block WHERE id = ? ORDER BY idx DESC LIMIT 1;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -192,7 +192,7 @@ public class DatabaseINode2Block {
   public static long getBcId(final long blockId) {
     long id = 0;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT id FROM inode2block WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -213,7 +213,7 @@ public class DatabaseINode2Block {
   public static long getSize() {
     long size = 0;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT COUNT(blockId) FROM inode2block;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -236,7 +236,7 @@ public class DatabaseINode2Block {
 
   public static void setBcIdViaBcId(final long bcId, final long newBcId) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "UPDATE inode2block SET id = ? WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, newBcId);
@@ -252,7 +252,7 @@ public class DatabaseINode2Block {
   public static List<Long> getBlockIds(final long inodeId) {
     List<Long> blockIds = new ArrayList<>();
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT blockId FROM inode2block WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, inodeId);
@@ -272,7 +272,7 @@ public class DatabaseINode2Block {
   public static List<Long> getAllBlockIds() {
     List<Long> blockIds = new ArrayList<>();
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT blockId FROM inode2block;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -290,7 +290,7 @@ public class DatabaseINode2Block {
 
   public static void deleteViaBlkId(final long blockId) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "DELETE FROM inode2block WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -304,7 +304,7 @@ public class DatabaseINode2Block {
 
   public static void delete(final long nodeId, final int idx) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "DELETE FROM inode2block WHERE id = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, nodeId);
@@ -319,7 +319,7 @@ public class DatabaseINode2Block {
 
   public static void deleteViaBcId(final long nodeId) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "DELETE FROM inode2block WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, nodeId);
@@ -333,7 +333,7 @@ public class DatabaseINode2Block {
 
   public static void truncate(final long nodeId, final int n) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "DELETE FROM inode2block WHERE id = ? and idx >= ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, nodeId);
@@ -348,7 +348,7 @@ public class DatabaseINode2Block {
 
   public static void setBlockId(final long nodeId, final int idx, final long blockId) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "UPDATE inode2block SET blockId = ? WHERE id = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -365,7 +365,7 @@ public class DatabaseINode2Block {
   public static int getBlockId(final long nodeId, final int idx) {
     int blockId = -1;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT blockId from inode2block WHERE id = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, nodeId);

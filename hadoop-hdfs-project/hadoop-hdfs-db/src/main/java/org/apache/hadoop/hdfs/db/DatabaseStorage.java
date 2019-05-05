@@ -17,7 +17,7 @@ public class DatabaseStorage {
 
   public static void insertStorage(final long blockId, final int idx, final String storageId) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "INSERT INTO block2storage(blockId, idx, storageId) VALUES (?, ?, ?);";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -38,7 +38,7 @@ public class DatabaseStorage {
   public static int getNumStorages(final long blockId) {
     int num = 0;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT COUNT(DISTINCT storageId) FROM block2storage WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -60,7 +60,7 @@ public class DatabaseStorage {
   public static List<String> getStorageIds(final long blockId) {
     List<String> storageIds = new ArrayList<String>();
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT storageId FROM block2storage WHERE blockId = ? ORDER BY idx ASC;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -82,7 +82,7 @@ public class DatabaseStorage {
   public static String getStorageId(final long blockId, final int idx) {
     String storageId = null;
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "SELECT storageId FROM block2storage WHERE blockId = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -103,7 +103,7 @@ public class DatabaseStorage {
 
   public static void setStorage(final long blockId, final int idx, final String storageId) {
     try {
-      Connection conn = DatabaseConnection.getInstance().getConnection();
+      Connection conn = Database.getInstance().getConnection();
       String sql = "UPDATE block2storage SET storageId = ? WHERE blockId = ? and idx = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       if (storageId != null) {
