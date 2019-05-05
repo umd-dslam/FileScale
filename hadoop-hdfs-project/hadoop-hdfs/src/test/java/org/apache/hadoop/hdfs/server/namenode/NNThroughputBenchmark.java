@@ -1555,8 +1555,6 @@ public class NNThroughputBenchmark implements Tool {
   }
 
   public static void main(String[] args) throws Exception {
-    // prepare database connection pool
-    Database.init();
     runBenchmark(new HdfsConfiguration(), args);
   }
 
