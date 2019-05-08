@@ -710,7 +710,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     }
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setParent(getId(), this.parent);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   
@@ -722,7 +722,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     this.parent = parentId;
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setParent(getId(), this.parent);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   /** Set container. */
@@ -734,7 +734,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     }
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setParent(getId(), this.parent);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   /** Clear references to other objects. */

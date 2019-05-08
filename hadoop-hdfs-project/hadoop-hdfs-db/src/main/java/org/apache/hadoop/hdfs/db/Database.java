@@ -1,5 +1,7 @@
 package org.apache.hadoop.hdfs.db;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.sql.Connection;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -9,10 +11,12 @@ import org.voltdb.client.*;
 public class Database {
   private static Database instance;
   private GenericObjectPool<DatabaseConnection> pool;
+  private ExecutorService executor;
 
   Database() {
     try {
       initializePool();
+      initializeExecutor();
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(0);
@@ -29,6 +33,10 @@ public class Database {
     }
     return instance;
   }
+
+  public ExecutorService getExecutorService() {
+    return executor;
+  } 
 
   public Connection getConnection() {
     DatabaseConnection obj = null;
@@ -90,11 +98,11 @@ public class Database {
       // responsible for creating the objects.
       // Also pass the config to the pool while creation.
       pool = new GenericObjectPool<DatabaseConnection>(new DatabaseFactory());
-      String conn = System.getenv("MAXCONNECTION");
-      if (conn == null) {
+      String num = System.getenv("MAX_CONNECTION_NUM");
+      if (num == null) {
         pool.setMaxTotal(2000);
       } else {
-        pool.setMaxTotal(Integer.parseInt(conn));
+        pool.setMaxTotal(Integer.parseInt(num));
       }
 
       pool.setMinIdle(50);
@@ -102,6 +110,20 @@ public class Database {
       pool.setBlockWhenExhausted(true);
       pool.setMaxWaitMillis(30 * 1000);
       pool.preparePool();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(0);
+    }
+  }
+
+  private void initializeExecutor() throws Exception {
+    try {
+      String num = System.getenv("ASYNC_EXECUTOR_NUM");
+      if (num == null) {
+        executor = Executors.newFixedThreadPool(100);
+      } else {
+        executor = Executors.newFixedThreadPool(Integer.parseInt(num));
+      }
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(0);

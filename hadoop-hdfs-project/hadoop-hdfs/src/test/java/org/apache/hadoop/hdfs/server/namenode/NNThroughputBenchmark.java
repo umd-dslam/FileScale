@@ -269,7 +269,11 @@ public class NNThroughputBenchmark implements Tool {
         while(isInProgress()) {
           // try {Thread.sleep(500);} catch (InterruptedException e) {}
         }
-        elapsedTime = Time.now() - start;
+        long end = Time.now();
+        elapsedTime = end - start;
+        LOG.info("Start Time: " + start);
+        LOG.info("End Time: " + end); 
+        LOG.info("Elapsed Time: " + elapsedTime);
         for(StatsDaemon d : daemons) {
           incrementStats(d.localNumOpsExecuted, d.localCumulativeTime);
           // System.out.println(d.toString() + ": ops Exec = " + d.localNumOpsExecuted);
@@ -1527,15 +1531,16 @@ public class NNThroughputBenchmark implements Tool {
         getBlockPoolId(dfs);
       }
       // run each benchmark
+      long beforeUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
       for(OperationStatsBase op : ops) {
         LOG.info("Starting benchmark: " + op.getOpName());
-        long beforeUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         op.benchmark();
-        long afterUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        long actualMemUsed = afterUsedMem - beforeUsedMem;
-        LOG.info("Memory Used: " + actualMemUsed); 
         op.cleanUp();
       }
+      long afterUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+      long actualUsedMem = afterUsedMem - beforeUsedMem;
+      LOG.info("Memory Used: " + actualUsedMem); 
+
       // print statistics
       for(OperationStatsBase op : ops) {
         LOG.info("");
