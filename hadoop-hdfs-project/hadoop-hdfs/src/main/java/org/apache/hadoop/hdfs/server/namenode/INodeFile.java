@@ -306,7 +306,7 @@ public class INodeFile extends INodeWithAdditionalFields
     header = that.getHeaderLong(); 
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setHeader(getId(), header);
-    });
+    }, Database.getInstance().getExecutorService());
     setBlocks(that);
   }
   
@@ -583,7 +583,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setHeader(getId(), header);
-    });
+    }, Database.getInstance().getExecutorService());;
   }
 
   /** Set the replication factor of this file. */
@@ -637,7 +637,7 @@ public class INodeFile extends INodeWithAdditionalFields
       getHeaderLong());
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setHeader(getId(), header);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,

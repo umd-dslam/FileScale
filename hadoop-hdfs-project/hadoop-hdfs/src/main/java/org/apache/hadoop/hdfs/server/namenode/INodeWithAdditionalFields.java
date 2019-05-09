@@ -134,7 +134,7 @@ public abstract class INodeWithAdditionalFields extends INode {
         parent != null ? parent.getId() : DatabaseINode.LONG_NULL,
         name != null && name.length > 0 ? DFSUtil.bytes2String(name) : null,
         accessTime, modificationTime, permission, header);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
@@ -193,12 +193,12 @@ public abstract class INodeWithAdditionalFields extends INode {
       this.name = name;
       CompletableFuture.runAsync(() -> {
         DatabaseINode.setName(getId(), DFSUtil.bytes2String(name));
-      });
+      }, Database.getInstance().getExecutorService());
     } else {
       this.name = null;
       CompletableFuture.runAsync(() -> {
         DatabaseINode.setName(getId(), null);
-      });
+      }, Database.getInstance().getExecutorService());
     }
   }
 
@@ -207,7 +207,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     permission = that.getPermissionLong();
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setPermission(getId(), permission);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   @Override
@@ -220,14 +220,14 @@ public abstract class INodeWithAdditionalFields extends INode {
     permission = perm; 
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setPermission(getId(), permission);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
     permission = f.BITS.combine(n, getPermissionLong());
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setPermission(getId(), permission);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   @Override
@@ -322,7 +322,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     modificationTime = that.getModificationTime(); 
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setModificationTime(getId(), modificationTime);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   @Override
@@ -330,7 +330,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.modificationTime = modificationTime;
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setModificationTime(getId(), modificationTime);
-    });
+    }, Database.getInstance().getExecutorService());
   }
 
   @Override
