@@ -28,11 +28,14 @@ public class INodeKeyedObjects {
   }
 
   public void returnToFilePool(long id, INodeFile inode) {
-    filePool.returnObject(id, inode);
+    filePool.getFactory().decrement(id);
+    if (filePool.getFactory().getCount(id) == 0) {
+      filePool.returnObject(id, inode);
+    }
   }
 
   public boolean isInFilePool(long id) {
-    return filePool.getFactory().find(id);
+    return filePool.isInFilePool(id);
   }
 
   public void clearFile(long id) {
@@ -40,11 +43,14 @@ public class INodeKeyedObjects {
   }
 
   public void returnToDirectoryPool(long id, INodeDirectory inode) {
-    directoryPool.returnObject(id, inode);
+    directoryPool.getFactory().decrement(id);
+    if (directoryPool.getFactory().getCount(id) == 0) {
+      directoryPool.returnObject(id, inode);
+    }
   }
 
   public boolean isInDirectoryPool(long id) {
-    return directoryPool.getFactory().find(id);
+    return directoryPool.isInDirectoryPool(id);
   }
 
   public void clearDirectory(long id) {

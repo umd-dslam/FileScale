@@ -16,11 +16,19 @@ public class INodeFileKeyedObjectPool extends GenericKeyedObjectPool<Long, INode
     }
 
     public INodeDirectory getActiveObject(Long key) {
-        final ObjectDeque<INodeFile> deque = poolMap.get(key);;
+        getFactory().increment(key);
+        final ObjectDeque<INodeFile> deque = poolMap.get(key);
         // only one object exists in each sub-pool per key
         for (final PooledObject<INodeFile> p : deque.getAllObjects().values()) {
             return p.getObject();
         }
         return null;
+    }
+
+    public boolean isInFilePool(Long key) {
+        if (poolMap.get(key) != null) {
+            return true;
+        }
+        return false;
     }
 }

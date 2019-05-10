@@ -2,26 +2,52 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
 
 
 public class INodeFileKeyedObjFactory extends BaseKeyedPooledObjectFactory<Long, INodeFile> {
-  private Set<Long> allIds;
+  private final ConcurrentHashMap<Long, AtomicInteger> map;
 
   public INodeFileKeyedObjFactory() {
     super();
-    allIds = new HashSet<Long>();
+    map = new ConcurrentHashMap<>();
   }
 
-  public boolean find(Long id) {
-    return allIds.contains(id);
+  public void decrement(final Long id) {
+    AtomicInteger value = map.get(id);
+    if (value != null) {
+      if (value.get() == 0) {
+        map.remove(id);
+      } else {
+        value.decrementAndGet();
+      }
+    }
+  }
+
+  public void increment(final Long id) {
+    // https://www.slideshare.net/sjlee0/robust-and-scalable-concurrent-programming-lesson-from-the-trenches
+    // Page 33
+    AtomicInteger value = map.get(id);
+    if (value == null) {
+      value = new AtomicInteger(0);
+      AtomicInteger old = map.putIfAbsent(id, value);
+      if (old != null) { value = old; }
+    }
+    value.incrementAndGet(); // increment the value atomically
+  }
+
+  public int getCount(final Long id) {
+    AtomicInteger value = map.get(id);
+    return (value == null) ? 0 : value.get();
   }
 
   @Override
-  public INodeFile create(Long id) {
-    allIds.add(id);
+  public INodeFile create(final Long id) {
+    increment(id);
     return new INodeFile(id);
   }
 
@@ -43,6 +69,7 @@ public class INodeFileKeyedObjFactory extends BaseKeyedPooledObjectFactory<Long,
 
   @Override
   public void destroyObject(Long id, PooledObject<INodeFile> pooledObject) {
-    allIds.remove(id);
+    super.destroyObject(id, pooledObject);
+    map.remove(id);
   }
 }
