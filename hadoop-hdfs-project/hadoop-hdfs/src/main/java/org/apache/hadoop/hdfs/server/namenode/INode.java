@@ -64,9 +64,13 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   long parent = -1L;
 
   INode(INode parent) {
+    InitINode(parent);
+  }
+
+  public void InitINode(INode parent) {
     if (parent != null) {
       this.parent = parent.getId();
-    }
+    }    
   }
 
   /** Get inode id */
@@ -689,7 +693,8 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     // return parent == null? null
     //         : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
     long id = getParentId(); 
-    return id == DatabaseINode.LONG_NULL ? null : new INodeDirectory(id);    
+    return id == DatabaseINode.LONG_NULL ? null : 
+        INodeKeyedObjects.getInstance().getINodeDirectory(id); 
   }
 
   /**

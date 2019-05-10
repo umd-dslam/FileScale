@@ -540,6 +540,20 @@ public class INodesInPath {
     return b.toString();
   }
 
+  void returnToPool() {
+    // return objects back to pool
+    for (int i = 0; i < inodes.length - 1; ++i) {
+      INodeDirectory dir = inodes[i].asDirectory();
+      INodeKeyedObjects.getInstance().returnToDirectoryPool(dir.getId(), dir);
+    }
+    INode inode = inodes[inodes.length - 1];
+    if (inode.isDirectory()) {
+      INodeKeyedObjects.getInstance().returnToDirectoryPool(inode.getId(), inode.asDirectory()); 
+    } else if (inode.isFile()) {
+      INodeKeyedObjects.getInstance().returnToFilePool(inode.getId(), inode.asFile());
+    }
+  }
+
   void validate() {
     // check parent up to snapshotRootIndex if this is a snapshot path
     int i = 0;

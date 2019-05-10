@@ -267,6 +267,16 @@ class FSDirDeleteOp {
 
     // ADD(gangliao): Remove inode from Postgres
     DatabaseINode.removeChild(targetNode.getId());
+    // Only remove the 1st inode id from inode object pool
+    // all childs will be cleaned by pool object eviction
+    if (targetNode.isDirectory()) {
+      List<Long> ids = DatabaseINode.getChildIds(targetNode.getId());
+      for (Long id : ids) {
+        INodeKeyedObjects.getInstance().clearDirectory(id);
+      }
+    } else if (targetNode.isFile()) {
+      INodeKeyedObjects.getInstance().clearFile(targetNode.getId());
+    }
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "

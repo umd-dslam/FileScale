@@ -72,10 +72,20 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   static final byte[] ROOT_NAME = DFSUtil.string2Bytes("");
 
+  public void InitINodeDirectory(long id, byte[] name, PermissionStatus permissions,
+      long mtime) {
+    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, 0L, 0L);
+  }
+
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime) {
     super(id, name, permissions, mtime, 0L, 0L);
+  }
+
+  public void InitINodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
+      long mtime) {
+    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, 0L);
   }
 
   public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,

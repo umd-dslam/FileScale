@@ -2546,6 +2546,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       }
     }
 
+    iip.returnToPool();
     return stat;
   }
 

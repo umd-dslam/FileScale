@@ -207,8 +207,9 @@ class FSDirMkdirOp {
       throw new FileAlreadyExistsException("Parent path is not a directory: " +
           parent.getPath() + " " + DFSUtil.bytes2String(name));
     }
-    final INodeDirectory dir = new INodeDirectory(parent.getLastINode(), inodeId, name, permission,
-        timestamp);
+
+    INodeDirectory dir = INodeKeyedObjects.getInstance().getINodeDirectory(inodeId);
+    dir.InitINodeDirectory(parent.getLastINode(), inodeId, name, permission, timestamp);
 
     INodesInPath iip =
         fsd.addLastINode(parent, dir, DFSUtil.bytes2String(name), permission.getPermission(), true);

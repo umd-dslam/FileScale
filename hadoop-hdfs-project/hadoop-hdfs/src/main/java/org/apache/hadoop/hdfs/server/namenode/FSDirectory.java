@@ -108,7 +108,8 @@ public class FSDirectory implements Closeable {
   static final Logger LOG = LoggerFactory.getLogger(FSDirectory.class);
 
   private static INodeDirectory createRoot(FSNamesystem namesystem) {
-    final INodeDirectory r = new INodeDirectory(
+    INodeDirectory r = INodeKeyedObjects.getInstance().getINodeDirectory(INodeId.ROOT_INODE_ID);
+    r.InitINodeDirectory(
         INodeId.ROOT_INODE_ID,
         INodeDirectory.ROOT_NAME,
         namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)),
