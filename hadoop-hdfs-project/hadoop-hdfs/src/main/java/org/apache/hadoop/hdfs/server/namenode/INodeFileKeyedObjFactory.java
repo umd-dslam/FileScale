@@ -67,7 +67,7 @@ public class INodeFileKeyedObjFactory extends BaseKeyedPooledObjectFactory<Long,
   }
 
   @Override
-  public void destroyObject(Long id, PooledObject<INodeFile> pooledObject) {
+  public void destroyObject(Long id, PooledObject<INodeFile> pooledObject) throws Exception {
     super.destroyObject(id, pooledObject);
     map.remove(id);
   }

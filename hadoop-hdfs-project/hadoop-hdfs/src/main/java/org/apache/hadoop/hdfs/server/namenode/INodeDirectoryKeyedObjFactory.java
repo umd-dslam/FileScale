@@ -69,7 +69,7 @@ public class INodeDirectoryKeyedObjFactory
   }
 
   @Override
-  public void destroyObject(Long id, PooledObject<INodeDirectory> pooledObject) {
+  public void destroyObject(Long id, PooledObject<INodeDirectory> pooledObject) throws Exception {
     super.destroyObject(id, pooledObject);
     map.remove(id);
   }
