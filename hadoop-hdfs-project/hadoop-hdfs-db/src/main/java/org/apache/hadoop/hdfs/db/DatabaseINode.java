@@ -136,7 +136,7 @@ public class DatabaseINode {
       final long header) {
     try {
       Connection conn = Database.getInstance().getConnection();
-
+      String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         sql = "UPSERT INTO inodes("

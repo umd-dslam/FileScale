@@ -1,11 +1,5 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
-import org.apache.commons.pool2.PooledObject;
-import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.apache.commons.pool2.impl.DefaultPooledObject;
-
 public class INodeKeyedObjects {
   private static INodeKeyedObjects instance;
   private INodeFileKeyedObjectPool filePool;
@@ -27,66 +21,36 @@ public class INodeKeyedObjects {
     return instance;
   }
 
-  public void returnToFilePool(long id, INodeFile inode) {
-    filePool.getFactory().decrement(id);
-    if (filePool.getFactory().getCount(id) == 0) {
-      filePool.returnObject(id, inode);
-    }
+  public void returnToFilePool(final Long id, final INodeFile inode) {
+    filePool.returnToPool(id, inode);
   }
 
-  public boolean isInFilePool(long id) {
+  public void returnToDirectoryPool(final Long id, final INodeDirectory inode) {
+    directoryPool.returnToPool(id, inode);
+  }
+
+  public boolean isInFilePool(final Long id) {
     return filePool.isInFilePool(id);
   }
 
-  public void clearFile(long id) {
-    filePool.clear(id);
-  }
-
-  public void returnToDirectoryPool(long id, INodeDirectory inode) {
-    directoryPool.getFactory().decrement(id);
-    if (directoryPool.getFactory().getCount(id) == 0) {
-      directoryPool.returnObject(id, inode);
-    }
-  }
-
-  public boolean isInDirectoryPool(long id) {
+  public boolean isInDirectoryPool(final Long id) {
     return directoryPool.isInDirectoryPool(id);
   }
 
-  public void clearDirectory(long id) {
+  public void clearFile(final Long id) {
+    filePool.clear(id);
+  }
+
+  public void clearDirectory(final Long id) {
     directoryPool.clear(id);
   }
 
-  public INodeDirectory getINodeDirectory(Long id) {
-    INodeDirectory obj = null;
-    try {
-      if (directoryPool.getNumActive(id) > 0) {
-        obj = directoryPool.getActiveObject(id);
-      } else {
-        obj = directoryPool.borrowObject(id);
-      }
-    } catch (Exception e) {
-      System.err.println("Failed to borrow a INode object : " + e.getMessage());
-      e.printStackTrace();
-      System.exit(0);
-    }
-    return obj;
+  public INodeFile getINodeFile(final Long id) {
+    return filePool.getObject(id);
   }
 
-  public INodeFile getINodeFile(Long id) {
-    INodeFile obj = null;
-    try {
-      if (filePool.getNumActive(id) > 0) {
-        obj = filePool.getActiveObject(id);
-      } else {
-        obj = filePool.borrowObject(id);
-      }
-    } catch (Exception e) {
-      System.err.println("Failed to borrow a INode object : " + e.getMessage());
-      e.printStackTrace();
-      System.exit(0);
-    }
-    return obj;
+  public INodeDirectory getINodeDirectory(final Long id) {
+    return directoryPool.getObject(id);
   }
 
   // A helper method to initialize the pool using the config and object-factory.
@@ -103,7 +67,7 @@ public class INodeKeyedObjects {
       }
       filePool.setMaxIdlePerKey(1);
       filePool.setMaxTotalPerKey(1);
-    
+
       directoryPool = new INodeDirectoryKeyedObjectPool(new INodeDirectoryKeyedObjFactory());
       size = System.getenv("MAX_DIRECTORYPOOL_SIZE");
       if (size == null) {

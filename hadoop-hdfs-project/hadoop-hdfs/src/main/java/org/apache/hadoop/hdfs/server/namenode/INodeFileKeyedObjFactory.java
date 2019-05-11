@@ -1,13 +1,10 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
-
 
 public class INodeFileKeyedObjFactory extends BaseKeyedPooledObjectFactory<Long, INodeFile> {
   private final ConcurrentHashMap<Long, AtomicInteger> map;
@@ -35,7 +32,9 @@ public class INodeFileKeyedObjFactory extends BaseKeyedPooledObjectFactory<Long,
     if (value == null) {
       value = new AtomicInteger(0);
       AtomicInteger old = map.putIfAbsent(id, value);
-      if (old != null) { value = old; }
+      if (old != null) {
+        value = old;
+      }
     }
     value.incrementAndGet(); // increment the value atomically
   }
@@ -63,8 +62,8 @@ public class INodeFileKeyedObjFactory extends BaseKeyedPooledObjectFactory<Long,
   }
 
   @Override
-  public void activateObject(PooledObject<INodeFile> pooledObject) throws Exception {
-    super.activateObject(pooledObject);
+  public void activateObject(Long id, PooledObject<INodeFile> pooledObject) throws Exception {
+    super.activateObject(id, pooledObject);
   }
 
   @Override

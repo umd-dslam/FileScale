@@ -1,15 +1,13 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
 
-
-public class INodeDirectoryKeyedObjFactory extends BaseKeyedPooledObjectFactory<Long, INodeFile> {
+public class INodeDirectoryKeyedObjFactory
+    extends BaseKeyedPooledObjectFactory<Long, INodeDirectory> {
 
   private final ConcurrentHashMap<Long, AtomicInteger> map;
 
@@ -36,7 +34,9 @@ public class INodeDirectoryKeyedObjFactory extends BaseKeyedPooledObjectFactory<
     if (value == null) {
       value = new AtomicInteger(0);
       AtomicInteger old = map.putIfAbsent(id, value);
-      if (old != null) { value = old; }
+      if (old != null) {
+        value = old;
+      }
     }
     value.incrementAndGet(); // increment the value atomically
   }
@@ -59,17 +59,17 @@ public class INodeDirectoryKeyedObjFactory extends BaseKeyedPooledObjectFactory<
   }
 
   @Override
-  public PooledObject<INodeFile> makeObject(Long id) throws Exception {
+  public PooledObject<INodeDirectory> makeObject(Long id) throws Exception {
     return super.makeObject(id);
   }
 
   @Override
-  public void activateObject(PooledObject<INodeFile> pooledObject) throws Exception {
-    super.activateObject(pooledObject);
+  public void activateObject(Long id, PooledObject<INodeDirectory> pooledObject) throws Exception {
+    super.activateObject(id, pooledObject);
   }
 
   @Override
-  public void destroyObject(Long id, PooledObject<INodeFile> pooledObject) {
+  public void destroyObject(Long id, PooledObject<INodeDirectory> pooledObject) {
     super.destroyObject(id, pooledObject);
     map.remove(id);
   }
