@@ -99,7 +99,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   /** The inode id. */
-  final private long id;
+  private long id;
   /**
    *  The inode name is in java UTF8 encoding; 
    *  The name in HdfsFileStatus should keep the same encoding as this.
@@ -140,6 +140,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   public void InitINodeWithAdditionalFields(INode parent, long id, byte[] name,
     long permission, long modificationTime, long accessTime, long header) {
     super.InitINode(parent);
+    this.id = id;
     this.name = name;
     this.permission = permission;
     this.modificationTime = modificationTime;
