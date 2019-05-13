@@ -1517,12 +1517,11 @@ public class FSDirectory implements Closeable {
    * @return The inode associated with the given id
    */
   public INode getInode(long id) {
-    readLock();
-    try {
-      return inodeMap.get(id);
-    } finally {
-      readUnlock();
-    }
+    return inodeMap.get(id);
+  }
+
+  public boolean findInode(long id) {
+    return inodeMap.find(id);
   }
   
   @VisibleForTesting

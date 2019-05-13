@@ -74,5 +74,14 @@ public class INodeMap {
     return null;
   }
 
+  public boolean find(long id) {
+    if (INodeKeyedObjects.getInstance().isInFilePool(id)
+    ||  INodeKeyedObjects.getInstance().isInDirectoryPool(id)
+    ||  DatabaseINode.checkInodeExistence(id)) {
+      return true;
+    }
+    return false;
+  }
+
   public void clear() {}
 }

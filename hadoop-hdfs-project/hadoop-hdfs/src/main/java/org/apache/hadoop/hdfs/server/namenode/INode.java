@@ -80,6 +80,9 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    * Check whether this is the root inode.
    */
   final boolean isRoot() {
+    if (getParentId() == 0) {
+      return true;
+    }
     return getLocalNameBytes() == null;
   }
 

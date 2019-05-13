@@ -6,8 +6,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class INodeFileKeyedObjectPool extends GenericKeyedObjectPool<Long, INodeFile> {
+  static final Logger LOG = LoggerFactory.getLogger(INodeFileKeyedObjectPool.class);
   private final INodeFileKeyedObjFactory factory;
 
   public INodeFileKeyedObjectPool(INodeFileKeyedObjFactory factory) {
@@ -25,8 +28,10 @@ public class INodeFileKeyedObjectPool extends GenericKeyedObjectPool<Long, INode
     INodeFile obj = null;
     try {
       if (getNumActive(key) > 0) {
+        LOG.info("get INodeFile Object (" + key + ") from Pool via borrowActiveObject");
         obj = borrowActiveObject(key);
       } else {
+        LOG.info("get INodeFile Object (" + key + ") from Pool via borrowObject");
         obj = borrowObject(key);
       }
     } catch (Exception e) {

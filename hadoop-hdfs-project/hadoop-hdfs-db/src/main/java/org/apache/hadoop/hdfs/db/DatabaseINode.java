@@ -48,7 +48,7 @@ public class DatabaseINode {
     return exist;
   }
 
-  private static boolean checkInodeExistence(final long childId) {
+  public static boolean checkInodeExistence(final long childId) {
     boolean exist = false;
     try {
       Connection conn = Database.getInstance().getConnection();
