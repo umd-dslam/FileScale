@@ -724,6 +724,7 @@ class FSDirWriteFileOp {
 
     fsn.finalizeINodeFileUnderConstruction(src, pendingFile,
         Snapshot.CURRENT_STATE_ID, true);
+    iip.returnToPool();
     return true;
   }
 
@@ -731,9 +732,11 @@ class FSDirWriteFileOp {
       long id, byte[] localName, PermissionStatus permissions, long mtime, long atime,
       Short replication, Byte ecPolicyID, long preferredBlockSize,
       byte storagePolicyId, BlockType blockType) {
-    return new INodeFile(id, localName, permissions, mtime, atime,
+    INodeFile file = INodeKeyedObjects.getInstance().getINodeFile(id);
+    file.InitINodeFile(id, localName, permissions, mtime, atime,
         BlockInfo.EMPTY_ARRAY, replication, ecPolicyID, preferredBlockSize,
         storagePolicyId, blockType);
+    return file;
   }
 
   private static INodeFile newINodeFile(long id, byte[] localName, PermissionStatus permissions,

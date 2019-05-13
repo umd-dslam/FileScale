@@ -99,7 +99,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   /** The inode id. */
-  final private long id;
+  private long id;
   /**
    *  The inode name is in java UTF8 encoding; 
    *  The name in HdfsFileStatus should keep the same encoding as this.
@@ -137,10 +137,38 @@ public abstract class INodeWithAdditionalFields extends INode {
     }, Database.getInstance().getExecutorService());
   }
 
+  public void InitINodeWithAdditionalFields(INode parent, long id, byte[] name,
+    long permission, long modificationTime, long accessTime, long header) {
+    super.InitINode(parent);
+    this.id = id;
+    this.name = name;
+    this.permission = permission;
+    this.modificationTime = modificationTime;
+
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.insertInode(id,
+        parent != null ? parent.getId() : DatabaseINode.LONG_NULL,
+        name != null && name.length > 0 ? DFSUtil.bytes2String(name) : null,
+        accessTime, modificationTime, permission, header);
+    }, Database.getInstance().getExecutorService());      
+  }
+
+  public void InitINodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
+    long modificationTime, long accessTime, long header) {
+    InitINodeWithAdditionalFields(null, id, name, PermissionStatusFormat.toLong(permissions),
+        modificationTime, accessTime, header); 
+  }
+
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
       long modificationTime, long accessTime, long header) {
     this(null, id, name, PermissionStatusFormat.toLong(permissions),
         modificationTime, accessTime, header);
+  }
+
+  public void InitINodeWithAdditionalFields(INode parent, long id, byte[] name, PermissionStatus permissions,
+      long modificationTime, long accessTime) {
+    InitINodeWithAdditionalFields(parent, id, name, PermissionStatusFormat.toLong(permissions),
+        modificationTime, accessTime, 0L);
   }
 
   INodeWithAdditionalFields(INode parent, long id, byte[] name, PermissionStatus permissions,

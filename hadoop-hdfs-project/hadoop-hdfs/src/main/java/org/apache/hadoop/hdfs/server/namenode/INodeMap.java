@@ -66,13 +66,21 @@ public class INodeMap {
    *         such {@link INode} in the map.
    */
   public INode get(long id) {
-    long header = DatabaseINode.getHeader(id);
-    if (header == 0) { // directory
-      return new INodeDirectory(id);
-    } else if (header > 0) {
-      return new INodeFile(id);
+    if (INodeKeyedObjects.getInstance().isInFilePool(id)) { // directory
+      return INodeKeyedObjects.getInstance().getINodeFile(id);
+    } else if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
+      return INodeKeyedObjects.getInstance().getINodeDirectory(id);
     }
     return null;
+  }
+
+  public boolean find(long id) {
+    if (INodeKeyedObjects.getInstance().isInFilePool(id)
+    ||  INodeKeyedObjects.getInstance().isInDirectoryPool(id)
+    ||  DatabaseINode.checkInodeExistence(id)) {
+      return true;
+    }
+    return false;
   }
 
   public void clear() {}

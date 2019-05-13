@@ -160,6 +160,9 @@ public class INodesInPath {
   static INodesInPath resolve(final INodeDirectory startingDir,
       byte[][] components, final boolean isRaw) {
     Preconditions.checkArgument(startingDir.compareTo(components[0]) == 0);
+    // we keeps a root reference in memory but we still need to borrow
+    // root dir again since it had been returned to pool before.
+    INodeKeyedObjects.getInstance().getINodeDirectory(startingDir.getId());
 
     INode curNode = startingDir;
     int count = 0;
@@ -538,6 +541,20 @@ public class INodesInPath {
     b.append("\n  isSnapshot        = ").append(isSnapshot)
      .append("\n  snapshotId        = ").append(snapshotId);
     return b.toString();
+  }
+
+  void returnToPool() {
+    // return objects back to pool
+    for (int i = 0; i < inodes.length - 1; ++i) {
+      INodeDirectory dir = inodes[i].asDirectory();
+      INodeKeyedObjects.getInstance().returnToDirectoryPool(dir.getId(), dir);
+    }
+    INode inode = inodes[inodes.length - 1];
+    if (inode.isDirectory()) {
+      INodeKeyedObjects.getInstance().returnToDirectoryPool(inode.getId(), inode.asDirectory()); 
+    } else if (inode.isFile()) {
+      INodeKeyedObjects.getInstance().returnToFilePool(inode.getId(), inode.asFile());
+    }
   }
 
   void validate() {

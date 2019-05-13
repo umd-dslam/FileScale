@@ -48,7 +48,7 @@ public class DatabaseINode {
     return exist;
   }
 
-  private static boolean checkInodeExistence(final long childId) {
+  public static boolean checkInodeExistence(final long childId) {
     boolean exist = false;
     try {
       Connection conn = Database.getInstance().getConnection();
@@ -134,16 +134,20 @@ public class DatabaseINode {
       final long modificationTime,
       final long permission,
       final long header) {
-    if (checkInodeExistence(id)) {
-      return;
-    }
     try {
       Connection conn = Database.getInstance().getConnection();
-
-      String sql =
-          "INSERT INTO inodes("
-              + "	id, name, accessTime, modificationTime, permission, header, parent"
-              + ") VALUES (?, ?, ?, ?, ?, ?, ?);";
+      String sql = "";
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        sql = "UPSERT INTO inodes("
+            + "	id, name, accessTime, modificationTime, permission, header, parent"
+            + ") VALUES (?, ?, ?, ?, ?, ?, ?);";
+      } else {
+        sql = "INSERT INTO inodes("
+            + " id, name, accessTime, modificationTime, permission, header, parent"
+            + ") VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE"
+            + "SET name = ?, accessTime = ?, modificationTime = ?, permission = ?, header = ?, parent = ?;";
+      }
 
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -158,6 +162,19 @@ public class DatabaseINode {
       pst.setLong(5, permission);
       pst.setLong(6, header);
       pst.setLong(7, pid);
+
+      if (!env.equals("VOLT")) {
+        if (name == null) {
+          pst.setNull(8, java.sql.Types.VARCHAR);
+        } else {
+          pst.setString(8, name);
+        }
+        pst.setLong(9, accessTime);
+        pst.setLong(10, modificationTime);
+        pst.setLong(11, permission);
+        pst.setLong(12, header);
+        pst.setLong(13, pid);
+      }
 
       pst.executeUpdate();
       pst.close();
@@ -399,6 +416,32 @@ public class DatabaseINode {
     }
     LOG.info("getParentIds: " + childId);
     return parents;
+  }
+
+  public static List<Long> getChildIds(final long childId) {
+    List<Long> childIds = new ArrayList();
+    try {
+      Connection conn = Database.getInstance().getConnection();
+      String sql =
+          "WITH RECURSIVE cte AS ("
+              + "       SELECT id, parent FROM inodes d WHERE id = ?"
+              + "   UNION ALL"
+              + "       SELECT d.id, d.parent FROM cte"
+              + "   JOIN inodes d ON cte.id = d.parent"
+              + ") SELECT id FROM cte;";
+      PreparedStatement pst = conn.prepareStatement(sql);
+      pst.setLong(1, childId);
+      ResultSet rs = pst.executeQuery();
+      while (rs.next()) {
+        childIds.add(0, rs.getLong(1));
+      }
+      rs.close();
+      pst.close();
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    LOG.info("getChildIds: " + childId);
+    return childIds;
   }
 
   public static List<Long> getChildrenIds(final long parentId) {

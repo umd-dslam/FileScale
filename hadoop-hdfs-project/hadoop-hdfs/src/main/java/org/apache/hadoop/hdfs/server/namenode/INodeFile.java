@@ -261,6 +261,28 @@ public class INodeFile extends INodeWithAdditionalFields
         preferredBlockSize, (byte) 0, CONTIGUOUS);
   }
 
+
+  public void InitINodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
+      long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
+      long preferredBlockSize, byte storagePolicyID, BlockType blockType) {
+    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, atime,
+      HeaderFormat.toLong(preferredBlockSize,
+        HeaderFormat.getBlockLayoutRedundancy(
+          blockType, replication, ecPolicyID), storagePolicyID
+        )
+      );
+    header = HeaderFormat.toLong(preferredBlockSize,
+      HeaderFormat.getBlockLayoutRedundancy(
+        blockType, replication, ecPolicyID), storagePolicyID
+      );
+    if (blklist != null && blklist.length > 0) {
+      for (BlockInfo b : blklist) {
+        Preconditions.checkArgument(b.getBlockType() == blockType);
+      }
+    }
+    setBlocks(blklist);
+  }
+
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
       long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
       long preferredBlockSize, byte storagePolicyID, BlockType blockType) {

@@ -469,6 +469,9 @@ class FSDirStatAndListingOp {
     if(isSnapShottable){
       flags.add(HdfsFileStatus.Flags.SNAPSHOT_ENABLED);
     }
+
+    iip.returnToPool();
+
     return createFileStatus(
         size,
         node.isDirectory(),
