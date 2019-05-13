@@ -375,7 +375,9 @@ public abstract class INodeWithAdditionalFields extends INode {
    */
   @Override
   public final void setAccessTime(long accessTime) {
-    DatabaseINode.setAccessTime(this.getId(), accessTime);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setAccessTime(this.getId(), accessTime);
+    }, Database.getInstance().getExecutorService());
   }
 
   protected void addFeature(Feature f) {
@@ -389,11 +391,15 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   protected void removeUCFeature(long id) {
-    DatabaseINode.removeUc(id);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.removeUc(id);
+    }, Database.getInstance().getExecutorService());
   }
 
   protected void removeXAttrFeature(long id) {
-    DatabaseINode.removeXAttr(id);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.removeXAttr(id);
+    }, Database.getInstance().getExecutorService());
   }
 
   protected void removeFeature(Feature f) {

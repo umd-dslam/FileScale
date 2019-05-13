@@ -44,6 +44,7 @@ import org.apache.hadoop.hdfs.db.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.security.AccessControlException;
+import java.util.concurrent.CompletableFuture;
 
 import static org.apache.hadoop.hdfs.protocol.HdfsConstants.BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
 
@@ -600,9 +601,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public boolean addChild(INode node) {
-    if(!DatabaseINode.addChild(node.getId(), node.getLocalName(), getId())) {
-      return false;
-    }
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.addChild(node.getId(), node.getLocalName(), getId());
+    }, Database.getInstance().getExecutorService());
+
     node.setParentWithoutUpdateDB(getId());
 
     if (node.getGroupName() == null) {
@@ -626,9 +628,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return sf.addChild(this, node, setModTime, latestSnapshotId);
     }
 
-    if(!DatabaseINode.addChild(node.getId(), name, this.getId())) {
-      return false;
-    }
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.addChild(node.getId(), name, this.getId());
+    }, Database.getInstance().getExecutorService());
 
     node.setParentWithoutUpdateDB(getId());
 
