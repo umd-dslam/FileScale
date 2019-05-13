@@ -29,7 +29,9 @@ public class DatabaseStorage {
       }
       pst.executeUpdate();
       pst.close();
-      LOG.info("insertStorage: (" + blockId + "," + idx + "," + storageId + "): " + sql);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("insertStorage: (" + blockId + "," + idx + "," + storageId + "): " + sql);
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -52,7 +54,9 @@ public class DatabaseStorage {
       System.out.println(ex.getMessage());
     }
 
-    LOG.info("getNumStorages: (" + blockId + "," + num + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getNumStorages: (" + blockId + "," + num + ")");
+    }
 
     return num;
   }
@@ -74,7 +78,9 @@ public class DatabaseStorage {
       System.out.println(ex.getMessage());
     }
 
-    LOG.info("getStorageIds: (" + blockId + "," + storageIds + "): ");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getStorageIds: (" + blockId + "," + storageIds + "): ");
+    }
 
     return storageIds;
   }
@@ -93,7 +99,9 @@ public class DatabaseStorage {
       }
       rs.close();
       pst.close();
-      LOG.info("getStorageId: (" + blockId + "," + idx + "," + storageId + "): " + sql);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("getStorageId: (" + blockId + "," + idx + "," + storageId + "): " + sql);
+      }
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -115,7 +123,9 @@ public class DatabaseStorage {
       pst.setInt(3, idx);
       pst.executeUpdate();
       pst.close();
-      LOG.info("setStorage: (" + storageId + "," + blockId + "," + idx + "): " + sql);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("setStorage: (" + storageId + "," + blockId + "," + idx + "): " + sql);
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }

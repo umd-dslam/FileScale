@@ -48,7 +48,9 @@ public class DatabaseConnection {
         this.connection = DriverManager.getConnection(postgres, props);
         url = postgres;
       }
-      LOG.info("DatabaseConnection: [" + env + "] " + url);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("DatabaseConnection: [" + env + "] " + url);
+      }
     } catch (Exception ex) {
       System.err.println("Database Connection Creation Failed : " + ex.getMessage());
       ex.printStackTrace();

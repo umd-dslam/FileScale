@@ -47,6 +47,9 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("setSecretManagerSummary [SET]");
+    }
   }
 
   public static void setStringTableSummary(int numEntry, int maskBits) {
@@ -72,6 +75,9 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("setStringTableSummary [SET]");
+    }
   }
 
   public Pair<Integer, Integer> getStringTableSummary() {
@@ -88,6 +94,9 @@ public class DatabaseNDExtraInfo {
       st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getStringTableSummary [GET]");
     }
     return result;
   }
@@ -106,6 +115,9 @@ public class DatabaseNDExtraInfo {
       st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getStringTable [GET]: " + size);
     }
     return result;
   }
@@ -127,7 +139,9 @@ public class DatabaseNDExtraInfo {
 
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          LOG.info("setStringTable Insertion Return: " + rs.getLong(1));
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("setStringTable Insertion Return: " + rs.getLong(1));
+          }
         }
         rs.close();
         proc.close();
@@ -165,6 +179,9 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getSecretManagerSummary [GET]");
+    }
     return result;
   }
 
@@ -183,6 +200,9 @@ public class DatabaseNDExtraInfo {
       st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getDelegationKeys [GET]");
     }
   }
 
@@ -209,7 +229,9 @@ public class DatabaseNDExtraInfo {
 
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          LOG.info("setDelegationKeys Insertion Return: " + rs.getLong(1));
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("setDelegationKeys Insertion Return: " + rs.getLong(1));
+          }
         }
         rs.close();
         proc.close();
@@ -267,7 +289,9 @@ public class DatabaseNDExtraInfo {
 
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          LOG.info("setPersistTokens Insertion Return: " + rs.getLong(1));
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("setPersistTokens Insertion Return: " + rs.getLong(1));
+          }
         }
         rs.close();
         proc.close();
@@ -337,6 +361,9 @@ public class DatabaseNDExtraInfo {
       st.close();
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getPersistTokens [GET]");
     }
   }
 }
