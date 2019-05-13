@@ -7,31 +7,25 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 
-public class INodeDirectoryKeyedObjectPool extends GenericKeyedObjectPool<Long, INodeDirectory>
-    implements INodeKeyedObjectPoolImpl {
+public class INodeDirectoryKeyedObjectPool extends GenericKeyedObjectPool<Long, INodeDirectory> {
   private final INodeDirectoryKeyedObjFactory factory;
-  private final ConcurrentHashMap<Long, ObjectDeque<INodeDirectory>> poolMap;
 
   public INodeDirectoryKeyedObjectPool(INodeDirectoryKeyedObjFactory factory) {
     super(factory);
     this.factory = factory;
-    this.poolMap =
-        (ConcurrentHashMap<Long, ObjectDeque<INodeDirectory>>) getSpecificFieldObject("poolMap");
   }
 
   public INodeDirectoryKeyedObjectPool(
       INodeDirectoryKeyedObjFactory factory, GenericKeyedObjectPoolConfig config) {
     super(factory, config);
     this.factory = factory;
-    this.poolMap =
-        (ConcurrentHashMap<Long, ObjectDeque<INodeDirectory>>) getSpecificFieldObject("poolMap");
   }
 
   public INodeDirectory getObject(Long key) {
     INodeDirectory obj = null;
     try {
       if (getNumActive(key) > 0) {
-        obj = getActiveObject(key);
+        obj = borrowActiveObject(key);
       } else {
         obj = borrowObject(key);
       }
@@ -43,13 +37,9 @@ public class INodeDirectoryKeyedObjectPool extends GenericKeyedObjectPool<Long, 
     return obj;
   }
 
-  private INodeDirectory getActiveObject(Long key) {
+  private INodeDirectory borrowActiveObject(Long key) {
     factory.increment(key);
-    PooledObject<INodeDirectory> p = poolMap.get(key).getAllObjects().values().iterator().next();
-    if (p != null) {
-      return p.getObject();
-    }
-    return null;
+    return super.getActiveObject(key);
   }
 
   public void returnToPool(Long id, INodeDirectory inode) {
@@ -60,10 +50,7 @@ public class INodeDirectoryKeyedObjectPool extends GenericKeyedObjectPool<Long, 
   }
 
   public boolean isInDirectoryPool(Long key) {
-    if (poolMap.get(key) != null) {
-      return true;
-    }
-    return false;
+    return super.findObject(key);
   }
 
   // Reflection via run-time type information (RTTI)

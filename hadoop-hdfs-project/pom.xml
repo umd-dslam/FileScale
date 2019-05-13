@@ -30,6 +30,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <packaging>pom</packaging>
 
   <modules>
+    <module>commons-pool2</module>
     <module>hadoop-hdfs</module>
     <module>hadoop-hdfs-client</module>
     <module>hadoop-hdfs-db</module>

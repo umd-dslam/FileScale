@@ -7,31 +7,25 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 
-public class INodeFileKeyedObjectPool extends GenericKeyedObjectPool<Long, INodeFile>
-    implements INodeKeyedObjectPoolImpl {
+public class INodeFileKeyedObjectPool extends GenericKeyedObjectPool<Long, INodeFile> {
   private final INodeFileKeyedObjFactory factory;
-  private final ConcurrentHashMap<Long, ObjectDeque<INodeFile>> poolMap;
 
   public INodeFileKeyedObjectPool(INodeFileKeyedObjFactory factory) {
     super(factory);
     this.factory = factory;
-    this.poolMap =
-        (ConcurrentHashMap<Long, ObjectDeque<INodeFile>>) getSpecificFieldObject("poolMap");
   }
 
   public INodeFileKeyedObjectPool(
       INodeFileKeyedObjFactory factory, GenericKeyedObjectPoolConfig config) {
     super(factory, config);
     this.factory = factory;
-    this.poolMap =
-        (ConcurrentHashMap<Long, ObjectDeque<INodeFile>>) getSpecificFieldObject("poolMap");
   }
 
   public INodeFile getObject(Long key) {
     INodeFile obj = null;
     try {
       if (getNumActive(key) > 0) {
-        obj = getActiveObject(key);
+        obj = borrowActiveObject(key);
       } else {
         obj = borrowObject(key);
       }
@@ -43,20 +37,13 @@ public class INodeFileKeyedObjectPool extends GenericKeyedObjectPool<Long, INode
     return obj;
   }
 
-  private INodeFile getActiveObject(Long key) {
+  private INodeFile borrowActiveObject(Long key) {
     factory.increment(key);
-    PooledObject<INodeFile> p = poolMap.get(key).getAllObjects().values().iterator().next();
-    if (p != null) {
-      return p.getObject();
-    }
-    return null;
+    return super.getActiveObject(key);
   }
 
   public boolean isInFilePool(Long key) {
-    if (poolMap.get(key) != null) {
-      return true;
-    }
-    return false;
+    return super.findObject(key);
   }
 
   public void returnToPool(Long id, INodeFile inode) {
