@@ -160,6 +160,9 @@ public class INodesInPath {
   static INodesInPath resolve(final INodeDirectory startingDir,
       byte[][] components, final boolean isRaw) {
     Preconditions.checkArgument(startingDir.compareTo(components[0]) == 0);
+    // we keeps a root reference in memory but we still need to borrow
+    // root dir again since it had been returned to pool before.
+    INodeKeyedObjects.getInstance().getINodeDirectory(startingDir.getId());
 
     INode curNode = startingDir;
     int count = 0;

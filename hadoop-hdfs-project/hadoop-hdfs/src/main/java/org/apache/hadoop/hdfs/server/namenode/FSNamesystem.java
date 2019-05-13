@@ -2898,10 +2898,10 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     // No further modification is allowed on a deleted file.
     // A file is considered deleted, if it is not in the inodeMap or is marked
     // as deleted in the snapshot feature.
-    if (isFileDeleted(file)) {
-      throw new FileNotFoundException("File is deleted: "
-          + leaseExceptionString(src, fileId, holder));
-    }
+    // if (isFileDeleted(file)) {
+    //   throw new FileNotFoundException("File is deleted: "
+    //       + leaseExceptionString(src, fileId, holder));
+    // }
     final String owner = file.getFileUnderConstructionFeature().getClientName(file.getId());
     if (holder != null && !owner.equals(holder)) {
       throw new LeaseExpiredException("Client (=" + holder
