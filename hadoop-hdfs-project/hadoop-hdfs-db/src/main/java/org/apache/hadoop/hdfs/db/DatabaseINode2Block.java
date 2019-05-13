@@ -17,7 +17,9 @@ public class DatabaseINode2Block {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode2Block.class);
 
   public static void insert(final long id, final long blockId, final int idx) {
-    LOG.info("INode2Block [insert]: (" + id + "," + blockId + "," + idx + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("INode2Block [insert]: (" + id + "," + blockId + "," + idx + ")");
+    }
     try {
       Connection conn = Database.getInstance().getConnection();
       String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES (?, ?, ?);";
@@ -56,7 +58,9 @@ public class DatabaseINode2Block {
 
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          LOG.info("INode2Block Insertion Return: " + rs.getLong(1));
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("INode2Block Insertion Return: " + rs.getLong(1));
+          }
         }
         rs.close();
         proc.close();
@@ -81,8 +85,9 @@ public class DatabaseINode2Block {
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
-
-        LOG.info("INode2Block [insert]: (" + sql + ")");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("INode2Block [insert]: (" + sql + ")");
+        }
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -115,7 +120,9 @@ public class DatabaseINode2Block {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    LOG.info(attrName + " [UPDATE]: (" + id + "," + attrValue + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(attrName + " [UPDATE]: (" + id + "," + attrValue + ")");
+    }
   }
 
   private static <T> T getAttribute(final long id, final String attrName) {
@@ -139,8 +146,9 @@ public class DatabaseINode2Block {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-
-    LOG.info(attrName + " [GET]: (" + id + "," + result + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(attrName + " [GET]: (" + id + "," + result + ")");
+    }
 
     return result;
   }
@@ -162,7 +170,9 @@ public class DatabaseINode2Block {
       System.out.println(ex.getMessage());
     }
 
-    LOG.info("getNumBlocks: (" + id + "," + num + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getNumBlocks: (" + id + "," + num + ")");
+    }
 
     return num;
   }
@@ -184,7 +194,9 @@ public class DatabaseINode2Block {
       System.out.println(ex.getMessage());
     }
 
-    LOG.info("getLastBlockId: (" + id + "," + blockId + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getLastBlockId: (" + id + "," + blockId + ")");
+    }
 
     return blockId;
   }
@@ -202,7 +214,9 @@ public class DatabaseINode2Block {
       }
       rs.close();
       pst.close();
-      LOG.info("getBcId: (" + blockId + "," + id + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("getBcId: (" + blockId + "," + id + ")");
+      }
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -222,7 +236,9 @@ public class DatabaseINode2Block {
       }
       rs.close();
       st.close();
-      LOG.info("getSize: (" + size + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("getSize: (" + size + ")");
+      }
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -243,7 +259,9 @@ public class DatabaseINode2Block {
       pst.setLong(2, bcId);
       pst.executeUpdate();
       pst.close();
-      LOG.info("setBcIdViaBcId: (" + bcId + "," + newBcId + "," + sql + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("setBcIdViaBcId: (" + bcId + "," + newBcId + "," + sql + ")");
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -266,6 +284,9 @@ public class DatabaseINode2Block {
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getBlockIds: (" + inodeId + ", " + blockIds + ")");
+    }
     return blockIds;
   }
 
@@ -285,6 +306,9 @@ public class DatabaseINode2Block {
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("getAllBlockIds: (" + blockIds + ")");
+    }
     return blockIds;
   }
 
@@ -296,7 +320,9 @@ public class DatabaseINode2Block {
       pst.setLong(1, blockId);
       pst.executeUpdate();
       pst.close();
-      LOG.info("deleteViaBlkId: (" + blockId + "," + sql + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("deleteViaBlkId: (" + blockId + "," + sql + ")");
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -311,7 +337,9 @@ public class DatabaseINode2Block {
       pst.setInt(2, idx);
       pst.executeUpdate();
       pst.close();
-      LOG.info("delete: (" + nodeId + "," + idx + "," + sql + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("delete: (" + nodeId + "," + idx + "," + sql + ")");
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -325,7 +353,9 @@ public class DatabaseINode2Block {
       pst.setLong(1, nodeId);
       pst.executeUpdate();
       pst.close();
-      LOG.info("deleteViaBcId: (" + nodeId + "," + sql + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("deleteViaBcId: (" + nodeId + "," + sql + ")");
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -340,7 +370,9 @@ public class DatabaseINode2Block {
       pst.setInt(2, n);
       pst.executeUpdate();
       pst.close();
-      LOG.info("truncate: (" + nodeId + "," + n + "," + sql + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("truncate: (" + nodeId + "," + n + "," + sql + ")");
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -356,7 +388,9 @@ public class DatabaseINode2Block {
       pst.setInt(3, idx);
       pst.executeUpdate();
       pst.close();
-      LOG.info("setBlockId: (" + nodeId + "," + blockId + "," + idx + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("setBlockId: (" + nodeId + "," + blockId + "," + idx + ")");
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -376,7 +410,9 @@ public class DatabaseINode2Block {
       }
       rs.close();
       pst.close();
-      LOG.info("getBlockId: (" + nodeId + "," + blockId + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("getBlockId: (" + nodeId + "," + blockId + ")");
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }

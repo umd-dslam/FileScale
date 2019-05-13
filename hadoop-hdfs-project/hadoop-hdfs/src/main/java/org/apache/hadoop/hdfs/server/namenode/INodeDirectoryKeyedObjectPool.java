@@ -28,10 +28,14 @@ public class INodeDirectoryKeyedObjectPool extends GenericKeyedObjectPool<Long, 
     INodeDirectory obj = null;
     try {
       if (getNumActive(key) > 0) {
-        LOG.info("get INodeDirectory Object (" + key + ") from Pool via borrowActiveObject");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("get INodeDirectory Object (" + key + ") from Pool via borrowActiveObject");
+        }
         obj = borrowActiveObject(key);
       } else {
-        LOG.info("get INodeDirectory Object (" + key + ") from Pool via borrowObject");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("get INodeDirectory Object (" + key + ") from Pool via borrowObject");
+        }
         obj = borrowObject(key);
       }
     } catch (Exception e) {
