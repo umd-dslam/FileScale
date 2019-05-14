@@ -1,7 +1,13 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.util.concurrent.TimeUnit;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Cache;
+
 public class INodeKeyedObjects {
   private static INodeKeyedObjects instance;
+  private static Cache<Long, INode> cache;
+
   private INodeFileKeyedObjectPool filePool;
   private INodeDirectoryKeyedObjectPool directoryPool;
 
@@ -82,4 +88,17 @@ public class INodeKeyedObjects {
       System.exit(0);
     }
   }
+
+  //--------------------------------------------------------
+  // caffeine cache 
+
+  public static Cache<Long, INode> getCache() {
+    if (cache == null) {
+      cache = Caffeine.newBuilder()
+      .maximumSize(10_000)
+      .build();
+    }
+    return cache;
+  }
+
 }

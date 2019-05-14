@@ -696,8 +696,10 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     // return parent == null? null
     //         : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
     long id = getParentId(); 
+    // return id == DatabaseINode.LONG_NULL ? null : 
+    //     INodeKeyedObjects.getInstance().getINodeDirectory(id); 
     return id == DatabaseINode.LONG_NULL ? null : 
-        INodeKeyedObjects.getInstance().getINodeDirectory(id); 
+        INodeKeyedObjects.getCache().get(id, k -> new INodeDirectory(id)).asDirectory(); 
   }
 
   /**

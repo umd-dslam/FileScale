@@ -116,6 +116,7 @@ public abstract class INodeWithAdditionalFields extends INode {
    */
   private long permission = 0L;
   private long modificationTime = -1L;
+  private long accessTime = -1L;
 
   /** An array {@link Feature}s. */
   private static final Feature[] EMPTY_FEATURE = new Feature[0];
@@ -128,6 +129,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.name = name;
     this.permission = permission;
     this.modificationTime = modificationTime;
+    this.accessTime = accessTime;
 
     CompletableFuture.runAsync(() -> {
       DatabaseINode.insertInode(id,
@@ -144,6 +146,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.name = name;
     this.permission = permission;
     this.modificationTime = modificationTime;
+    this.accessTime = accessTime;
 
     CompletableFuture.runAsync(() -> {
       DatabaseINode.insertInode(id,
@@ -193,7 +196,7 @@ public abstract class INodeWithAdditionalFields extends INode {
         : other.getParent(), other.getId(), other.getLocalNameBytes(),
           other.getPermissionLong(),
           other.getModificationTime(),
-          DatabaseINode.getAccessTime(other.getId()), 0L);
+          other.getAccessTime(), 0L);
   }
 
   /** Get inode id */
@@ -367,7 +370,10 @@ public abstract class INodeWithAdditionalFields extends INode {
       return getSnapshotINode(snapshotId).getAccessTime();
     }
 
-    return DatabaseINode.getAccessTime(this.getId());
+    if (accessTime == -1L) {
+      accessTime = DatabaseINode.getAccessTime(this.getId());
+    }
+    return accessTime;
   }
 
   /**
@@ -375,6 +381,7 @@ public abstract class INodeWithAdditionalFields extends INode {
    */
   @Override
   public final void setAccessTime(long accessTime) {
+    this.accessTime = accessTime;
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setAccessTime(this.getId(), accessTime);
     }, Database.getInstance().getExecutorService());

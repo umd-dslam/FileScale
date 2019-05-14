@@ -66,18 +66,21 @@ public class INodeMap {
    *         such {@link INode} in the map.
    */
   public INode get(long id) {
-    if (INodeKeyedObjects.getInstance().isInFilePool(id)) { // directory
-      return INodeKeyedObjects.getInstance().getINodeFile(id);
-    } else if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
-      return INodeKeyedObjects.getInstance().getINodeDirectory(id);
-    }
-    return null;
+    return INodeKeyedObjects.getCache().getIfPresent(id); 
+    // if (INodeKeyedObjects.getInstance().isInFilePool(id)) { // directory
+    //   return INodeKeyedObjects.getInstance().getINodeFile(id);
+    // } else if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
+    //   return INodeKeyedObjects.getInstance().getINodeDirectory(id);
+    // }
+    // return null;
   }
 
   public boolean find(long id) {
-    if (INodeKeyedObjects.getInstance().isInFilePool(id)
-    ||  INodeKeyedObjects.getInstance().isInDirectoryPool(id)
-    ||  DatabaseINode.checkInodeExistence(id)) {
+    // if (INodeKeyedObjects.getInstance().isInFilePool(id)
+    // ||  INodeKeyedObjects.getInstance().isInDirectoryPool(id)
+    // ||  DatabaseINode.checkInodeExistence(id)) {
+    if (INodeKeyedObjects.getCache().getIfPresent(id) != null
+      || DatabaseINode.checkInodeExistence(id)) {
       return true;
     }
     return false;

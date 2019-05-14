@@ -470,7 +470,7 @@ class FSDirStatAndListingOp {
       flags.add(HdfsFileStatus.Flags.SNAPSHOT_ENABLED);
     }
 
-    iip.returnToPool();
+    // iip.returnToPool();
 
     return createFileStatus(
         size,
