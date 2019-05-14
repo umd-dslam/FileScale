@@ -269,15 +269,17 @@ class FSDirDeleteOp {
     DatabaseINode.removeChild(targetNode.getId());
     if (targetNode.isDirectory()) {
       List<Long> ids = DatabaseINode.getChildIds(targetNode.getId());
-      for (Long id : ids) {
-        if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
-          INodeKeyedObjects.getInstance().clearDirectory(id);
-        } else {
-          INodeKeyedObjects.getInstance().clearFile(id); 
-        }
-      }
+      INodeKeyedObjects.getCache().invalidateAll(ids);
+      // for (Long id : ids) {
+        // if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
+        //   INodeKeyedObjects.getInstance().clearDirectory(id);
+        // } else {
+        //   INodeKeyedObjects.getInstance().clearFile(id); 
+        // }
+      // }
     } else if (targetNode.isFile()) {
-      INodeKeyedObjects.getInstance().clearFile(targetNode.getId());
+      // INodeKeyedObjects.getInstance().clearFile(targetNode.getId());
+      INodeKeyedObjects.getCache().invalidate(targetNode.getId());
     }
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {

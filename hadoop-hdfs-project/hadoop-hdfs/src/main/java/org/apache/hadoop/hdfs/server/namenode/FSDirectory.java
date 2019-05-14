@@ -108,12 +108,16 @@ public class FSDirectory implements Closeable {
   static final Logger LOG = LoggerFactory.getLogger(FSDirectory.class);
 
   private static INodeDirectory createRoot(FSNamesystem namesystem) {
-    INodeDirectory r = INodeKeyedObjects.getInstance().getINodeDirectory(INodeId.ROOT_INODE_ID);
-    r.InitINodeDirectory(
-        INodeId.ROOT_INODE_ID,
-        INodeDirectory.ROOT_NAME,
-        namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)),
-        0L);
+    // INodeDirectory r = INodeKeyedObjects.getInstance().getINodeDirectory(INodeId.ROOT_INODE_ID);
+    // r.InitINodeDirectory(
+    //     INodeId.ROOT_INODE_ID,
+    //     INodeDirectory.ROOT_NAME,
+    //     namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)),
+    //     0L);
+    INodeDirectory r = new INodeDirectory(INodeId.ROOT_INODE_ID, INodeDirectory.ROOT_NAME,
+      namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L);
+    INodeKeyedObjects.getCache().put(INodeId.ROOT_INODE_ID, r);
+
     // TODO: enable later
     // r.addDirectoryWithQuotaFeature(
     //     new DirectoryWithQuotaFeature.Builder().

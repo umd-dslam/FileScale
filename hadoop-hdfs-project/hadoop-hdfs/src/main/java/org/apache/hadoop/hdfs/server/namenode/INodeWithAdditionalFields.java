@@ -381,7 +381,7 @@ public abstract class INodeWithAdditionalFields extends INode {
    */
   @Override
   public final void setAccessTime(long accessTime) {
-    this,accessTime = accessTime;
+    this.accessTime = accessTime;
     CompletableFuture.runAsync(() -> {
       DatabaseINode.setAccessTime(this.getId(), accessTime);
     }, Database.getInstance().getExecutorService());
