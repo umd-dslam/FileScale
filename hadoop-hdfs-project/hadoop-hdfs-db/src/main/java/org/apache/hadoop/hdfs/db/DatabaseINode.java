@@ -499,18 +499,30 @@ public class DatabaseINode {
     List<Long> childIds = new ArrayList<>();
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      // check the existence of node in Postgres
-      String sql = "SELECT id FROM inodes WHERE parent = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, parentId);
-      ResultSet rs = pst.executeQuery();
-      while (rs.next()) {
-        long id = rs.getLong(1);
-        childIds.add(id);
+      String env = System.getenv("DATABASE");
+
+      if (env.equals("VOLT")) {
+        VoltTable[] results = obj.getVoltClient().callProcedure(
+            "GetChildrenIds", parentId).getResults();
+        VoltTable result = results[0];
+        result.resetRowPosition();
+        while (result.advanceRow()) {
+          childIds.add(result.getLong(0));
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        // check the existence of node in Postgres
+        String sql = "SELECT id FROM inodes WHERE parent = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, parentId);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          long id = rs.getLong(1);
+          childIds.add(id);
+        }
+        rs.close();
+        pst.close();
       }
-      rs.close();
-      pst.close();
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
