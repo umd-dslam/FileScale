@@ -25,7 +25,6 @@ public class RemoveChild extends VoltProcedure {
       voltQueueSQL(sql2, results[0].fetchRow(i).getLong(0));
     }
     voltExecuteSQL();
-
     return 1;
   }
 }

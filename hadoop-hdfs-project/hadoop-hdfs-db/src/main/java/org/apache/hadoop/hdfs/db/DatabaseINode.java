@@ -530,24 +530,25 @@ public class DatabaseINode {
       String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        sql = "UPSERT INTO inodes(parent, name, id) VALUES (?, ?, ?);";
+        CallableStatement proc = conn.prepareCall("{call AddChild(?, ?, ?)}");
+        proc.setLong(1, childId);
+        proc.setString(2, childName);
+        proc.setLong(3, parentId);
+        proc.executeQuery();
       } else {
         sql = "INSERT INTO inodes(parent, name, id) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET parent = ?, name = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, parentId);
+        pst.setString(2, childName);
+        pst.setLong(3, childId);
+        pst.setLong(4, parentId);
+        pst.setString(5, childName);
+        pst.executeUpdate();
+        pst.close();
       }
       if (LOG.isDebugEnabled()) {
         LOG.debug("addChild: [OK] UPSERT (" + childId + "," + parentId + "," + childName + ")");
       }
-
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, parentId);
-      pst.setString(2, childName);
-      pst.setLong(3, childId);
-      if (!env.equals("VOLT")) {
-        pst.setLong(4, parentId);
-        pst.setString(5, childName);
-      }
-      pst.executeUpdate();
-      pst.close();
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());

@@ -9,11 +9,7 @@ public class SetStringTable extends VoltProcedure {
     for (int i = 0; i < ids.length; ++i) {
       voltQueueSQL(sql, ids[i], strs[i]);
     }
-    VoltTable[] results = voltExecuteSQL();
-
-    if (results[0].getRowCount() < 1) {
-      return -1;
-    }
+    voltExecuteSQL();
     return 1;
   }
 }
