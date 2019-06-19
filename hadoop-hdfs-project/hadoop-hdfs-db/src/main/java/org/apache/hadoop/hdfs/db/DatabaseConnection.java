@@ -10,11 +10,11 @@ import org.voltdb.*;
 import org.voltdb.client.*;
 
 public class DatabaseConnection {
-  private String postgres = "jdbc:postgresql://localhost:5432/docker";
-  private String cockroach = "jdbc:postgresql://localhost:26257/docker";
-  private String volt = "jdbc:voltdb://localhost:21212";
-  private String username = "docker";
-  private String password = "docker";
+  private static String postgres = "jdbc:postgresql://localhost:5432/docker";
+  private static String cockroach = "jdbc:postgresql://localhost:26257/docker";
+  private static String volt = "jdbc:voltdb://localhost:21212";
+  private static String username = "docker";
+  private static String password = "docker";
 
   private Connection connection;
   private Client client = null;
@@ -54,7 +54,7 @@ public class DatabaseConnection {
     } catch (Exception ex) {
       System.err.println("Database Connection Creation Failed : " + ex.getMessage());
       ex.printStackTrace();
-      System.exit(0);
+      System.exit(-1);
     }
   }
 

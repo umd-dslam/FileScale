@@ -19,7 +19,7 @@ public class Database {
       initializeExecutor();
     } catch (Exception e) {
       e.printStackTrace();
-      System.exit(0);
+      System.exit(-1);
     }
   }
 
@@ -38,56 +38,23 @@ public class Database {
     return executor;
   } 
 
-  public Connection getConnection() {
+  public DatabaseConnection getConnection() {
     DatabaseConnection obj = null;
     try {
       obj = pool.borrowObject();
-      try {
-        // ...use the object...
-        return obj.getConnection();
-      } catch (Exception e) {
-        // invalidate the object
-        pool.invalidateObject(obj);
-        // do not return the object to the pool twice
-        obj = null;
-      } finally {
-        // make sure the object is returned to the pool
-        if (null != obj) {
-          pool.returnObject(obj);
-        }
-      }
     } catch (Exception e) {
       System.err.println("Failed to borrow a Connection object : " + e.getMessage());
       e.printStackTrace();
-      System.exit(0);
+      System.exit(-1);
     }
-    return null;
+    return obj;
   }
 
-  public Client getVoltClient() {
-    DatabaseConnection obj = null;
-    try {
-      obj = pool.borrowObject();
-      try {
-        // ...use the object...
-        return obj.getVoltClient();
-      } catch (Exception e) {
-        // invalidate the object
-        pool.invalidateObject(obj);
-        // do not return the object to the pool twice
-        obj = null;
-      } finally {
-        // make sure the object is returned to the pool
-        if (null != obj) {
-          pool.returnObject(obj);
-        }
-      }
-    } catch (Exception e) {
-      System.err.println("Failed to borrow a Volt client object : " + e.getMessage());
-      e.printStackTrace();
-      System.exit(0);
+  public void retConnection(DatabaseConnection obj) {
+    // make sure the object is returned to the pool
+    if (null != obj) {
+      pool.returnObject(obj);
     }
-    return null;
   }
 
   // A helper method to initialize the pool using the config and object-factory.
@@ -112,7 +79,7 @@ public class Database {
       pool.preparePool();
     } catch (Exception e) {
       e.printStackTrace();
-      System.exit(0);
+      System.exit(-1);
     }
   }
 
@@ -120,13 +87,13 @@ public class Database {
     try {
       String num = System.getenv("ASYNC_EXECUTOR_NUM");
       if (num == null) {
-        executor = Executors.newFixedThreadPool(100);
+        executor = Executors.newFixedThreadPool(16);
       } else {
         executor = Executors.newFixedThreadPool(Integer.parseInt(num));
       }
     } catch (Exception e) {
       e.printStackTrace();
-      System.exit(0);
+      System.exit(-1);
     }
   }
 

@@ -20,7 +20,8 @@ public class DatabaseNDExtraInfo {
 
   public static void setSecretManagerSummary(int currentId, int tokenSequenceNumber, int numKeys, int numTokens) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
@@ -44,6 +45,7 @@ public class DatabaseNDExtraInfo {
       }
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -54,7 +56,8 @@ public class DatabaseNDExtraInfo {
 
   public static void setStringTableSummary(int numEntry, int maskBits) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
@@ -72,6 +75,7 @@ public class DatabaseNDExtraInfo {
       }
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -83,7 +87,8 @@ public class DatabaseNDExtraInfo {
   public Pair<Integer, Integer> getStringTableSummary() {
     ImmutablePair<Integer, Integer> result = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT numEntry, maskBits FROM hdfs;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -92,6 +97,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -104,7 +110,8 @@ public class DatabaseNDExtraInfo {
   public List<Pair<Integer, String>> getStringTable(int size) {
     List<Pair<Integer, String>> result = new ArrayList<>(size);
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT id, str FROM stringtable;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -113,6 +120,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -131,7 +139,8 @@ public class DatabaseNDExtraInfo {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call SetStringTable(?, ?)}");
 
         proc.setArray(1, conn.createArrayOf("INT", ids));
@@ -145,6 +154,7 @@ public class DatabaseNDExtraInfo {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
@@ -154,10 +164,12 @@ public class DatabaseNDExtraInfo {
               +  "VALUES (" + idStr + "," + str + ") "
               +  "ON CONFLICT(id) DO UPDATE SET str = " + str + ";";
         }
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -167,7 +179,8 @@ public class DatabaseNDExtraInfo {
   public Pair<Integer, Integer> getSecretManagerSummary() {
     ImmutablePair<Integer, Integer> result = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT currentId, tokenSequenceNumber FROM hdfs;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -176,6 +189,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -187,7 +201,8 @@ public class DatabaseNDExtraInfo {
 
   public static void getDelegationKeys(List<Integer> ids, List<Long> dates, List<String> keys) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT id, expiryDate, key FROM delegationkeys;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -198,6 +213,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -220,7 +236,8 @@ public class DatabaseNDExtraInfo {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call SetDelegationKeys(?, ?, ?)}");
 
         proc.setArray(1, conn.createArrayOf("INT", ids));
@@ -235,6 +252,7 @@ public class DatabaseNDExtraInfo {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
@@ -247,10 +265,12 @@ public class DatabaseNDExtraInfo {
               +  "key = " + keyStr + ";";
         }
 
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -274,7 +294,8 @@ public class DatabaseNDExtraInfo {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();;
         CallableStatement proc =
             conn.prepareCall("{call SetPersistTokens(?, ?, ?, ?, ?, ?, ?, ?)}");
 
@@ -295,6 +316,7 @@ public class DatabaseNDExtraInfo {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
         String sql = "DELETE FROM persisttokens;"
                 + "INSERT INTO persisttokens(owner, renewer, realuser, issueDate, "
@@ -321,10 +343,12 @@ public class DatabaseNDExtraInfo {
         }
         sql = sql.substring(0, sql.length() - 1) + ";";
 
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -341,7 +365,8 @@ public class DatabaseNDExtraInfo {
       List<Long> expirydates,
       List<Long> maxdates) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();;
       String sql =
           "SELECT owner, renewer, realuser, issueDate, maxDate, "
               + "expiryDate, sequenceNumber, masterKeyId FROM persisttokens;";
@@ -359,6 +384,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }

@@ -28,7 +28,8 @@ public class DatabaseINode {
   public static boolean checkInodeExistence(final long parentId, final String childName) {
     boolean exist = false;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       // check the existence of node in Postgres
       String sql = "SELECT COUNT(id) FROM inodes WHERE parent = ? and name = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
@@ -42,6 +43,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -51,7 +53,8 @@ public class DatabaseINode {
   public static boolean checkInodeExistence(final long childId) {
     boolean exist = false;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       // check the existence of node in Postgres
       String sql = "SELECT COUNT(id) FROM inodes WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
@@ -64,6 +67,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -72,7 +76,8 @@ public class DatabaseINode {
 
   private static <T> void setAttribute(final long id, final String attrName, final T attrValue) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
 
       String sql = "UPDATE inodes SET " + attrName + " = ? WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
@@ -87,12 +92,13 @@ public class DatabaseINode {
         pst.setLong(1, ((Long) attrValue).longValue());
       } else {
         System.err.println("Only support string and long types for now.");
-        System.exit(0);
+        System.exit(-1);
       }
       pst.setLong(2, id);
 
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -104,7 +110,8 @@ public class DatabaseINode {
   private static <T> T getAttribute(final long id, final String attrName) {
     T result = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT " + attrName + " FROM inodes WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -119,6 +126,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -138,7 +146,8 @@ public class DatabaseINode {
       final long permission,
       final long header) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
@@ -181,6 +190,7 @@ public class DatabaseINode {
 
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -199,7 +209,8 @@ public class DatabaseINode {
 
   public static void updateModificationTime(final long id, final long childId) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE inodes SET modificationTime = ("
         + "SELECT modificationTime FROM inodes WHERE id = ?) WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
@@ -207,6 +218,7 @@ public class DatabaseINode {
       pst.setLong(2, id);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -258,7 +270,8 @@ public class DatabaseINode {
   public static long getChild(final long parentId, final String childName) {
     long childId = -1;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       // check the existence of node in Postgres
       String sql = "SELECT id FROM inodes WHERE parent = ? AND name = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
@@ -270,6 +283,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -285,13 +299,15 @@ public class DatabaseINode {
     List<Long> res = new ArrayList();
     try {
       // call a stored procedure
-      VoltTable[] results = Database.getInstance().getVoltClient().callProcedure(
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      VoltTable[] results = obj.getVoltClient().callProcedure(
           "GetChildIdsByPath", id, components).getResults();
       VoltTable result = results[0];
       result.resetRowPosition();
       while (result.advanceRow()) {
         res.add(result.getLong(0));
       }
+      Database.getInstance().retConnection(obj);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -307,7 +323,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call RemoveChild(?)}");
         proc.setLong(1, id);
         ResultSet rs = proc.executeQuery();
@@ -318,8 +335,10 @@ public class DatabaseINode {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         // delete file/directory recusively
         String sql =
             "DELETE FROM inodes WHERE id IN ("
@@ -335,6 +354,7 @@ public class DatabaseINode {
         pst.setLong(1, id);
         pst.executeUpdate();
         pst.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -347,7 +367,8 @@ public class DatabaseINode {
   public static List<String> getPathComponents(final long childId) {
     List<String> names = new ArrayList();
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql =
           "WITH RECURSIVE cte AS ("
               + "       SELECT id, parent, name FROM inodes d WHERE id = ?"
@@ -363,6 +384,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -378,7 +400,8 @@ public class DatabaseINode {
     List<String> names = new ArrayList();
     ImmutablePair result = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql =
           "WITH RECURSIVE cte AS ("
               + "       SELECT id, parent, name FROM inodes d WHERE id = ?"
@@ -395,6 +418,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -413,7 +437,8 @@ public class DatabaseINode {
   public static List<Long> getParentIds(final long childId) {
     List<Long> parents = new ArrayList();
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql =
           "WITH RECURSIVE cte AS ("
               + "       SELECT id, parent FROM inodes d WHERE id = ?"
@@ -430,6 +455,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -442,7 +468,8 @@ public class DatabaseINode {
   public static List<Long> getChildIds(final long childId) {
     List<Long> childIds = new ArrayList();
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql =
           "WITH RECURSIVE cte AS ("
               + "       SELECT id, parent FROM inodes d WHERE id = ?"
@@ -458,6 +485,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -470,7 +498,8 @@ public class DatabaseINode {
   public static List<Long> getChildrenIds(final long parentId) {
     List<Long> childIds = new ArrayList<>();
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       // check the existence of node in Postgres
       String sql = "SELECT id FROM inodes WHERE parent = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
@@ -482,6 +511,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -495,7 +525,8 @@ public class DatabaseINode {
 
   public static boolean addChild(final long childId, final String childName, final long parentId) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
@@ -517,6 +548,7 @@ public class DatabaseINode {
       }
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -527,7 +559,8 @@ public class DatabaseINode {
   public static long getINodesNum() {
     long num = 0;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT COUNT(id) FROM inodes;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -536,6 +569,7 @@ public class DatabaseINode {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -549,7 +583,8 @@ public class DatabaseINode {
   public static long getLastInodeId() {
     long num = 0;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT MAX(id) FROM inodes;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -558,6 +593,7 @@ public class DatabaseINode {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -569,7 +605,8 @@ public class DatabaseINode {
 
   public static void insertUc(final long id, final String clientName, final String clientMachine) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "INSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -577,6 +614,7 @@ public class DatabaseINode {
       pst.setString(3, clientMachine);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -588,7 +626,8 @@ public class DatabaseINode {
   public static Boolean checkUCExistence(final long id) {
     boolean exist = false;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT COUNT(id) FROM inodeuc WHERE id = ?";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -600,6 +639,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -609,7 +649,8 @@ public class DatabaseINode {
   public static String getUcClientName(final long id) {
     String name = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT clientName FROM inodeuc WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -619,6 +660,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -630,13 +672,15 @@ public class DatabaseINode {
 
   public static void setUcClientName(final long id, final String clientName) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE inodeuc SET clientName = ? WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setString(1, clientName);
       pst.setLong(2, id);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -648,7 +692,8 @@ public class DatabaseINode {
   public static String getUcClientMachine(final long id) {
     String name = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT clientMachine FROM inodeuc WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -658,6 +703,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -669,7 +715,8 @@ public class DatabaseINode {
 
   public static void setUcClientMachine(final long id, final String clientMachine) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE inodeuc SET clientMachine = ? WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setString(1, clientMachine);
@@ -686,12 +733,14 @@ public class DatabaseINode {
 
   public static void removeUc(final long id) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "DELETE FROM inodeuc WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -703,7 +752,8 @@ public class DatabaseINode {
   public static String getXAttrValue(final long id) {
     String value = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT value FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -713,6 +763,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -725,7 +776,8 @@ public class DatabaseINode {
   public static String getXAttrName(final long id) {
     String name = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT name FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -735,6 +787,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -747,7 +800,8 @@ public class DatabaseINode {
   public static int getXAttrNameSpace(final long id) {
     int ns = -1;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT namespace FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -757,6 +811,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -793,7 +848,8 @@ public class DatabaseINode {
   public List<XAttrInfo> getXAttrs(final long id) {
     List<XAttrInfo> xinfo = new ArrayList<XAttrInfo>();
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT namespace, name, value FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -803,6 +859,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -815,7 +872,8 @@ public class DatabaseINode {
   public static Boolean checkXAttrExistence(final long id) {
     boolean exist = false;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT COUNT(id) FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -827,6 +885,7 @@ public class DatabaseINode {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -835,7 +894,8 @@ public class DatabaseINode {
 
   public static void insertXAttr(final long id, final int namespace, final String name, final String value) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "INSERT INTO inodexattrs(id, namespace, name, value) VALUES (?, ?, ?, ?);";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -844,6 +904,7 @@ public class DatabaseINode {
       pst.setString(4, value);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -854,12 +915,14 @@ public class DatabaseINode {
 
   public static void removeXAttr(final long id) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "DELETE FROM inodexattrs WHERE id = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -873,7 +936,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call InsertXAttrs(?, ?, ?)}");
         proc.setLong(1, id);
         proc.setArray(2, conn.createArrayOf("SMALLINT", ns.toArray(new Long[ns.size()])));
@@ -886,8 +950,10 @@ public class DatabaseINode {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         String sql = "";
         for (int i = 0; i < ns.size(); ++i) {
           sql += "INSERT INTO inodexattrs(id, namespace, name, value) VALUES(?, ?, ?, ?);";
@@ -901,6 +967,7 @@ public class DatabaseINode {
         }
         pst.executeUpdate();
         pst.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
