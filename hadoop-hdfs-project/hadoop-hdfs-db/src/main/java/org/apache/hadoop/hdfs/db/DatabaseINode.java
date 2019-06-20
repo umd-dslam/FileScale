@@ -210,14 +210,19 @@ public class DatabaseINode {
   public static void updateModificationTime(final long id, final long childId) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "UPDATE inodes SET modificationTime = ("
-        + "SELECT modificationTime FROM inodes WHERE id = ?) WHERE id = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, childId);
-      pst.setLong(2, id);
-      pst.executeUpdate();
-      pst.close();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("UpdateModificationTime", id, childId);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "UPDATE inodes SET modificationTime = ("
+          + "SELECT modificationTime FROM inodes WHERE id = ?) WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, childId);
+        pst.setLong(2, id);
+        pst.executeUpdate();
+        pst.close();
+      }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
