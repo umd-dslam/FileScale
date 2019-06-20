@@ -696,14 +696,19 @@ public class DatabaseINode {
   public static void insertUc(final long id, final String clientName, final String clientMachine) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "INSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, id);
-      pst.setString(2, clientName);
-      pst.setString(3, clientMachine);
-      pst.executeUpdate();
-      pst.close();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("InsertUc", id, clientName, clientMachine);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "INSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        pst.setString(2, clientName);
+        pst.setString(3, clientMachine);
+        pst.executeUpdate();
+        pst.close();
+      }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
