@@ -169,8 +169,7 @@ public class DatabaseINode2Block {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results =
-            obj.getVoltClient().callProcedure("GetNumBlocks", id).getResults();
+        VoltTable[] results = obj.getVoltClient().callProcedure("GetNumBlocks", id).getResults();
         VoltTable result = results[0];
         result.resetRowPosition();
         while (result.advanceRow()) {

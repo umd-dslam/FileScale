@@ -406,7 +406,8 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetModificationTime", id).getResults();
+        VoltTable[] results =
+            obj.getVoltClient().callProcedure("GetModificationTime", id).getResults();
         VoltTable result = results[0];
         result.resetRowPosition();
         while (result.advanceRow()) {
@@ -963,8 +964,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
 
       if (env.equals("VOLT")) {
-        VoltTable[] results =
-            obj.getVoltClient().callProcedure("GetUcClientName", id).getResults();
+        VoltTable[] results = obj.getVoltClient().callProcedure("GetUcClientName", id).getResults();
         VoltTable result = results[0];
         result.resetRowPosition();
         while (result.advanceRow()) {
