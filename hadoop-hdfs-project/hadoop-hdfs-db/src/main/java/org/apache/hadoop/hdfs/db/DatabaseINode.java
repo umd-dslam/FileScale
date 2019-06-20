@@ -196,11 +196,51 @@ public class DatabaseINode {
   }
 
   public static void setAccessTime(final long id, final long accessTime) {
-    setAttribute(id, "accessTime", accessTime);
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("SetAccessTime", id, accessTime);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "UPDATE inodes SET accessTime = ? WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, accessTime);
+        pst.setLong(2, id);
+        pst.executeUpdate();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("accessTime [UPDATE]: (" + id + "," + accessTime + ")");
+    }
   }
 
   public static void setModificationTime(final long id, final long modificationTime) {
-    setAttribute(id, "modificationTime", modificationTime);
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("SetModificationTime", id, modificationTime);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "UPDATE inodes SET modificationTime = ? WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, modificationTime);
+        pst.setLong(2, id);
+        pst.executeUpdate();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("modificationTime [UPDATE]: (" + id + "," + modificationTime + ")");
+    }
   }
 
   public static void updateModificationTime(final long id, final long childId) {
