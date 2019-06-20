@@ -1,8 +1,8 @@
 package org.apache.hadoop.hdfs.db;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -29,7 +29,7 @@ public class DatabaseDatablock {
       }
       rs.close();
       pst.close();
-      Database.getInstance().retConnection(obj); 
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -47,7 +47,8 @@ public class DatabaseDatablock {
       DatabaseConnection obj = Database.getInstance().getConnection();
       Connection conn = obj.getConnection();
 
-      String sql = "INSERT INTO datablocks(blockId, numBytes, generationStamp, ecPolicyId) VALUES (?, ?, ?, -1);";
+      String sql =
+          "INSERT INTO datablocks(blockId, numBytes, generationStamp, ecPolicyId) VALUES (?, ?, ?, -1);";
 
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -245,7 +246,7 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) { 
+    if (LOG.isDebugEnabled()) {
       LOG.debug("delete DateBlock/INode2Block [UPDATE]: (" + nodeId + "," + index + ")");
     }
   }
@@ -261,7 +262,7 @@ public class DatabaseDatablock {
         proc.setLong(1, blockId);
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) { 
+          if (LOG.isDebugEnabled()) {
             LOG.debug("removeBlock Return: " + rs.getLong(1));
           }
         }
@@ -271,7 +272,8 @@ public class DatabaseDatablock {
       } else {
         DatabaseConnection obj = Database.getInstance().getConnection();
         Connection conn = obj.getConnection();
-        String sql = "DELETE FROM inode2block WHERE blockId = ?;"
+        String sql =
+            "DELETE FROM inode2block WHERE blockId = ?;"
                 + "DELETE FROM datablocks WHERE blockId = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
         pst.setLong(1, blockId);
@@ -306,7 +308,8 @@ public class DatabaseDatablock {
       } else {
         DatabaseConnection obj = Database.getInstance().getConnection();
         Connection conn = obj.getConnection();
-        String sql = "DELETE FROM datablocks WHERE blockId IN ("
+        String sql =
+            "DELETE FROM datablocks WHERE blockId IN ("
                 + "   SELECT blockId from inode2block where id = ?"
                 + ");"
                 + "DELETE FROM inode2block where id = ?;";
@@ -462,7 +465,8 @@ public class DatabaseDatablock {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("setStorageBlockIndex [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
+      LOG.debug(
+          "setStorageBlockIndex [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
     }
   }
 }

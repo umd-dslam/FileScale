@@ -10,12 +10,10 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import java.util.HashMap;
-import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.voltdb.*;
 
 public class DatabaseINode {
@@ -147,35 +145,32 @@ public class DatabaseINode {
       final long header) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        sql = "UPSERT INTO inodes("
-            + "	id, name, accessTime, modificationTime, permission, header, parent"
-            + ") VALUES (?, ?, ?, ?, ?, ?, ?);";
+        obj.getVoltClient()
+            .callProcedure(
+                "InsertINode", id, parent, name, accessTime, modificationTime, permission, header);
       } else {
-        sql = "INSERT INTO inodes("
-            + " id, name, accessTime, modificationTime, permission, header, parent"
-            + ") VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE"
-            + "SET name = ?, accessTime = ?, modificationTime = ?, permission = ?, header = ?, parent = ?;";
-      }
+        String sql =
+            "INSERT INTO inodes("
+                + " id, name, accessTime, modificationTime, permission, header, parent"
+                + ") VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE"
+                + "SET name = ?, accessTime = ?, modificationTime = ?, permission = ?, header = ?, parent = ?;";
+        Connection conn = obj.getConnection();
+        PreparedStatement pst = conn.prepareStatement(sql);
 
-      PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        if (name == null) {
+          pst.setNull(2, java.sql.Types.VARCHAR);
+        } else {
+          pst.setString(2, name);
+        }
+        pst.setLong(3, accessTime);
+        pst.setLong(4, modificationTime);
+        pst.setLong(5, permission);
+        pst.setLong(6, header);
+        pst.setLong(7, pid);
 
-      pst.setLong(1, id);
-      if (name == null) {
-        pst.setNull(2, java.sql.Types.VARCHAR);
-      } else {
-        pst.setString(2, name);
-      }
-      pst.setLong(3, accessTime);
-      pst.setLong(4, modificationTime);
-      pst.setLong(5, permission);
-      pst.setLong(6, header);
-      pst.setLong(7, pid);
-
-      if (!env.equals("VOLT")) {
         if (name == null) {
           pst.setNull(8, java.sql.Types.VARCHAR);
         } else {
@@ -186,10 +181,11 @@ public class DatabaseINode {
         pst.setLong(11, permission);
         pst.setLong(12, header);
         pst.setLong(13, pid);
+
+        pst.executeUpdate();
+        pst.close();
       }
 
-      pst.executeUpdate();
-      pst.close();
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -215,8 +211,9 @@ public class DatabaseINode {
         obj.getVoltClient().callProcedure("UpdateModificationTime", id, childId);
       } else {
         Connection conn = obj.getConnection();
-        String sql = "UPDATE inodes SET modificationTime = ("
-          + "SELECT modificationTime FROM inodes WHERE id = ?) WHERE id = ?;";
+        String sql =
+            "UPDATE inodes SET modificationTime = ("
+                + "SELECT modificationTime FROM inodes WHERE id = ?) WHERE id = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
         pst.setLong(1, childId);
         pst.setLong(2, id);
@@ -228,7 +225,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("updateModificationTime [UPDATE]: (" + id + ")");    
+      LOG.debug("updateModificationTime [UPDATE]: (" + id + ")");
     }
   }
 
@@ -325,8 +322,8 @@ public class DatabaseINode {
     try {
       // call a stored procedure
       DatabaseConnection obj = Database.getInstance().getConnection();
-      VoltTable[] results = obj.getVoltClient().callProcedure(
-          "GetChildIdsByPath", id, components).getResults();
+      VoltTable[] results =
+          obj.getVoltClient().callProcedure("GetChildIdsByPath", id, components).getResults();
       VoltTable result = results[0];
       result.resetRowPosition();
       while (result.advanceRow()) {
@@ -515,8 +512,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
 
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure(
-            "GetChildrenIds", parentId).getResults();
+        VoltTable[] results =
+            obj.getVoltClient().callProcedure("GetChildrenIds", parentId).getResults();
         VoltTable result = results[0];
         result.resetRowPosition();
         while (result.advanceRow()) {
@@ -561,7 +558,8 @@ public class DatabaseINode {
         proc.setLong(3, parentId);
         proc.executeQuery();
       } else {
-        sql = "INSERT INTO inodes(parent, name, id) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET parent = ?, name = ?;";
+        sql =
+            "INSERT INTO inodes(parent, name, id) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET parent = ?, name = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
         pst.setLong(1, parentId);
         pst.setString(2, childName);
@@ -601,7 +599,7 @@ public class DatabaseINode {
     }
     if (LOG.isDebugEnabled()) {
       LOG.debug("getINodesNum [GET]: (" + num + ")");
-    }  
+    }
 
     return num;
   }
@@ -734,7 +732,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("getUcClientMachine [GET]: (" + id + ", " + name + ")"); 
+      LOG.debug("getUcClientMachine [GET]: (" + id + ", " + name + ")");
     }
     return name;
   }
@@ -755,7 +753,7 @@ public class DatabaseINode {
     if (LOG.isDebugEnabled()) {
       LOG.debug("setUcClientMachine [UPDATE]: (" + id + ", " + clientMachine + ")");
     }
-  }  
+  }
 
   public static void removeUc(final long id) {
     try {
@@ -794,7 +792,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrValue [GET]: (" + id + ", " + value + ")"); 
+      LOG.debug("getXAttrValue [GET]: (" + id + ", " + value + ")");
     }
     return value;
   }
@@ -818,7 +816,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrName [GET]: (" + id + ", " + name + ")"); 
+      LOG.debug("getXAttrName [GET]: (" + id + ", " + name + ")");
     }
     return name;
   }
@@ -842,7 +840,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrNameSpace [GET]: (" + id + ", " + ns + ")"); 
+      LOG.debug("getXAttrNameSpace [GET]: (" + id + ", " + ns + ")");
     }
     return ns;
   }
@@ -890,7 +888,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrs [GET]: (" + id + ")"); 
+      LOG.debug("getXAttrs [GET]: (" + id + ")");
     }
     return xinfo;
   }
@@ -918,7 +916,8 @@ public class DatabaseINode {
     return exist;
   }
 
-  public static void insertXAttr(final long id, final int namespace, final String name, final String value) {
+  public static void insertXAttr(
+      final long id, final int namespace, final String name, final String value) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       Connection conn = obj.getConnection();
@@ -935,7 +934,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("insertXAttr [UPDATE]: (" + id + ", " + namespace + ", " + name + ", " + value + ")");
+      LOG.debug(
+          "insertXAttr [UPDATE]: (" + id + ", " + namespace + ", " + name + ", " + value + ")");
     }
   }
 
@@ -957,7 +957,8 @@ public class DatabaseINode {
     }
   }
 
-  public static void insertXAttrs(final long id, final List<Integer> ns, final List<String> namevals) {
+  public static void insertXAttrs(
+      final long id, final List<Integer> ns, final List<String> namevals) {
     try {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
@@ -967,7 +968,8 @@ public class DatabaseINode {
         CallableStatement proc = conn.prepareCall("{call InsertXAttrs(?, ?, ?)}");
         proc.setLong(1, id);
         proc.setArray(2, conn.createArrayOf("SMALLINT", ns.toArray(new Long[ns.size()])));
-        proc.setArray(3, conn.createArrayOf("VARCHAR", namevals.toArray(new String[namevals.size()])));
+        proc.setArray(
+            3, conn.createArrayOf("VARCHAR", namevals.toArray(new String[namevals.size()])));
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
           if (LOG.isDebugEnabled()) {

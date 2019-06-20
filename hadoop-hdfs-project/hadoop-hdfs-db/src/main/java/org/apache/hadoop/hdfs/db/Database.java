@@ -2,9 +2,7 @@ package org.apache.hadoop.hdfs.db;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.sql.Connection;
 import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.voltdb.*;
 import org.voltdb.client.*;
 
@@ -36,7 +34,7 @@ public class Database {
 
   public ExecutorService getExecutorService() {
     return executor;
-  } 
+  }
 
   public DatabaseConnection getConnection() {
     DatabaseConnection obj = null;

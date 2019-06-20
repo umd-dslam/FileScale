@@ -3,9 +3,7 @@ package org.apache.hadoop.hdfs.db;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,5 +138,4 @@ public class DatabaseStorage {
       System.err.println(ex.getMessage());
     }
   }
-
 }

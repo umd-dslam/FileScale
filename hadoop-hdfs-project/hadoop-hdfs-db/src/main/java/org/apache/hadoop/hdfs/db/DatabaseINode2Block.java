@@ -1,8 +1,8 @@
 package org.apache.hadoop.hdfs.db;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -56,7 +56,7 @@ public class DatabaseINode2Block {
         List<Integer> idxs = new ArrayList<Integer>();
         for (int i = 0; i < blockIds.size(); ++i) {
           idxs.add(index + i);
-        } 
+        }
         proc.setArray(3, conn.createArrayOf("INT", idxs.toArray(new Integer[blockIds.size()])));
 
         ResultSet rs = proc.executeQuery();
@@ -76,12 +76,12 @@ public class DatabaseINode2Block {
           idx += 1;
           sql +=
               "("
-                + String.valueOf(id)
-                + ","
-                + String.valueOf(blockIds.get(i))
-                + ","
-                + String.valueOf(idx)
-                + "),";
+                  + String.valueOf(id)
+                  + ","
+                  + String.valueOf(blockIds.get(i))
+                  + ","
+                  + String.valueOf(idx)
+                  + "),";
         }
         sql = sql.substring(0, sql.length() - 1) + ";";
 
@@ -261,7 +261,7 @@ public class DatabaseINode2Block {
       System.out.println(ex.getMessage());
     }
 
-    return size;    
+    return size;
   }
 
   public static void setBcIdViaBlkId(final long blockId, final long bcId) {

@@ -18,7 +18,8 @@ public class DatabaseNDExtraInfo {
 
   public DatabaseNDExtraInfo() {}
 
-  public static void setSecretManagerSummary(int currentId, int tokenSequenceNumber, int numKeys, int numTokens) {
+  public static void setSecretManagerSummary(
+      int currentId, int tokenSequenceNumber, int numKeys, int numTokens) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       Connection conn = obj.getConnection();
@@ -30,7 +31,7 @@ public class DatabaseNDExtraInfo {
       } else {
         sql =
             "INSERT INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?) "
-          + "ON CONFLICT(id) DO UPDATE SET currentId = ?, tokenSequenceNumber = ?, numKeys = ?, numTokens = ?;";
+                + "ON CONFLICT(id) DO UPDATE SET currentId = ?, tokenSequenceNumber = ?, numKeys = ?, numTokens = ?;";
       }
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, currentId);
@@ -41,7 +42,7 @@ public class DatabaseNDExtraInfo {
         pst.setInt(5, currentId);
         pst.setInt(6, tokenSequenceNumber);
         pst.setInt(7, numKeys);
-        pst.setInt(8, numTokens);        
+        pst.setInt(8, numTokens);
       }
       pst.executeUpdate();
       pst.close();
@@ -63,15 +64,16 @@ public class DatabaseNDExtraInfo {
       if (env.equals("VOLT")) {
         sql = "UPSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?);";
       } else {
-        sql = "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) "
-            + "ON CONFLICT(id) DO UPDATE SET numEntry = ?, maskBits = ?;";
+        sql =
+            "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) "
+                + "ON CONFLICT(id) DO UPDATE SET numEntry = ?, maskBits = ?;";
       }
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, numEntry);
       pst.setInt(2, maskBits);
       if (!env.equals("VOLT")) {
         pst.setInt(3, numEntry);
-        pst.setInt(4, maskBits);        
+        pst.setInt(4, maskBits);
       }
       pst.executeUpdate();
       pst.close();
@@ -158,11 +160,18 @@ public class DatabaseNDExtraInfo {
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
-          String idStr = "'" + String.valueOf(ids[i]) + "'"; 
-          String str = "'" + strs[i] + "'"; 
-          sql += "INSERT INTO stringtable(id, str) "
-              +  "VALUES (" + idStr + "," + str + ") "
-              +  "ON CONFLICT(id) DO UPDATE SET str = " + str + ";";
+          String idStr = "'" + String.valueOf(ids[i]) + "'";
+          String str = "'" + strs[i] + "'";
+          sql +=
+              "INSERT INTO stringtable(id, str) "
+                  + "VALUES ("
+                  + idStr
+                  + ","
+                  + str
+                  + ") "
+                  + "ON CONFLICT(id) DO UPDATE SET str = "
+                  + str
+                  + ";";
         }
         DatabaseConnection obj = Database.getInstance().getConnection();
         Connection conn = obj.getConnection();
@@ -256,13 +265,24 @@ public class DatabaseNDExtraInfo {
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
-          String idStr = "'" + String.valueOf(ids[i]) + "'"; 
-          String dateStr = "'" + String.valueOf(dates[i]) + "'"; 
-          String keyStr = "'" + String.valueOf(keys[i]) + "'"; 
-          sql += "INSERT INTO delegationkeys(id, expiryDate, key) "
-              +  "VALUES (" + idStr + "," + dateStr + "," + keyStr + ") "
-              +  "ON CONFLICT(id) DO UPDATE SET expiryDate = " + dateStr + ", "
-              +  "key = " + keyStr + ";";
+          String idStr = "'" + String.valueOf(ids[i]) + "'";
+          String dateStr = "'" + String.valueOf(dates[i]) + "'";
+          String keyStr = "'" + String.valueOf(keys[i]) + "'";
+          sql +=
+              "INSERT INTO delegationkeys(id, expiryDate, key) "
+                  + "VALUES ("
+                  + idStr
+                  + ","
+                  + dateStr
+                  + ","
+                  + keyStr
+                  + ") "
+                  + "ON CONFLICT(id) DO UPDATE SET expiryDate = "
+                  + dateStr
+                  + ", "
+                  + "key = "
+                  + keyStr
+                  + ";";
         }
 
         DatabaseConnection obj = Database.getInstance().getConnection();
@@ -295,7 +315,8 @@ public class DatabaseNDExtraInfo {
       if (env.equals("VOLT")) {
         // call a stored procedure
         DatabaseConnection obj = Database.getInstance().getConnection();
-        Connection conn = obj.getConnection();;
+        Connection conn = obj.getConnection();
+        ;
         CallableStatement proc =
             conn.prepareCall("{call SetPersistTokens(?, ?, ?, ?, ?, ?, ?, ?)}");
 
@@ -318,27 +339,44 @@ public class DatabaseNDExtraInfo {
         proc.close();
         Database.getInstance().retConnection(obj);
       } else {
-        String sql = "DELETE FROM persisttokens;"
+        String sql =
+            "DELETE FROM persisttokens;"
                 + "INSERT INTO persisttokens(owner, renewer, realuser, issueDate, "
                 + "maxDate, expiryDate, sequenceNumber, masterKeyId) VALUES ";
         for (int i = 0; i < owners.length; ++i) {
           sql +=
               "("
-                  + "'" + owners[i] + "'"
+                  + "'"
+                  + owners[i]
+                  + "'"
                   + ","
-                  + "'" + renewers[i] + "'"
+                  + "'"
+                  + renewers[i]
+                  + "'"
                   + ","
-                  + "'" + realusers[i] + "'"
+                  + "'"
+                  + realusers[i]
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(issuedates[i]) + "'"
+                  + "'"
+                  + String.valueOf(issuedates[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(maxdates[i]) + "'"
+                  + "'"
+                  + String.valueOf(maxdates[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(expirydates[i]) + "'"
+                  + "'"
+                  + String.valueOf(expirydates[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(seqnumbers[i]) + "'"
+                  + "'"
+                  + String.valueOf(seqnumbers[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(masterkeys[i]) + "'"
+                  + "'"
+                  + String.valueOf(masterkeys[i])
+                  + "'"
                   + "),";
         }
         sql = sql.substring(0, sql.length() - 1) + ";";
@@ -366,7 +404,8 @@ public class DatabaseNDExtraInfo {
       List<Long> maxdates) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();;
+      Connection conn = obj.getConnection();
+      ;
       String sql =
           "SELECT owner, renewer, realuser, issueDate, maxDate, "
               + "expiryDate, sequenceNumber, masterKeyId FROM persisttokens;";
