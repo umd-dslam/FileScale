@@ -306,7 +306,38 @@ public class DatabaseINode {
   }
 
   public static long getAccessTime(final long id) {
-    return getAttribute(id, "accessTime");
+    long res = 0;
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        VoltTable[] results = obj.getVoltClient().callProcedure("GetAccessTime", id).getResults();
+        VoltTable result = results[0];
+        result.resetRowPosition();
+        while (result.advanceRow()) {
+          res = result.getLong(0);
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "SELECT accessTime FROM inodes WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          res = rs.getLong(1);
+        }
+        rs.close();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("accessTime [GET]: (" + id + "," + res + ")");
+    }
+    return res;
   }
 
   public static long getModificationTime(final long id) {
