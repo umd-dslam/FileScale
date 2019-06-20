@@ -147,7 +147,7 @@ public class DatabaseConnectionTest {
                 pst.setLong(1, ((Long)attrValue).longValue());
             } else {
                 System.err.println("Only support string and long types for now.");
-                System.exit(0);
+                System.exit(-1);
             }
             pst.setLong(2, id);
 

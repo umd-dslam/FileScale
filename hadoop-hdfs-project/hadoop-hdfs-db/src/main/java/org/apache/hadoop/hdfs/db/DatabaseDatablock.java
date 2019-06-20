@@ -1,14 +1,15 @@
 package org.apache.hadoop.hdfs.db;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.voltdb.*;
 
 public class DatabaseDatablock {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseDatablock.class);
@@ -16,7 +17,8 @@ public class DatabaseDatablock {
   private static boolean checkBlockExistence(final long blkid) {
     boolean exist = false;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT COUNT(blockId) FROM datablocks WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blkid);
@@ -28,6 +30,7 @@ public class DatabaseDatablock {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -42,9 +45,11 @@ public class DatabaseDatablock {
       return;
     }
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
 
-      String sql = "INSERT INTO datablocks(blockId, numBytes, generationStamp, ecPolicyId) VALUES (?, ?, ?, -1);";
+      String sql =
+          "INSERT INTO datablocks(blockId, numBytes, generationStamp, ecPolicyId) VALUES (?, ?, ?, -1);";
 
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -54,6 +59,7 @@ public class DatabaseDatablock {
 
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -65,7 +71,8 @@ public class DatabaseDatablock {
   private static <T> T getAttribute(final long id, final String attrName) {
     T result = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT " + attrName + " FROM datablocks WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, id);
@@ -82,6 +89,7 @@ public class DatabaseDatablock {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -96,7 +104,8 @@ public class DatabaseDatablock {
   public static Long[] getNumBytesAndStamp(final long blockId) {
     Long[] result = new Long[2];
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT numBytes, generationStamp FROM datablocks WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -107,6 +116,7 @@ public class DatabaseDatablock {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -131,13 +141,15 @@ public class DatabaseDatablock {
 
   public static void setBlockId(final long blockId, final long bid) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE datablocks SET blockId = ? WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, bid);
       pst.setLong(2, blockId);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -148,13 +160,15 @@ public class DatabaseDatablock {
 
   public static void setNumBytes(final long blockId, final long numBytes) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE datablocks SET numBytes = ? WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, numBytes);
       pst.setLong(2, blockId);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -165,13 +179,15 @@ public class DatabaseDatablock {
 
   public static void setGenerationStamp(final long blockId, final long generationStamp) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE datablocks SET generationStamp = ? WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, generationStamp);
       pst.setLong(2, blockId);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -182,13 +198,15 @@ public class DatabaseDatablock {
 
   public static void setReplication(final long blockId, final short replication) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE datablocks SET replication = ? WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, replication);
       pst.setLong(2, blockId);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -199,12 +217,14 @@ public class DatabaseDatablock {
 
   public static void delete(final long blockId) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "DELETE FROM datablocks WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -212,7 +232,8 @@ public class DatabaseDatablock {
 
   public static void delete(final long nodeId, final int index) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql =
           "DELETE FROM datablocks WHERE blockId = ("
               + "  SELECT blockId FROM inode2block WHERE id = ? and index = ?"
@@ -222,10 +243,11 @@ public class DatabaseDatablock {
       pst.setInt(2, index);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) { 
+    if (LOG.isDebugEnabled()) {
       LOG.debug("delete DateBlock/INode2Block [UPDATE]: (" + nodeId + "," + index + ")");
     }
   }
@@ -235,26 +257,31 @@ public class DatabaseDatablock {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call RemoveBlock(?)}");
         proc.setLong(1, blockId);
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) { 
+          if (LOG.isDebugEnabled()) {
             LOG.debug("removeBlock Return: " + rs.getLong(1));
           }
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
-        Connection conn = Database.getInstance().getConnection();
-        String sql = "DELETE FROM inode2block WHERE blockId = ?;"
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
+        String sql =
+            "DELETE FROM inode2block WHERE blockId = ?;"
                 + "DELETE FROM datablocks WHERE blockId = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
         pst.setLong(1, blockId);
         pst.setLong(2, blockId);
         pst.executeUpdate();
         pst.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -266,7 +293,8 @@ public class DatabaseDatablock {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call RemoveAllBlocks(?)}");
         proc.setLong(1, inodeId);
         ResultSet rs = proc.executeQuery();
@@ -277,9 +305,12 @@ public class DatabaseDatablock {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
-        Connection conn = Database.getInstance().getConnection();
-        String sql = "DELETE FROM datablocks WHERE blockId IN ("
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
+        String sql =
+            "DELETE FROM datablocks WHERE blockId IN ("
                 + "   SELECT blockId from inode2block where id = ?"
                 + ");"
                 + "DELETE FROM inode2block where id = ?;";
@@ -288,6 +319,7 @@ public class DatabaseDatablock {
         pst.setLong(2, inodeId);
         pst.executeUpdate();
         pst.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -297,7 +329,8 @@ public class DatabaseDatablock {
   public static long getTotalNumBytes(final long inodeId, final int length) {
     long size = 0;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql =
           "SELECT SUM(numBytes) FROM datablocks WHERE blockId IN ("
               + "  SELECT blockId FROM inode2block WHERE id = ? and index < ?"
@@ -311,6 +344,7 @@ public class DatabaseDatablock {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
@@ -324,13 +358,15 @@ public class DatabaseDatablock {
 
   public static void setECPolicyId(final long blockId, final byte ecPolicyId) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE datablocks SET ecPolicyId = ? WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, (int) ecPolicyId);
       pst.setLong(2, blockId);
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -342,7 +378,8 @@ public class DatabaseDatablock {
   public static byte getECPolicyId(final long blockId) {
     byte ecId = -1;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT ecPolicyId FROM datablocks WHERE blockId = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -352,6 +389,7 @@ public class DatabaseDatablock {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -364,7 +402,8 @@ public class DatabaseDatablock {
 
   public static void addStorage(final long blockId, final int index, final int blockIndex) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "INSERT INTO blockstripes(blockId, index, blockIndex) VALUES (?, ?, ?);";
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -374,6 +413,7 @@ public class DatabaseDatablock {
 
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -385,7 +425,8 @@ public class DatabaseDatablock {
   public static byte getStorageBlockIndex(final long blockId, final int index) {
     byte blockIndex = -1;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT blockIndex FROM blockstripes WHERE blockId = ? and index = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, blockId);
@@ -396,6 +437,7 @@ public class DatabaseDatablock {
       }
       rs.close();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -408,7 +450,8 @@ public class DatabaseDatablock {
   public static void setStorageBlockIndex(
       final long blockId, final int index, final byte blockIndex) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "UPDATE blockstripes SET blockIndex = ? WHERE blockId = ? and index = ?;";
       PreparedStatement pst = conn.prepareStatement(sql);
 
@@ -418,11 +461,13 @@ public class DatabaseDatablock {
 
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("setStorageBlockIndex [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
+      LOG.debug(
+          "setStorageBlockIndex [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
     }
   }
 }

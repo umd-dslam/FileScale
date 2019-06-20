@@ -31,11 +31,7 @@ public class SetPersistTokens extends VoltProcedure {
           seqnumbers[i],
           masterkeys[i]);
     }
-    VoltTable[] results = voltExecuteSQL();
-
-    if (results[0].getRowCount() < 1) {
-      return -1;
-    }
+    voltExecuteSQL();
     return 1;
   }
 }

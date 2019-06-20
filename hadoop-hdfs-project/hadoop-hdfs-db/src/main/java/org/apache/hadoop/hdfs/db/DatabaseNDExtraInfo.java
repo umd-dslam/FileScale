@@ -18,9 +18,11 @@ public class DatabaseNDExtraInfo {
 
   public DatabaseNDExtraInfo() {}
 
-  public static void setSecretManagerSummary(int currentId, int tokenSequenceNumber, int numKeys, int numTokens) {
+  public static void setSecretManagerSummary(
+      int currentId, int tokenSequenceNumber, int numKeys, int numTokens) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
@@ -29,7 +31,7 @@ public class DatabaseNDExtraInfo {
       } else {
         sql =
             "INSERT INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?) "
-          + "ON CONFLICT(id) DO UPDATE SET currentId = ?, tokenSequenceNumber = ?, numKeys = ?, numTokens = ?;";
+                + "ON CONFLICT(id) DO UPDATE SET currentId = ?, tokenSequenceNumber = ?, numKeys = ?, numTokens = ?;";
       }
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, currentId);
@@ -40,10 +42,11 @@ public class DatabaseNDExtraInfo {
         pst.setInt(5, currentId);
         pst.setInt(6, tokenSequenceNumber);
         pst.setInt(7, numKeys);
-        pst.setInt(8, numTokens);        
+        pst.setInt(8, numTokens);
       }
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -54,24 +57,27 @@ public class DatabaseNDExtraInfo {
 
   public static void setStringTableSummary(int numEntry, int maskBits) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         sql = "UPSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?);";
       } else {
-        sql = "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) "
-            + "ON CONFLICT(id) DO UPDATE SET numEntry = ?, maskBits = ?;";
+        sql =
+            "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) "
+                + "ON CONFLICT(id) DO UPDATE SET numEntry = ?, maskBits = ?;";
       }
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setInt(1, numEntry);
       pst.setInt(2, maskBits);
       if (!env.equals("VOLT")) {
         pst.setInt(3, numEntry);
-        pst.setInt(4, maskBits);        
+        pst.setInt(4, maskBits);
       }
       pst.executeUpdate();
       pst.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -83,7 +89,8 @@ public class DatabaseNDExtraInfo {
   public Pair<Integer, Integer> getStringTableSummary() {
     ImmutablePair<Integer, Integer> result = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT numEntry, maskBits FROM hdfs;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -92,6 +99,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -104,7 +112,8 @@ public class DatabaseNDExtraInfo {
   public List<Pair<Integer, String>> getStringTable(int size) {
     List<Pair<Integer, String>> result = new ArrayList<>(size);
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT id, str FROM stringtable;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -113,6 +122,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -131,7 +141,8 @@ public class DatabaseNDExtraInfo {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call SetStringTable(?, ?)}");
 
         proc.setArray(1, conn.createArrayOf("INT", ids));
@@ -145,19 +156,29 @@ public class DatabaseNDExtraInfo {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
-          String idStr = "'" + String.valueOf(ids[i]) + "'"; 
-          String str = "'" + strs[i] + "'"; 
-          sql += "INSERT INTO stringtable(id, str) "
-              +  "VALUES (" + idStr + "," + str + ") "
-              +  "ON CONFLICT(id) DO UPDATE SET str = " + str + ";";
+          String idStr = "'" + String.valueOf(ids[i]) + "'";
+          String str = "'" + strs[i] + "'";
+          sql +=
+              "INSERT INTO stringtable(id, str) "
+                  + "VALUES ("
+                  + idStr
+                  + ","
+                  + str
+                  + ") "
+                  + "ON CONFLICT(id) DO UPDATE SET str = "
+                  + str
+                  + ";";
         }
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -167,7 +188,8 @@ public class DatabaseNDExtraInfo {
   public Pair<Integer, Integer> getSecretManagerSummary() {
     ImmutablePair<Integer, Integer> result = null;
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT currentId, tokenSequenceNumber FROM hdfs;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -176,6 +198,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -187,7 +210,8 @@ public class DatabaseNDExtraInfo {
 
   public static void getDelegationKeys(List<Integer> ids, List<Long> dates, List<String> keys) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql = "SELECT id, expiryDate, key FROM delegationkeys;";
       Statement st = conn.createStatement();
       ResultSet rs = st.executeQuery(sql);
@@ -198,6 +222,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
@@ -220,7 +245,8 @@ public class DatabaseNDExtraInfo {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         CallableStatement proc = conn.prepareCall("{call SetDelegationKeys(?, ?, ?)}");
 
         proc.setArray(1, conn.createArrayOf("INT", ids));
@@ -235,22 +261,36 @@ public class DatabaseNDExtraInfo {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
-          String idStr = "'" + String.valueOf(ids[i]) + "'"; 
-          String dateStr = "'" + String.valueOf(dates[i]) + "'"; 
-          String keyStr = "'" + String.valueOf(keys[i]) + "'"; 
-          sql += "INSERT INTO delegationkeys(id, expiryDate, key) "
-              +  "VALUES (" + idStr + "," + dateStr + "," + keyStr + ") "
-              +  "ON CONFLICT(id) DO UPDATE SET expiryDate = " + dateStr + ", "
-              +  "key = " + keyStr + ";";
+          String idStr = "'" + String.valueOf(ids[i]) + "'";
+          String dateStr = "'" + String.valueOf(dates[i]) + "'";
+          String keyStr = "'" + String.valueOf(keys[i]) + "'";
+          sql +=
+              "INSERT INTO delegationkeys(id, expiryDate, key) "
+                  + "VALUES ("
+                  + idStr
+                  + ","
+                  + dateStr
+                  + ","
+                  + keyStr
+                  + ") "
+                  + "ON CONFLICT(id) DO UPDATE SET expiryDate = "
+                  + dateStr
+                  + ", "
+                  + "key = "
+                  + keyStr
+                  + ";";
         }
 
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -274,7 +314,9 @@ public class DatabaseNDExtraInfo {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
+        ;
         CallableStatement proc =
             conn.prepareCall("{call SetPersistTokens(?, ?, ?, ?, ?, ?, ?, ?)}");
 
@@ -295,36 +337,56 @@ public class DatabaseNDExtraInfo {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
       } else {
-        String sql = "DELETE FROM persisttokens;"
+        String sql =
+            "DELETE FROM persisttokens;"
                 + "INSERT INTO persisttokens(owner, renewer, realuser, issueDate, "
                 + "maxDate, expiryDate, sequenceNumber, masterKeyId) VALUES ";
         for (int i = 0; i < owners.length; ++i) {
           sql +=
               "("
-                  + "'" + owners[i] + "'"
+                  + "'"
+                  + owners[i]
+                  + "'"
                   + ","
-                  + "'" + renewers[i] + "'"
+                  + "'"
+                  + renewers[i]
+                  + "'"
                   + ","
-                  + "'" + realusers[i] + "'"
+                  + "'"
+                  + realusers[i]
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(issuedates[i]) + "'"
+                  + "'"
+                  + String.valueOf(issuedates[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(maxdates[i]) + "'"
+                  + "'"
+                  + String.valueOf(maxdates[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(expirydates[i]) + "'"
+                  + "'"
+                  + String.valueOf(expirydates[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(seqnumbers[i]) + "'"
+                  + "'"
+                  + String.valueOf(seqnumbers[i])
+                  + "'"
                   + ","
-                  + "'" + String.valueOf(masterkeys[i]) + "'"
+                  + "'"
+                  + String.valueOf(masterkeys[i])
+                  + "'"
                   + "),";
         }
         sql = sql.substring(0, sql.length() - 1) + ";";
 
-        Connection conn = Database.getInstance().getConnection();
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
         Statement st = conn.createStatement();
         st.executeUpdate(sql);
         st.close();
+        Database.getInstance().retConnection(obj);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -341,7 +403,8 @@ public class DatabaseNDExtraInfo {
       List<Long> expirydates,
       List<Long> maxdates) {
     try {
-      Connection conn = Database.getInstance().getConnection();
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      Connection conn = obj.getConnection();
       String sql =
           "SELECT owner, renewer, realuser, issueDate, maxDate, "
               + "expiryDate, sequenceNumber, masterKeyId FROM persisttokens;";
@@ -359,6 +422,7 @@ public class DatabaseNDExtraInfo {
       }
       rs.close();
       st.close();
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
