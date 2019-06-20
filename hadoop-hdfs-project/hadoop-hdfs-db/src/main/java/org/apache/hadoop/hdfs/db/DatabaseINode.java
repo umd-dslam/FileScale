@@ -548,17 +548,12 @@ public class DatabaseINode {
   public static boolean addChild(final long childId, final String childName, final long parentId) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "";
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        CallableStatement proc = conn.prepareCall("{call AddChild(?, ?, ?)}");
-        proc.setLong(1, childId);
-        proc.setString(2, childName);
-        proc.setLong(3, parentId);
-        proc.executeQuery();
+        obj.getVoltClient().callProcedure("AddChild", childId, childName, parentId);
       } else {
-        sql =
+        Connection conn = obj.getConnection();
+        String sql =
             "INSERT INTO inodes(parent, name, id) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET parent = ?, name = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
         pst.setLong(1, parentId);
