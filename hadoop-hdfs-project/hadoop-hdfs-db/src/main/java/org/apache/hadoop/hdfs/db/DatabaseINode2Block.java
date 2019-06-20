@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.voltdb.*;
 
 public class DatabaseINode2Block {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode2Block.class);
@@ -169,11 +170,15 @@ public class DatabaseINode2Block {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetNumBlocks", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          num = result.getInt(0);
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetNumBlocks", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            num = (int) result.getLong(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -388,7 +393,11 @@ public class DatabaseINode2Block {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("DeleteViaBcId", nodeId);
+        try {
+          obj.getVoltClient().callProcedure("DeleteViaBcId", nodeId);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "DELETE FROM inode2block WHERE id = ?;";
@@ -399,7 +408,7 @@ public class DatabaseINode2Block {
       }
       Database.getInstance().retConnection(obj);
       if (LOG.isDebugEnabled()) {
-        LOG.debug("deleteViaBcId: (" + nodeId + "," + sql + ")");
+        LOG.debug("deleteViaBcId: (" + nodeId + ")");
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());

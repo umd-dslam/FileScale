@@ -147,9 +147,13 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient()
-            .callProcedure(
-                "InsertINode", id, parent, name, accessTime, modificationTime, permission, header);
+        try {
+          obj.getVoltClient()
+              .callProcedure(
+                  "InsertINode", id, pid, name, accessTime, modificationTime, permission, header);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         String sql =
             "INSERT INTO inodes("
@@ -200,7 +204,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("SetAccessTime", id, accessTime);
+        try {
+          obj.getVoltClient().callProcedure("SetAccessTime", id, accessTime);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "UPDATE inodes SET accessTime = ? WHERE id = ?;";
@@ -224,7 +232,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("SetModificationTime", id, modificationTime);
+        try {
+          obj.getVoltClient().callProcedure("SetModificationTime", id, modificationTime);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "UPDATE inodes SET modificationTime = ? WHERE id = ?;";
@@ -248,7 +260,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("UpdateModificationTime", id, childId);
+        try {
+          obj.getVoltClient().callProcedure("UpdateModificationTime", id, childId);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql =
@@ -274,7 +290,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("SetPermission", id, permission);
+        try {
+          obj.getVoltClient().callProcedure("SetPermission", id, permission);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "UPDATE inodes SET permission = ? WHERE id = ?;";
@@ -298,7 +318,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("SetHeader", id, header);
+        try {
+          obj.getVoltClient().callProcedure("SetHeader", id, header);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "UPDATE inodes SET header = ? WHERE id = ?;";
@@ -322,7 +346,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("SetParent", id, parent);
+        try {
+          obj.getVoltClient().callProcedure("SetParent", id, parent);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "UPDATE inodes SET parent = ? WHERE id = ?;";
@@ -346,7 +374,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("SetName", id, name);
+        try {
+          obj.getVoltClient().callProcedure("SetName", id, name);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "UPDATE inodes SET name = ? WHERE id = ?;";
@@ -371,11 +403,15 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetAccessTime", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          res = result.getLong(0);
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetAccessTime", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -406,12 +442,16 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results =
-            obj.getVoltClient().callProcedure("GetModificationTime", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          res = result.getLong(0);
+        try {
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("GetModificationTime", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -442,11 +482,15 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetHeader", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          res = result.getLong(0);
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetHeader", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -477,11 +521,15 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetPermission", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          res = result.getLong(0);
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetPermission", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -512,11 +560,15 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetParent", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          res = result.getLong(0);
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetParent", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -547,11 +599,15 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetName", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          res = result.getString(0);
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetName", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getString(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -609,12 +665,16 @@ public class DatabaseINode {
     try {
       // call a stored procedure
       DatabaseConnection obj = Database.getInstance().getConnection();
-      VoltTable[] results =
-          obj.getVoltClient().callProcedure("GetChildIdsByPath", id, components).getResults();
-      VoltTable result = results[0];
-      result.resetRowPosition();
-      while (result.advanceRow()) {
-        res.add(result.getLong(0));
+      try {
+        VoltTable[] results =
+            obj.getVoltClient().callProcedure("GetChildIdsByPath", id, components).getResults();
+        VoltTable result = results[0];
+        result.resetRowPosition();
+        while (result.advanceRow()) {
+          res.add(result.getLong(0));
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       Database.getInstance().retConnection(obj);
     } catch (Exception e) {
@@ -633,7 +693,11 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        obj.getVoltClient().callProcedure("RemoveChild", id);
+        try {
+          obj.getVoltClient().callProcedure("RemoveChild", id);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         // delete file/directory recusively
@@ -799,12 +863,16 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
 
       if (env.equals("VOLT")) {
-        VoltTable[] results =
-            obj.getVoltClient().callProcedure("GetChildrenIds", parentId).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          childIds.add(result.getLong(0));
+        try {
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("GetChildrenIds", parentId).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            childIds.add(result.getLong(0));
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
@@ -837,7 +905,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("AddChild", childId, childName, parentId);
+        try {
+          obj.getVoltClient().callProcedure("AddChild", childId, childName, parentId);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql =
@@ -914,7 +986,11 @@ public class DatabaseINode {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
-        obj.getVoltClient().callProcedure("InsertUc", id, clientName, clientMachine);
+        try {
+          obj.getVoltClient().callProcedure("InsertUc", id, clientName, clientMachine);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       } else {
         Connection conn = obj.getConnection();
         String sql = "INSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);";
@@ -964,11 +1040,16 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
 
       if (env.equals("VOLT")) {
-        VoltTable[] results = obj.getVoltClient().callProcedure("GetUcClientName", id).getResults();
-        VoltTable result = results[0];
-        result.resetRowPosition();
-        while (result.advanceRow()) {
-          name = result.getString(0);
+        try {
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("GetUcClientName", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            name = result.getString(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
       } else {
         Connection conn = obj.getConnection();
