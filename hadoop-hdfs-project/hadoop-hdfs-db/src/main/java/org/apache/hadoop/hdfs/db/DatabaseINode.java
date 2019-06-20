@@ -318,7 +318,27 @@ public class DatabaseINode {
   }
 
   public static void setParent(final long id, final long parent) {
-    setAttribute(id, "parent", parent);
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("SetParent", id, parent);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "UPDATE inodes SET parent = ? WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, parent);
+        pst.setLong(2, id);
+        pst.executeUpdate();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("parent [UPDATE]: (" + id + "," + parent + ")");
+    }
   }
 
   public static void setName(final long id, final String name) {
