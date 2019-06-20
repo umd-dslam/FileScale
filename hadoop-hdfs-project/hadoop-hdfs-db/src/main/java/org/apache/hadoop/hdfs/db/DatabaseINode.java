@@ -254,7 +254,27 @@ public class DatabaseINode {
   }
 
   public static void setHeader(final long id, final long header) {
-    setAttribute(id, "header", header);
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("SetHeader", id, header);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "UPDATE inodes SET header = ? WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, header);
+        pst.setLong(2, id);
+        pst.executeUpdate();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("header [UPDATE]: (" + id + "," + header + ")");
+    }
   }
 
   public static void setParent(final long id, final long parent) {
@@ -303,7 +323,7 @@ public class DatabaseINode {
     }
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug(attrName + " [GET]: (" + id + "," + result + ")");
+      LOG.debug("header [GET]: (" + id + "," + res + ")");
     }
     return res;
   }
