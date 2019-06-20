@@ -405,7 +405,6 @@ public class DatabaseNDExtraInfo {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       Connection conn = obj.getConnection();
-      ;
       String sql =
           "SELECT owner, renewer, realuser, issueDate, maxDate, "
               + "expiryDate, sequenceNumber, masterKeyId FROM persisttokens;";
