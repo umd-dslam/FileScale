@@ -10,7 +10,7 @@ public class SetDelegationKeys extends VoltProcedure {
     for (int i = 0; i < ids.length; ++i) {
       voltQueueSQL(sql, ids[i], dates[i], keys[i]);
     }
-    results = voltExecuteSQL();
+    voltExecuteSQL();
     return 1;
   }
 }
