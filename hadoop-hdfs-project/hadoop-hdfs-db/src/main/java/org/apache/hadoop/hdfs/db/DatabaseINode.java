@@ -776,16 +776,28 @@ public class DatabaseINode {
     String name = null;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "SELECT clientName FROM inodeuc WHERE id = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, id);
-      ResultSet rs = pst.executeQuery();
-      while (rs.next()) {
-        name = rs.getString(1);
+      String env = System.getenv("DATABASE");
+
+      if (env.equals("VOLT")) {
+        VoltTable[] results =
+            obj.getVoltClient().callProcedure("GetUcClientName", id).getResults();
+        VoltTable result = results[0];
+        result.resetRowPosition();
+        while (result.advanceRow()) {
+          name = result.getString(0);
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "SELECT clientName FROM inodeuc WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          name = rs.getString(1);
+        }
+        rs.close();
+        pst.close();
       }
-      rs.close();
-      pst.close();
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
