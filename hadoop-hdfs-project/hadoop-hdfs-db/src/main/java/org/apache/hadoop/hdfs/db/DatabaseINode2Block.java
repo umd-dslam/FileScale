@@ -167,16 +167,27 @@ public class DatabaseINode2Block {
     int num = 0;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "SELECT COUNT(DISTINCT blockId) FROM inode2block WHERE id = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, id);
-      ResultSet rs = pst.executeQuery();
-      while (rs.next()) {
-        num = rs.getInt(1);
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        VoltTable[] results =
+            obj.getVoltClient().callProcedure("GetNumBlocks", id).getResults();
+        VoltTable result = results[0];
+        result.resetRowPosition();
+        while (result.advanceRow()) {
+          num = result.getInt(0);
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "SELECT COUNT(DISTINCT blockId) FROM inode2block WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          num = rs.getInt(1);
+        }
+        rs.close();
+        pst.close();
       }
-      rs.close();
-      pst.close();
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
