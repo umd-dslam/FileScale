@@ -228,7 +228,27 @@ public class DatabaseINode {
   }
 
   public static void setPermission(final long id, final long permission) {
-    setAttribute(id, "permission", permission);
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("SetPermission", id, permission);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "UPDATE inodes SET permission = ? WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, permission);
+        pst.setLong(2, id);
+        pst.executeUpdate();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("permission [UPDATE]: (" + id + "," + permission + ")");
+    }
   }
 
   public static void setHeader(final long id, final long header) {
@@ -320,24 +340,12 @@ public class DatabaseINode {
 
   public static void removeChild(final long id) {
     try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
-        DatabaseConnection obj = Database.getInstance().getConnection();
-        Connection conn = obj.getConnection();
-        CallableStatement proc = conn.prepareCall("{call RemoveChild(?)}");
-        proc.setLong(1, id);
-        ResultSet rs = proc.executeQuery();
-        while (rs.next()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("removeChild Return: " + rs.getLong(1));
-          }
-        }
-        rs.close();
-        proc.close();
-        Database.getInstance().retConnection(obj);
+        obj.getVoltClient().callProcedure("RemoveChild", id);
       } else {
-        DatabaseConnection obj = Database.getInstance().getConnection();
         Connection conn = obj.getConnection();
         // delete file/directory recusively
         String sql =
@@ -354,8 +362,8 @@ public class DatabaseINode {
         pst.setLong(1, id);
         pst.executeUpdate();
         pst.close();
-        Database.getInstance().retConnection(obj);
       }
+      Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
