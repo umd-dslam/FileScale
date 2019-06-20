@@ -387,12 +387,17 @@ public class DatabaseINode2Block {
   public static void deleteViaBcId(final long nodeId) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "DELETE FROM inode2block WHERE id = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, nodeId);
-      pst.executeUpdate();
-      pst.close();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        obj.getVoltClient().callProcedure("DeleteViaBcId", nodeId);
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "DELETE FROM inode2block WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, nodeId);
+        pst.executeUpdate();
+        pst.close();
+      }
       Database.getInstance().retConnection(obj);
       if (LOG.isDebugEnabled()) {
         LOG.debug("deleteViaBcId: (" + nodeId + "," + sql + ")");
