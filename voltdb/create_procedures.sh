@@ -1,7 +1,7 @@
 set -xe
 
 ## declare an array variable
-declare -a VOLTDB_PROCEDURES=("VoltDBStoredProcedureTest" "GetChildIdsByPath" "SetPersistTokens" "SetDelegationKeys" "SetStringTable" "RemoveChild" "RemoveBlock" "RemoveAllBlocks" "InsertINode2Block" "InsertXAttrs")
+VOLTDB_PROCEDURES=$(ls | grep java | cut -f 1 -d '.')
 
 cat <<EOF
 ============================================
@@ -13,7 +13,7 @@ EOF
 
 EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd | sed '1,/^--- User Procedures ------------------------------------------$/d' | awk '{print $1}')
 
-for procedure in ${VOLTDB_PROCEDURES[@]}
+for procedure in $VOLTDB_PROCEDURES
 do
     if [[ $EXISTS_PRCEDURES == *"$procedure"* ]];
     then
@@ -42,7 +42,7 @@ Creating New Stored Procedures ...
 EOF
 
 
-for procedure in ${VOLTDB_PROCEDURES[@]}
+for procedure in $VOLTDB_PROCEDURES
 do
     echo "CREATE PROCEDURE FROM CLASS $procedure;" | sqlcmd;
 done
