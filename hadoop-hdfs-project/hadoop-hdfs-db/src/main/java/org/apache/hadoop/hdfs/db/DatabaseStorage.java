@@ -29,8 +29,8 @@ public class DatabaseStorage {
       pst.executeUpdate();
       pst.close();
       Database.getInstance().retConnection(obj);
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("insertStorage: (" + blockId + "," + idx + "," + storageId + "): " + sql);
+      if (LOG.isInfoEnabled()) {
+        LOG.info("insertStorage: (" + blockId + "," + idx + "," + storageId + "): " + sql);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -56,8 +56,8 @@ public class DatabaseStorage {
       System.out.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getNumStorages: (" + blockId + "," + num + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getNumStorages: (" + blockId + "," + num + ")");
     }
 
     return num;
@@ -82,8 +82,8 @@ public class DatabaseStorage {
       System.out.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getStorageIds: (" + blockId + "," + storageIds + "): ");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getStorageIds: (" + blockId + "," + storageIds + "): ");
     }
 
     return storageIds;
@@ -105,8 +105,8 @@ public class DatabaseStorage {
       rs.close();
       pst.close();
       Database.getInstance().retConnection(obj);
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("getStorageId: (" + blockId + "," + idx + "," + storageId + "): " + sql);
+      if (LOG.isInfoEnabled()) {
+        LOG.info("getStorageId: (" + blockId + "," + idx + "," + storageId + "): " + sql);
       }
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
@@ -131,8 +131,8 @@ public class DatabaseStorage {
       pst.executeUpdate();
       pst.close();
       Database.getInstance().retConnection(obj);
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("setStorage: (" + storageId + "," + blockId + "," + idx + "): " + sql);
+      if (LOG.isInfoEnabled()) {
+        LOG.info("setStorage: (" + storageId + "," + blockId + "," + idx + "): " + sql);
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
