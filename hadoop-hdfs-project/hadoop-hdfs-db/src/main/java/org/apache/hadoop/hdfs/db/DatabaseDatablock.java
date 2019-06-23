@@ -34,8 +34,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("checkBlockExistence [GET]: (" + blkid + "," + exist + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("checkBlockExistence [GET]: (" + blkid + "," + exist + ")");
     }
     return exist;
   }
@@ -63,8 +63,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("insertBlock [UPDATE]: (" + blkid + ", " + len + ", " + genStamp + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("insertBlock [UPDATE]: (" + blkid + ", " + len + ", " + genStamp + ")");
     }
   }
 
@@ -94,8 +94,8 @@ public class DatabaseDatablock {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(attrName + " [GET]: (" + id + "," + result + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info(attrName + " [GET]: (" + id + "," + result + ")");
     }
 
     return result;
@@ -121,8 +121,8 @@ public class DatabaseDatablock {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getNumBytesAndStamp [GET]: " + blockId);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getNumBytesAndStamp [GET]: " + blockId);
     }
     return result;
   }
@@ -153,8 +153,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setBlockId [UPDATE]: (" + blockId + "," + bid + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setBlockId [UPDATE]: (" + blockId + "," + bid + ")");
     }
   }
 
@@ -172,8 +172,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setNumBytes [UPDATE]: (" + blockId + "," + numBytes + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setNumBytes [UPDATE]: (" + blockId + "," + numBytes + ")");
     }
   }
 
@@ -191,8 +191,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("generationStamp [UPDATE]: (" + blockId + "," + generationStamp + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("generationStamp [UPDATE]: (" + blockId + "," + generationStamp + ")");
     }
   }
 
@@ -210,8 +210,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setReplication [UPDATE]: (" + blockId + "," + replication + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setReplication [UPDATE]: (" + blockId + "," + replication + ")");
     }
   }
 
@@ -247,8 +247,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("delete DateBlock/INode2Block [UPDATE]: (" + nodeId + "," + index + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("delete DateBlock/INode2Block [UPDATE]: (" + nodeId + "," + index + ")");
     }
   }
 
@@ -263,8 +263,8 @@ public class DatabaseDatablock {
         proc.setLong(1, blockId);
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("removeBlock Return: " + rs.getLong(1));
+          if (LOG.isInfoEnabled()) {
+            LOG.info("removeBlock Return: " + rs.getLong(1));
           }
         }
         rs.close();
@@ -299,8 +299,8 @@ public class DatabaseDatablock {
         proc.setLong(1, inodeId);
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("removeAllBlocks Return: " + rs.getLong(1));
+          if (LOG.isInfoEnabled()) {
+            LOG.info("removeAllBlocks Return: " + rs.getLong(1));
           }
         }
         rs.close();
@@ -349,8 +349,8 @@ public class DatabaseDatablock {
       System.out.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getTotalNumBytes: (" + inodeId + "," + size + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getTotalNumBytes: (" + inodeId + "," + size + ")");
     }
 
     return size;
@@ -370,8 +370,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setECPolicyId [UPDATE]: (" + blockId + "," + ecPolicyId + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setECPolicyId [UPDATE]: (" + blockId + "," + ecPolicyId + ")");
     }
   }
 
@@ -394,8 +394,8 @@ public class DatabaseDatablock {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getECPolicyId [GET]: (" + blockId + "," + ecId + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getECPolicyId [GET]: (" + blockId + "," + ecId + ")");
     }
     return ecId;
   }
@@ -417,8 +417,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("addStorage [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("addStorage [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
     }
   }
 
@@ -441,8 +441,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getStorageBlockIndex [GET]: (" + blockId + "," + index + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getStorageBlockIndex [GET]: (" + blockId + "," + index + ")");
     }
     return blockIndex;
   }
@@ -465,8 +465,8 @@ public class DatabaseDatablock {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (LOG.isInfoEnabled()) {
+      LOG.info(
           "setStorageBlockIndex [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
     }
   }

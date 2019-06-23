@@ -100,8 +100,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(attrName + " [UPDATE]: (" + id + "," + attrValue + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info(attrName + " [UPDATE]: (" + id + "," + attrValue + ")");
     }
   }
 
@@ -128,8 +128,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(attrName + " [GET]: (" + id + "," + result + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info(attrName + " [GET]: (" + id + "," + result + ")");
     }
 
     return result;
@@ -194,8 +194,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("insertInode: (" + id + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("insertInode: (" + id + ")");
     }
   }
 
@@ -222,8 +222,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("accessTime [UPDATE]: (" + id + "," + accessTime + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("accessTime [UPDATE]: (" + id + "," + accessTime + ")");
     }
   }
 
@@ -250,8 +250,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("modificationTime [UPDATE]: (" + id + "," + modificationTime + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("modificationTime [UPDATE]: (" + id + "," + modificationTime + ")");
     }
   }
 
@@ -280,8 +280,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("updateModificationTime [UPDATE]: (" + id + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("updateModificationTime [UPDATE]: (" + id + ")");
     }
   }
 
@@ -308,8 +308,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("permission [UPDATE]: (" + id + "," + permission + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("permission [UPDATE]: (" + id + "," + permission + ")");
     }
   }
 
@@ -336,8 +336,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("header [UPDATE]: (" + id + "," + header + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("header [UPDATE]: (" + id + "," + header + ")");
     }
   }
 
@@ -364,8 +364,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("parent [UPDATE]: (" + id + "," + parent + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("parent [UPDATE]: (" + id + "," + parent + ")");
     }
   }
 
@@ -392,8 +392,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("name [UPDATE]: (" + id + "," + name + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("name [UPDATE]: (" + id + "," + name + ")");
     }
   }
 
@@ -430,8 +430,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("accessTime [GET]: (" + id + "," + res + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("accessTime [GET]: (" + id + "," + res + ")");
     }
     return res;
   }
@@ -470,8 +470,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("modificationTime [GET]: (" + id + "," + res + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("modificationTime [GET]: (" + id + "," + res + ")");
     }
     return res;
   }
@@ -509,8 +509,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("header [GET]: (" + id + "," + res + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("header [GET]: (" + id + "," + res + ")");
     }
     return res;
   }
@@ -548,8 +548,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("permission [GET]: (" + id + "," + res + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("permission [GET]: (" + id + "," + res + ")");
     }
     return res;
   }
@@ -587,8 +587,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("parent [GET]: (" + id + "," + res + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("parent [GET]: (" + id + "," + res + ")");
     }
     return res;
   }
@@ -626,8 +626,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("name [GET]: (" + id + "," + res + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("name [GET]: (" + id + "," + res + ")");
     }
     return res;
   }
@@ -653,8 +653,8 @@ public class DatabaseINode {
       System.out.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getChild: (" + childId + "," + parentId + "," + childName + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getChild: (" + childId + "," + parentId + "," + childName + ")");
     }
 
     return childId;
@@ -680,8 +680,8 @@ public class DatabaseINode {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getChildIdsByPath: " + id);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getChildIdsByPath: " + id);
     }
 
     return res;
@@ -720,8 +720,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("removeChild: " + id);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("removeChild: " + id);
     }
   }
 
@@ -749,8 +749,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getPathComponents: " + childId);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getPathComponents: " + childId);
     }
     return names;
   }
@@ -784,8 +784,8 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getParentIdsAndPaths: " + childId);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getParentIdsAndPaths: " + childId);
     }
 
     if (ids.size() != 0 || names.size() != 0) {
@@ -820,8 +820,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getParentIds: " + childId);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getParentIds: " + childId);
     }
     return parents;
   }
@@ -850,8 +850,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getChildIds: " + childId);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getChildIds: " + childId);
     }
     return childIds;
   }
@@ -893,8 +893,8 @@ public class DatabaseINode {
       System.out.println(ex.getMessage());
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getChildrenIds: (" + childIds + "," + parentId + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getChildrenIds: (" + childIds + "," + parentId + ")");
     }
 
     return childIds;
@@ -923,8 +923,8 @@ public class DatabaseINode {
         pst.executeUpdate();
         pst.close();
       }
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("addChild: [OK] UPSERT (" + childId + "," + parentId + "," + childName + ")");
+      if (LOG.isInfoEnabled()) {
+        LOG.info("addChild: [OK] UPSERT (" + childId + "," + parentId + "," + childName + ")");
       }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
@@ -951,8 +951,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getINodesNum [GET]: (" + num + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getINodesNum [GET]: (" + num + ")");
     }
 
     return num;
@@ -975,8 +975,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getLastInodeId [GET]: (" + num + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getLastInodeId [GET]: (" + num + ")");
     }
     return num;
   }
@@ -1005,8 +1005,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("insertUc [UPDATE]: (" + id + ", " + clientName + ", " + clientMachine + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("insertUc [UPDATE]: (" + id + ", " + clientName + ", " + clientMachine + ")");
     }
   }
 
@@ -1067,8 +1067,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getUcClientName [GET]: (" + id + ", " + name + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getUcClientName [GET]: (" + id + ", " + name + ")");
     }
     return name;
   }
@@ -1087,8 +1087,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setUcClientName [UPDATE]: (" + id + ", " + clientName + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setUcClientName [UPDATE]: (" + id + ", " + clientName + ")");
     }
   }
 
@@ -1110,8 +1110,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getUcClientMachine [GET]: (" + id + ", " + name + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getUcClientMachine [GET]: (" + id + ", " + name + ")");
     }
     return name;
   }
@@ -1129,8 +1129,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setUcClientMachine [UPDATE]: (" + id + ", " + clientMachine + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setUcClientMachine [UPDATE]: (" + id + ", " + clientMachine + ")");
     }
   }
 
@@ -1147,8 +1147,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("removeUc [UPDATE]: (" + id + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("removeUc [UPDATE]: (" + id + ")");
     }
   }
 
@@ -1170,8 +1170,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrValue [GET]: (" + id + ", " + value + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getXAttrValue [GET]: (" + id + ", " + value + ")");
     }
     return value;
   }
@@ -1194,8 +1194,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrName [GET]: (" + id + ", " + name + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getXAttrName [GET]: (" + id + ", " + name + ")");
     }
     return name;
   }
@@ -1218,8 +1218,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrNameSpace [GET]: (" + id + ", " + ns + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getXAttrNameSpace [GET]: (" + id + ", " + ns + ")");
     }
     return ns;
   }
@@ -1266,8 +1266,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getXAttrs [GET]: (" + id + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getXAttrs [GET]: (" + id + ")");
     }
     return xinfo;
   }
@@ -1312,8 +1312,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (LOG.isInfoEnabled()) {
+      LOG.info(
           "insertXAttr [UPDATE]: (" + id + ", " + namespace + ", " + name + ", " + value + ")");
     }
   }
@@ -1331,8 +1331,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("removeXAttr [UPDATE]: (" + id + ")");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("removeXAttr [UPDATE]: (" + id + ")");
     }
   }
 
@@ -1351,8 +1351,8 @@ public class DatabaseINode {
             3, conn.createArrayOf("VARCHAR", namevals.toArray(new String[namevals.size()])));
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("insertXAttrs Return: " + rs.getLong(1));
+          if (LOG.isInfoEnabled()) {
+            LOG.info("insertXAttrs Return: " + rs.getLong(1));
           }
         }
         rs.close();
@@ -1379,8 +1379,8 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("insertXAttrs: " + id);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("insertXAttrs: " + id);
     }
   }
 }

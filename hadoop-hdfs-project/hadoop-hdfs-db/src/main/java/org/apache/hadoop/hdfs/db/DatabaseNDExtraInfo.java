@@ -50,8 +50,8 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setSecretManagerSummary [SET]");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setSecretManagerSummary [SET]");
     }
   }
 
@@ -81,8 +81,8 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("setStringTableSummary [SET]");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setStringTableSummary [SET]");
     }
   }
 
@@ -103,8 +103,8 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getStringTableSummary [GET]");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getStringTableSummary [GET]");
     }
     return result;
   }
@@ -126,8 +126,8 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getStringTable [GET]: " + size);
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getStringTable [GET]: " + size);
     }
     return result;
   }
@@ -150,8 +150,8 @@ public class DatabaseNDExtraInfo {
 
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("setStringTable Insertion Return: " + rs.getLong(1));
+          if (LOG.isInfoEnabled()) {
+            LOG.info("setStringTable Insertion Return: " + rs.getLong(1));
           }
         }
         rs.close();
@@ -202,8 +202,8 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getSecretManagerSummary [GET]");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getSecretManagerSummary [GET]");
     }
     return result;
   }
@@ -226,8 +226,8 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getDelegationKeys [GET]");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getDelegationKeys [GET]");
     }
   }
 
@@ -255,8 +255,8 @@ public class DatabaseNDExtraInfo {
 
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("setDelegationKeys Insertion Return: " + rs.getLong(1));
+          if (LOG.isInfoEnabled()) {
+            LOG.info("setDelegationKeys Insertion Return: " + rs.getLong(1));
           }
         }
         rs.close();
@@ -331,8 +331,8 @@ public class DatabaseNDExtraInfo {
 
         ResultSet rs = proc.executeQuery();
         while (rs.next()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("setPersistTokens Insertion Return: " + rs.getLong(1));
+          if (LOG.isInfoEnabled()) {
+            LOG.info("setPersistTokens Insertion Return: " + rs.getLong(1));
           }
         }
         rs.close();
@@ -426,8 +426,8 @@ public class DatabaseNDExtraInfo {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("getPersistTokens [GET]");
+    if (LOG.isInfoEnabled()) {
+      LOG.info("getPersistTokens [GET]");
     }
   }
 }
