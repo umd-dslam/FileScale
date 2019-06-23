@@ -306,17 +306,31 @@ public class DatabaseINode2Block {
     List<Long> blockIds = new ArrayList<>();
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "SELECT blockId FROM inode2block WHERE id = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, inodeId);
-      ResultSet rs = pst.executeQuery();
-      while (rs.next()) {
-        long id = rs.getLong(1);
-        blockIds.add(id);
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetBlockIds", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            blockIds.add(result.getLong(0));
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "SELECT blockId FROM inode2block WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, inodeId);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          long id = rs.getLong(1);
+          blockIds.add(id);
+        }
+        rs.close();
+        pst.close();
       }
-      rs.close();
-      pst.close();
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
