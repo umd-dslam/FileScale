@@ -1017,7 +1017,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          VoltTable[] results = obj.getVoltClient().callProcedure("CheckUCExistence", id).getResults();
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("CheckUCExistence", id).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -1295,7 +1296,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          VoltTable[] results = obj.getVoltClient().callProcedure("CheckXAttrExistence", id).getResults();
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("CheckXAttrExistence", id).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {

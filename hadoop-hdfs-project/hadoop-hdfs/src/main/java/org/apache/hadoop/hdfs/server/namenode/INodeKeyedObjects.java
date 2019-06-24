@@ -1,8 +1,9 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.concurrent.TimeUnit;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class INodeKeyedObjects {
   private static INodeKeyedObjects instance;
@@ -10,6 +11,8 @@ public class INodeKeyedObjects {
 
   private INodeFileKeyedObjectPool filePool;
   private INodeDirectoryKeyedObjectPool directoryPool;
+
+  static final Logger LOG = LoggerFactory.getLogger(INodeKeyedObjects.class);
 
   INodeKeyedObjects() {
     try {
@@ -89,16 +92,25 @@ public class INodeKeyedObjects {
     }
   }
 
-  //--------------------------------------------------------
-  // caffeine cache 
+  // --------------------------------------------------------
+  // caffeine cache
 
   public static Cache<Long, INode> getCache() {
     if (cache == null) {
-      cache = Caffeine.newBuilder()
-      .maximumSize(10_000)
-      .build();
+      // https://github.com/ben-manes/caffeine/wiki/Removal
+      cache =
+          Caffeine.newBuilder()
+              .removalListener(
+                  (id, inode, cause) -> {
+                    if (cause.wasEvicted()) {
+                      LOG.info("Cache Evicted: INode=%s", id);
+                      // stored procedure: update inode in db
+                      // ...
+                    }
+                  })
+              .maximumSize(10_000)
+              .build();
     }
     return cache;
   }
-
 }
