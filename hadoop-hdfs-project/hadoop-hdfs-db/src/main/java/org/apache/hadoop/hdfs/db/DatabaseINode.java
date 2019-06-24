@@ -1331,15 +1331,24 @@ public class DatabaseINode {
       final long id, final int namespace, final String name, final String value) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "INSERT INTO inodexattrs(id, namespace, name, value) VALUES (?, ?, ?, ?);";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, id);
-      pst.setInt(2, namespace);
-      pst.setString(3, name);
-      pst.setString(4, value);
-      pst.executeUpdate();
-      pst.close();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure("InsertXAttr", id, namespace, name, value);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "INSERT INTO inodexattrs(id, namespace, name, value) VALUES (?, ?, ?, ?);";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        pst.setInt(2, namespace);
+        pst.setString(3, name);
+        pst.setString(4, value);
+        pst.executeUpdate();
+        pst.close();
+      }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
