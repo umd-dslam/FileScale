@@ -641,7 +641,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (setModTime) {
       // update modification time of the parent directory
       // updateModificationTime(node.getModificationTime(), latestSnapshotId);
-      DatabaseINode.updateModificationTime(getId(), node.getId());
+      long mtime = node.getModificationTime();
+      setModificationTime(mtime);
+      CompletableFuture.runAsync(() -> {
+        DatabaseINode.setModificationTime(getId(), mtime);
+      }, Database.getInstance().getExecutorService());
     }
     return true;
   }
