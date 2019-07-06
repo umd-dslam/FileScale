@@ -162,9 +162,24 @@ public abstract class INodeWithAdditionalFields extends INode {
         modificationTime, accessTime, header); 
   }
 
+  public void updateINode(long header) {
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.insertInode(id,
+      getParentId(),
+      name != null && name.length > 0 ? DFSUtil.bytes2String(name) : null,
+      accessTime, modificationTime, permission, header);
+    }, Database.getInstance().getExecutorService());      
+  }
+
   INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
       long modificationTime, long accessTime, long header) {
     this(null, id, name, PermissionStatusFormat.toLong(permissions),
+        modificationTime, accessTime, header);
+  }
+
+  INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
+      long modificationTime, long accessTime, long header, INodeDirectory parent) {
+    this(parent, id, name, PermissionStatusFormat.toLong(permissions),
         modificationTime, accessTime, header);
   }
 
@@ -222,23 +237,23 @@ public abstract class INodeWithAdditionalFields extends INode {
   public final void setLocalName(byte[] name) {
     if (name != null) {
       this.name = name;
-      CompletableFuture.runAsync(() -> {
-        DatabaseINode.setName(getId(), DFSUtil.bytes2String(name));
-      }, Database.getInstance().getExecutorService());
+      // CompletableFuture.runAsync(() -> {
+      //   DatabaseINode.setName(getId(), DFSUtil.bytes2String(name));
+      // }, Database.getInstance().getExecutorService());
     } else {
       this.name = null;
-      CompletableFuture.runAsync(() -> {
-        DatabaseINode.setName(getId(), null);
-      }, Database.getInstance().getExecutorService());
+      // CompletableFuture.runAsync(() -> {
+      //   DatabaseINode.setName(getId(), null);
+      // }, Database.getInstance().getExecutorService());
     }
   }
 
   /** Clone the {@link PermissionStatus}. */
   final void clonePermissionStatus(INodeWithAdditionalFields that) {
     permission = that.getPermissionLong();
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setPermission(getId(), permission);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setPermission(getId(), permission);
+    // }, Database.getInstance().getExecutorService());
   }
 
   @Override
@@ -249,16 +264,16 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   private final void setPermission(long perm) {
     permission = perm; 
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setPermission(getId(), permission);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setPermission(getId(), permission);
+    // }, Database.getInstance().getExecutorService());
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
     permission = f.BITS.combine(n, getPermissionLong());
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setPermission(getId(), permission);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setPermission(getId(), permission);
+    // }, Database.getInstance().getExecutorService());
   }
 
   @Override
@@ -351,17 +366,17 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   final void cloneModificationTime(INodeWithAdditionalFields that) {
     modificationTime = that.getModificationTime(); 
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setModificationTime(getId(), modificationTime);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setModificationTime(getId(), modificationTime);
+    // }, Database.getInstance().getExecutorService());
   }
 
   @Override
   public final void setModificationTime(long modificationTime) {
     this.modificationTime = modificationTime;
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setModificationTime(getId(), modificationTime);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setModificationTime(getId(), modificationTime);
+    // }, Database.getInstance().getExecutorService());
   }
 
   @Override
@@ -382,9 +397,9 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final void setAccessTime(long accessTime) {
     this.accessTime = accessTime;
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setAccessTime(this.getId(), accessTime);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setAccessTime(this.getId(), accessTime);
+    // }, Database.getInstance().getExecutorService());
   }
 
   protected void addFeature(Feature f) {

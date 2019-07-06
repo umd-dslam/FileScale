@@ -24,6 +24,8 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Feature for under-construction file.
  */
@@ -42,11 +44,15 @@ public class FileUnderConstructionFeature implements INode.Feature {
   public FileUnderConstructionFeature() {}
 
   public FileUnderConstructionFeature(final long id, final String clientName, final String clientMachine) {
-    DatabaseINode.insertUc(id, clientName, clientMachine);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.insertUc(id, clientName, clientMachine);
+    }, Database.getInstance().getExecutorService());
   }
 
   public static void createFileUnderConstruction(final long id, final String clientName, final String clientMachine) {
-    DatabaseINode.insertUc(id, clientName, clientMachine);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.insertUc(id, clientName, clientMachine);
+    }, Database.getInstance().getExecutorService());
   }
 
   public static Boolean isFileUnderConstruction(final long id) {
@@ -58,7 +64,9 @@ public class FileUnderConstructionFeature implements INode.Feature {
   }
 
   public static void setClientName(final long id, String clientName) {
-    DatabaseINode.setUcClientName(id, clientName);
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.setUcClientName(id, clientName);
+    }, Database.getInstance().getExecutorService());
   }
 
   public static String getClientMachine(final long id) {

@@ -70,7 +70,7 @@ public class Database {
         pool.setMaxTotal(Integer.parseInt(num));
       }
 
-      pool.setMinIdle(50);
+      pool.setMinIdle(16);
       pool.setMaxIdle(500);
       pool.setBlockWhenExhausted(true);
       pool.setMaxWaitMillis(30 * 1000);

@@ -149,7 +149,7 @@ public class DatabaseINode {
       if (env.equals("VOLT")) {
         try {
           obj.getVoltClient()
-              .callProcedure(
+              .callProcedure(new ProcedureCallback(),
                   "InsertINode", id, pid, name, accessTime, modificationTime, permission, header);
         } catch (Exception e) {
           e.printStackTrace();
@@ -987,7 +987,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("InsertUc", id, clientName, clientMachine);
+          obj.getVoltClient().callProcedure(new ProcedureCallback(), "InsertUc", id, clientName, clientMachine);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -1336,7 +1336,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("InsertXAttr", id, namespace, name, value);
+          obj.getVoltClient().callProcedure(new ProcedureCallback(), "InsertXAttr", id, namespace, name, value);
         } catch (Exception e) {
           e.printStackTrace();
         }

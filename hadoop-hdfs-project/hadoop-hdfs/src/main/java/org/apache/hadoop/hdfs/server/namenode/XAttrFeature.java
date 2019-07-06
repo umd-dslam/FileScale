@@ -28,6 +28,8 @@ import org.apache.hadoop.hdfs.db.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Preconditions;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Feature for extended attributes.
  */
@@ -53,7 +55,9 @@ public class XAttrFeature implements INode.Feature {
         namevals.add(attr.getName());
         namevals.add(XAttr.bytes2String(attr.getValue()));
       }
-      DatabaseINode.insertXAttrs(id, ns, namevals);
+      CompletableFuture.runAsync(() -> {
+        DatabaseINode.insertXAttrs(id, ns, namevals);
+      }, Database.getInstance().getExecutorService());
     }
   }
 

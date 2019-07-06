@@ -2,6 +2,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,11 +102,18 @@ public class INodeKeyedObjects {
       cache =
           Caffeine.newBuilder()
               .removalListener(
-                  (id, inode, cause) -> {
-                    if (cause.wasEvicted()) {
+                  (Long id, INode inode, RemovalCause cause) -> {
+                    if (cause == RemovalCause.EXPLICIT
+                        || cause == RemovalCause.COLLECTED
+                        || cause == RemovalCause.EXPIRED
+                        || cause == RemovalCause.SIZE) {
                       LOG.info("Cache Evicted: INode=%s", id);
                       // stored procedure: update inode in db
-                      // ...
+                      if (inode.isDirectory()) {
+                        inode.asDirectory().updateINodeDirectory();
+                      } else {
+                        inode.asFile().updateINodeFile();
+                      }
                     }
                   })
               .maximumSize(10_000)
