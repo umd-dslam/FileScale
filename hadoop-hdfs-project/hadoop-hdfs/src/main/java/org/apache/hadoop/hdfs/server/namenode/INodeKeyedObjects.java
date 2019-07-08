@@ -3,12 +3,59 @@ package org.apache.hadoop.hdfs.server.namenode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class INodeKeyedObjects {
+  static class CompositeKey {
+    Long k1;
+    String k2;
+    Pair<Long, String> k3;
+
+    CompositeKey(Long k1, String k2, Pair<Long, String> k3) {
+      this.k1 = k1;
+      this.k2 = k2;
+      this.k3 = k3;
+    }
+
+    Pair<Long, String> getK3() {
+      return this.k3;
+    }
+
+    String getK2() {
+      return this.k2;
+    }
+
+    Long getK1() {
+      return this.k1;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if ((o == null) || (o.getClass() != this.getClass())) {
+        return false;
+      }
+      CompositeKey other = (CompositeKey) o;
+      return new EqualsBuilder()
+          .append(k1, other.k1)
+          .append(k2, other.k2)
+          .append(k3, other.k3)
+          .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder().append(this.k1).append(this.k2).append(this.k3).toHashCode();
+    }
+  }
+
   private static INodeKeyedObjects instance;
-  private static Cache<Long, INode> cache;
+
+  static boolean use_cache = true;
+  private static IndexedCache<CompositeKey, INode> cache;
 
   private INodeFileKeyedObjectPool filePool;
   private INodeDirectoryKeyedObjectPool directoryPool;
@@ -16,11 +63,13 @@ public class INodeKeyedObjects {
   static final Logger LOG = LoggerFactory.getLogger(INodeKeyedObjects.class);
 
   INodeKeyedObjects() {
-    try {
-      initializePool();
-    } catch (Exception e) {
-      e.printStackTrace();
-      System.exit(0);
+    if (!use_cache) {
+      try {
+        initializePool();
+      } catch (Exception e) {
+        e.printStackTrace();
+        System.exit(0);
+      }
     }
   }
 
@@ -99,15 +148,16 @@ public class INodeKeyedObjects {
   public static Cache<Long, INode> getCache() {
     if (cache == null) {
       // https://github.com/ben-manes/caffeine/wiki/Removal
-      cache =
+
+      Caffeine<Object, Object> cfein =
           Caffeine.newBuilder()
               .removalListener(
-                  (Long id, INode inode, RemovalCause cause) -> {
+                  (CompositeKey keys, INode inode, RemovalCause cause) -> {
                     if (cause == RemovalCause.EXPLICIT
                         || cause == RemovalCause.COLLECTED
                         || cause == RemovalCause.EXPIRED
                         || cause == RemovalCause.SIZE) {
-                      LOG.info("Cache Evicted: INode=%s", id);
+                      LOG.info("Cache Evicted: INode=%s", keys.getK1());
                       // stored procedure: update inode in db
                       if (inode.isDirectory()) {
                         inode.asDirectory().updateINodeDirectory();
@@ -116,8 +166,13 @@ public class INodeKeyedObjects {
                       }
                     }
                   })
-              .maximumSize(10_000)
-              .build();
+              .maximumSize(10_000);
+      cache =
+          new IndexedCache.Builder<CompositeKey, String>()
+              .withIndex(Long.class, ck -> ck.getK1())
+              .withIndex(String.class, ck -> ck.getK2())
+              .withIndex(Pair.class, ck -> ck.getK3())
+              .buildFromCaffeine(cfein);
     }
     return cache;
   }

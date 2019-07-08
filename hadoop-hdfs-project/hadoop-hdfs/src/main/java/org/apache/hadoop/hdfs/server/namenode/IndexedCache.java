@@ -26,7 +26,7 @@ public class IndexedCache<K, V> implements Cache<K, V> {
 
   @Override
   public long estimatedSize() {
-    cache.estimatedSize();
+    return cache.estimatedSize();
   }
 
   @Override
