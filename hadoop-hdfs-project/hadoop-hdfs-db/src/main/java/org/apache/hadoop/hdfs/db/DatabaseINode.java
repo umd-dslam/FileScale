@@ -15,6 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
+import org.voltdb.client.*;
 
 public class DatabaseINode {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode.class);
@@ -149,7 +150,7 @@ public class DatabaseINode {
       if (env.equals("VOLT")) {
         try {
           obj.getVoltClient()
-              .callProcedure(new ProcedureCallback(),
+              .callProcedure(new NullCallback(),
                   "InsertINode", id, pid, name, accessTime, modificationTime, permission, header);
         } catch (Exception e) {
           e.printStackTrace();
@@ -205,7 +206,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("SetAccessTime", id, accessTime);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetAccessTime", id, accessTime);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -233,7 +234,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("SetModificationTime", id, modificationTime);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetModificationTime", id, modificationTime);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -261,7 +262,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("UpdateModificationTime", id, childId);
+          obj.getVoltClient().callProcedure(new NullCallback(), "UpdateModificationTime", id, childId);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -291,7 +292,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("SetPermission", id, permission);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetPermission", id, permission);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -319,7 +320,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("SetHeader", id, header);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetHeader", id, header);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -347,7 +348,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("SetParent", id, parent);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetParent", id, parent);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -375,7 +376,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("SetName", id, name);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetName", id, name);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -906,7 +907,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("AddChild", childId, childName, parentId);
+          obj.getVoltClient().callProcedure(new NullCallback(), "AddChild", childId, childName, parentId);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -987,7 +988,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new ProcedureCallback(), "InsertUc", id, clientName, clientMachine);
+          obj.getVoltClient().callProcedure(new NullCallback(), "InsertUc", id, clientName, clientMachine);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -1336,7 +1337,7 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new ProcedureCallback(), "InsertXAttr", id, namespace, name, value);
+          obj.getVoltClient().callProcedure(new NullCallback(), "InsertXAttr", id, namespace, name, value);
         } catch (Exception e) {
           e.printStackTrace();
         }

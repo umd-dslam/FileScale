@@ -13,6 +13,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
+import org.voltdb.client.*;
 
 public class DatabaseINode2Block {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode2Block.class);
@@ -309,7 +310,7 @@ public class DatabaseINode2Block {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          VoltTable[] results = obj.getVoltClient().callProcedure("GetBlockIds", id).getResults();
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetBlockIds", inodeId).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -408,7 +409,7 @@ public class DatabaseINode2Block {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("DeleteViaBcId", nodeId);
+          obj.getVoltClient().callProcedure(new NullCallback(), "DeleteViaBcId", nodeId);
         } catch (Exception e) {
           e.printStackTrace();
         }
