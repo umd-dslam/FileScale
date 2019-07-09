@@ -69,6 +69,7 @@ import java.util.Set;
 
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
 import static org.apache.hadoop.util.Time.now;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 class FSDirWriteFileOp {
   private FSDirWriteFileOp() {}
@@ -739,7 +740,9 @@ class FSDirWriteFileOp {
     INodeFile file = new INodeFile(id, localName, permissions, mtime, atime,
         BlockInfo.EMPTY_ARRAY, replication, ecPolicyID, preferredBlockSize,
         storagePolicyId, blockType, parent);
-    INodeKeyedObjects.getCache().put(id, file);
+    INodeKeyedObjects.getCache().put(new CompositeKey((Long)id,
+      new ImmutablePair<>(parent.getId(), file.getLocalName())),
+      file);
     return file;
   }
 

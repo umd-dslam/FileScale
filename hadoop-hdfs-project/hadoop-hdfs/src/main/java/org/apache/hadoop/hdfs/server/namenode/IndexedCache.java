@@ -1,3 +1,5 @@
+package org.apache.hadoop.hdfs.server.namenode;
+
 import com.github.benmanes.caffeine.cache.*;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import java.util.HashMap;
@@ -47,6 +49,15 @@ public class IndexedCache<K, V> implements Cache<K, V> {
   @Override
   public V getIfPresent(Object key) {
     return cache.getIfPresent(key);
+  }
+
+  public <R> V getIfPresent(Class<R> clazz, R value) {
+    Set<K> keys = indexes.get(clazz).getOrDefault(value, new HashSet<>());
+    if (keys.isEmpty()) {
+      return null;
+    } else {
+      return cache.getIfPresent(keys.iterator().next());
+    }
   }
 
   @Override
