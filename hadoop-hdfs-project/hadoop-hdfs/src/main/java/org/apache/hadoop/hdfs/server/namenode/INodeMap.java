@@ -66,7 +66,7 @@ public class INodeMap {
    *         such {@link INode} in the map.
    */
   public INode get(long id) {
-    return INodeKeyedObjects.getCache().getIfPresent(id); 
+    return INodeKeyedObjects.getCache().getIfPresent(Long.class, id); 
     // if (INodeKeyedObjects.getInstance().isInFilePool(id)) { // directory
     //   return INodeKeyedObjects.getInstance().getINodeFile(id);
     // } else if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
@@ -79,7 +79,7 @@ public class INodeMap {
     // if (INodeKeyedObjects.getInstance().isInFilePool(id)
     // ||  INodeKeyedObjects.getInstance().isInDirectoryPool(id)
     // ||  DatabaseINode.checkInodeExistence(id)) {
-    if (INodeKeyedObjects.getCache().getIfPresent(id) != null
+    if (INodeKeyedObjects.getCache().getIfPresent(Long.class, id) != null
       || DatabaseINode.checkInodeExistence(id)) {
       return true;
     }

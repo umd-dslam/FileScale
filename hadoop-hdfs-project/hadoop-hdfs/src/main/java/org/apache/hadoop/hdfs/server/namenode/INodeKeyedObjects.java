@@ -1,22 +1,30 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.concurrent.TimeUnit;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class INodeKeyedObjects {
   private static INodeKeyedObjects instance;
-  private static Cache<Long, INode> cache;
+
+  static boolean use_cache = true;
+  private static IndexedCache<CompositeKey, INode> cache;
 
   private INodeFileKeyedObjectPool filePool;
   private INodeDirectoryKeyedObjectPool directoryPool;
 
+  static final Logger LOG = LoggerFactory.getLogger(INodeKeyedObjects.class);
+
   INodeKeyedObjects() {
-    try {
-      initializePool();
-    } catch (Exception e) {
-      e.printStackTrace();
-      System.exit(0);
+    if (!use_cache) {
+      try {
+        initializePool();
+      } catch (Exception e) {
+        e.printStackTrace();
+        System.exit(0);
+      }
     }
   }
 
@@ -89,16 +97,39 @@ public class INodeKeyedObjects {
     }
   }
 
-  //--------------------------------------------------------
-  // caffeine cache 
+  // --------------------------------------------------------
+  // caffeine cache
 
-  public static Cache<Long, INode> getCache() {
+  public static IndexedCache<CompositeKey, INode> getCache() {
     if (cache == null) {
-      cache = Caffeine.newBuilder()
-      .maximumSize(10_000)
-      .build();
+      // https://github.com/ben-manes/caffeine/wiki/Removal
+      Caffeine<Object, Object> cfein =
+          Caffeine.newBuilder()
+              .removalListener(
+                  (Object keys, Object value, RemovalCause cause) -> {
+                    if (cause == RemovalCause.EXPLICIT
+                        || cause == RemovalCause.COLLECTED
+                        || cause == RemovalCause.EXPIRED
+                        || cause == RemovalCause.SIZE) {
+                      if (LOG.isInfoEnabled()) {
+                        LOG.info("Cache Evicted: INode=%s", ((CompositeKey) keys).getK1());
+                      }
+                      // stored procedure: update inode in db
+                      INode inode = (INode) value;
+                      if (inode.isDirectory()) {
+                        inode.asDirectory().updateINodeDirectory();
+                      } else {
+                        inode.asFile().updateINodeFile();
+                      }
+                    }
+                  })
+              .maximumSize(10_000);
+      cache =
+          new IndexedCache.Builder<CompositeKey, INode>()
+              .withIndex(Long.class, ck -> ck.getK1())
+              .withIndex(Pair.class, ck -> ck.getK3())
+              .buildFromCaffeine(cfein);
     }
     return cache;
   }
-
 }

@@ -466,8 +466,7 @@ public class DatabaseDatablock {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info(
-          "setStorageBlockIndex [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
+      LOG.info("setStorageBlockIndex [UPDATE]: (" + blockId + "," + index + "," + blockIndex + ")");
     }
   }
 }

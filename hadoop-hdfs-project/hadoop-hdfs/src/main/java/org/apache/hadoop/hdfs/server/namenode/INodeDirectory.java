@@ -78,6 +78,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
     super.InitINodeWithAdditionalFields(id, name, permissions, mtime, 0L, 0L);
   }
 
+  public void updateINodeDirectory() {
+    super.updateINode(0L);
+  }
+
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime) {
@@ -601,9 +605,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public boolean addChild(INode node) {
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.addChild(node.getId(), node.getLocalName(), getId());
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.addChild(node.getId(), node.getLocalName(), getId());
+    // }, Database.getInstance().getExecutorService());
 
     node.setParentWithoutUpdateDB(getId());
 
@@ -628,9 +632,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return sf.addChild(this, node, setModTime, latestSnapshotId);
     }
 
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.addChild(node.getId(), name, this.getId());
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.addChild(node.getId(), name, this.getId());
+    // }, Database.getInstance().getExecutorService());
 
     node.setParentWithoutUpdateDB(getId());
 
@@ -643,9 +647,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
       // updateModificationTime(node.getModificationTime(), latestSnapshotId);
       long mtime = node.getModificationTime();
       setModificationTime(mtime);
-      CompletableFuture.runAsync(() -> {
-        DatabaseINode.setModificationTime(getId(), mtime);
-      }, Database.getInstance().getExecutorService());
+      // CompletableFuture.runAsync(() -> {
+      //   DatabaseINode.setModificationTime(getId(), mtime);
+      // }, Database.getInstance().getExecutorService());
     }
     return true;
   }

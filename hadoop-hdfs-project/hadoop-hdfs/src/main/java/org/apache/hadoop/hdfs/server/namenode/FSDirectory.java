@@ -95,6 +95,7 @@ import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.SECURITY_
 import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.XATTR_SATISFY_STORAGE_POLICY;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
 import org.apache.hadoop.hdfs.db.*;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 /**
  * Both FSDirectory and FSNamesystem manage the state of the namespace.
@@ -108,15 +109,11 @@ public class FSDirectory implements Closeable {
   static final Logger LOG = LoggerFactory.getLogger(FSDirectory.class);
 
   private static INodeDirectory createRoot(FSNamesystem namesystem) {
-    // INodeDirectory r = INodeKeyedObjects.getInstance().getINodeDirectory(INodeId.ROOT_INODE_ID);
-    // r.InitINodeDirectory(
-    //     INodeId.ROOT_INODE_ID,
-    //     INodeDirectory.ROOT_NAME,
-    //     namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)),
-    //     0L);
     INodeDirectory r = new INodeDirectory(INodeId.ROOT_INODE_ID, INodeDirectory.ROOT_NAME,
       namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L);
-    INodeKeyedObjects.getCache().put(INodeId.ROOT_INODE_ID, r);
+    INodeKeyedObjects.getCache().put(new CompositeKey((Long)INodeId.ROOT_INODE_ID,
+      new ImmutablePair<>(0L, r.getLocalName())),
+      r);
 
     // TODO: enable later
     // r.addDirectoryWithQuotaFeature(

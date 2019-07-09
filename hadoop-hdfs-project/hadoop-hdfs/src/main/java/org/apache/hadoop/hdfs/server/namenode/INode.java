@@ -47,6 +47,7 @@ import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.util.ChunkedArrayList;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.hdfs.db.*;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -684,7 +685,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return toString() + "(" + getObjectString() + "), " + getParentString();
   }
 
-  private final long getParentId() {
+  public final long getParentId() {
     if (parent == -1L) {
       parent = DatabaseINode.getParent(getId()); 
     }
@@ -693,13 +694,22 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   /** @return the parent directory */
   public final INodeDirectory getParent() {
-    // return parent == null? null
-    //         : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
     long id = getParentId(); 
     // return id == DatabaseINode.LONG_NULL ? null : 
     //     INodeKeyedObjects.getInstance().getINodeDirectory(id); 
-    return id == DatabaseINode.LONG_NULL ? null : 
-        INodeKeyedObjects.getCache().get(id, k -> new INodeDirectory(id)).asDirectory(); 
+  
+    if (id == DatabaseINode.LONG_NULL) {
+      return null;
+    } else {
+      INode dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, id); 
+      if (dir == null) {
+        dir = new INodeDirectory(id);
+        INodeKeyedObjects.getCache().put(
+          new CompositeKey((Long)id,
+          new ImmutablePair<>(dir.getParentId(), dir.getLocalName())), dir.asDirectory());
+      }
+      return dir.asDirectory();
+    }
   }
 
   /**
@@ -718,9 +728,9 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     } else {
       this.parent = parent.getId();
     }
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setParent(getId(), this.parent);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setParent(getId(), this.parent);
+    // }, Database.getInstance().getExecutorService());
   }
 
   
@@ -730,9 +740,9 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   public final void setParent(long parentId) {
     this.parent = parentId;
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setParent(getId(), this.parent);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setParent(getId(), this.parent);
+    // }, Database.getInstance().getExecutorService());
   }
 
   /** Set container. */
@@ -742,9 +752,9 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     } else {
       this.parent = parent.getId();
     }
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setParent(getId(), this.parent);
-    }, Database.getInstance().getExecutorService());
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setParent(getId(), this.parent);
+    // }, Database.getInstance().getExecutorService());
   }
 
   /** Clear references to other objects. */

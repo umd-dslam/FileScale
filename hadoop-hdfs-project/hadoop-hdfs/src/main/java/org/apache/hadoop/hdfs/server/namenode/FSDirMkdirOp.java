@@ -32,6 +32,7 @@ import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import org.apache.hadoop.hdfs.server.namenode.FSDirectory.DirOp;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.security.AccessControlException;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
 import java.util.List;
@@ -209,7 +210,9 @@ class FSDirMkdirOp {
     }
 
     INodeDirectory dir = new INodeDirectory(parent.getLastINode(), inodeId, name, permission, timestamp);
-    INodeKeyedObjects.getCache().put(inodeId, dir);
+    INodeKeyedObjects.getCache().put(new CompositeKey((Long)inodeId,
+      new ImmutablePair<>(parent.getLastINode().getId(), dir.getLocalName())),
+      dir);
     // INodeDirectory dir = INodeKeyedObjects.getInstance().getINodeDirectory(inodeId);
     // dir.InitINodeDirectory(parent.getLastINode(), inodeId, name, permission, timestamp);
 
