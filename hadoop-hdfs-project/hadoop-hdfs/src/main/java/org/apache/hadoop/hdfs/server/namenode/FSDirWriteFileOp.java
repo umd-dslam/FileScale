@@ -710,16 +710,16 @@ class FSDirWriteFileOp {
     }
     // Check the state of the penultimate block. It should be completed
     // before attempting to complete the last one.
-    if (!fsn.checkFileProgress(src, pendingFile, false)) {
-      return false;
-    }
+    // if (!fsn.checkFileProgress(src, pendingFile, false)) {
+    //   return false;
+    // }
 
     // commit the last block and complete it if it has minimum replicas
     fsn.commitOrCompleteLastBlock(pendingFile, iip, last);
 
-    if (!fsn.checkFileProgress(src, pendingFile, true)) {
-      return false;
-    }
+    // if (!fsn.checkFileProgress(src, pendingFile, true)) {
+    //   return false;
+    // }
 
     fsn.addCommittedBlocksToPending(pendingFile);
 

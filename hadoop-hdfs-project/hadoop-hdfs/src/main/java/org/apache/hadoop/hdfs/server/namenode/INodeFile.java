@@ -414,7 +414,7 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   void toCompleteFile(long mtime, int numCommittedAllowed, short minReplication) {
     Preconditions.checkState(isUnderConstruction(), "File %s is not under construction", this);
-    assertAllBlocksComplete(numCommittedAllowed, minReplication);
+    // assertAllBlocksComplete(numCommittedAllowed, minReplication);
     removeUCFeature(getId());
     setModificationTime(mtime);
   }
