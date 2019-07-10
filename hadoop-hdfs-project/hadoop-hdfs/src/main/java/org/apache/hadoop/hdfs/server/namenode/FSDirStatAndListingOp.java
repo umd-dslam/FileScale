@@ -428,7 +428,7 @@ class FSDirStatAndListingOp {
 
     if (node.isFile()) {
       final INodeFile fileNode = node.asFile();
-      size = fileNode.computeFileSize(snapshot);
+      // size = fileNode.computeFileSize(snapshot);
       replication = fileNode.getFileReplication(snapshot);
       blocksize = fileNode.getPreferredBlockSize();
       if (isEncrypted) {

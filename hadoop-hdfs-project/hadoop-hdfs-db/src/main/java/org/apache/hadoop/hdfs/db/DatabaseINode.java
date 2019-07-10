@@ -46,6 +46,9 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("checkInodeExistence [GET]: (" + parentId + "," + childName + "," + exist + ")");
+    }
     return exist;
   }
 
@@ -69,6 +72,9 @@ public class DatabaseINode {
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("checkInodeExistence [GET]: (" + id + "," + exist + ")");
     }
     return exist;
   }
@@ -1048,6 +1054,9 @@ public class DatabaseINode {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("checkUCExistence [GET]: (" + id + ", " + exist + ")");
+    }
     return exist;
   }
 
@@ -1326,6 +1335,9 @@ public class DatabaseINode {
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("checkXAttrExistence [GET]: (" + id + ", " + exist + ")");
     }
     return exist;
   }
