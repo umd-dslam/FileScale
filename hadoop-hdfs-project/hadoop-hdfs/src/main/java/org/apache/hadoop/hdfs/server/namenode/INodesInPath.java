@@ -244,11 +244,7 @@ public class INodesInPath {
         inodes = Arrays.copyOf(inodes, components.length);
       } else {
         // normal case, and also for resolving file/dir under snapshot root
-          curNode = INodeKeyedObjects.getCache().getIfPresent(Pair.class,
-            new ImmutablePair<>((Long)curNode.getId(), DFSUtil.bytes2String(childName)));
-          if (curNode == null) {
-            curNode = dir.getChild(childName, isSnapshot ? snapshotId : CURRENT_STATE_ID);
-          }
+        curNode = dir.getChild(childName, isSnapshot ? snapshotId : CURRENT_STATE_ID);
       }
     }
     return new INodesInPath(inodes, components, isRaw, isSnapshot, snapshotId);

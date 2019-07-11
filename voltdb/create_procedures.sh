@@ -1,5 +1,3 @@
-set -xe
-
 ## declare an array variable
 VOLTDB_PROCEDURES=$(ls | grep java | cut -f 1 -d '.')
 

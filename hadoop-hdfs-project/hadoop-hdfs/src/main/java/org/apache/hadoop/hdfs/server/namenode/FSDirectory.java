@@ -154,6 +154,9 @@ public class FSDirectory implements Closeable {
         .isdir(true)
         .build();
 
+  public final static HdfsFileStatus DOT_NORMAL_STATUS =
+      new HdfsFileStatus.Builder().build();
+
   private static FSDirectory instance;
         
   INodeDirectory rootDir;
@@ -1519,6 +1522,10 @@ public class FSDirectory implements Closeable {
    */
   public INode getInode(long id) {
     return inodeMap.get(id);
+  }
+
+  public INode getInode(long parentId, String childName) {
+    return inodeMap.get(parentId, childName);
   }
 
   public boolean findInode(long id) {

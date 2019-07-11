@@ -455,11 +455,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     DirectoryWithSnapshotFeature sf;
     if (snapshotId == Snapshot.CURRENT_STATE_ID || 
         (sf = getDirectoryWithSnapshotFeature()) == null) {
-      // ReadOnlyList<INode> c = getCurrentChildrenList();
-      // final int i = ReadOnlyList.Util.binarySearch(c, name);
-      // return i < 0 ? null : c.get(i);
-      long id = DatabaseINode.getChild(this.getId(), DFSUtil.bytes2String(name));
-      return id == -1 ? null : FSDirectory.getInstance().getInode(id);
+      return FSDirectory.getInstance().getInode(this.getId(), DFSUtil.bytes2String(name));
     }
     
     return sf.getChild(this, name, snapshotId);

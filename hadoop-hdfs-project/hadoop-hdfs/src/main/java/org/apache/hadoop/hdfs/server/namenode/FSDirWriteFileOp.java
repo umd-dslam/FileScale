@@ -414,7 +414,7 @@ class FSDirWriteFileOp {
       NameNode.stateChangeLog.debug("DIR* NameSystem.startFile: added " +
           src + " inode " + newNode.getId() + " " + holder);
     }
-    return FSDirStatAndListingOp.getFileInfo(fsd, iip, false, false);
+    return FSDirectory.DOT_NORMAL_STATUS;
   }
 
   static INodeFile addFileForEditLog(

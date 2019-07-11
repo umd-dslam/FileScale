@@ -27,6 +27,8 @@ import org.apache.hadoop.util.GSet;
 import org.apache.hadoop.util.LightWeightGSet;
 import org.apache.hadoop.hdfs.db.*;
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 /**
  * Storing all the {@link INode}s and maintaining the mapping between INode ID
@@ -66,13 +68,43 @@ public class INodeMap {
    *         such {@link INode} in the map.
    */
   public INode get(long id) {
-    return INodeKeyedObjects.getCache().getIfPresent(Long.class, id); 
-    // if (INodeKeyedObjects.getInstance().isInFilePool(id)) { // directory
-    //   return INodeKeyedObjects.getInstance().getINodeFile(id);
-    // } else if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
-    //   return INodeKeyedObjects.getInstance().getINodeDirectory(id);
-    // }
-    // return null;
+    INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, id); 
+    if (inode == null) {
+      if (!DatabaseINode.checkInodeExistence(id)) {
+        return null;
+      }
+      long header = DatabaseINode.getHeader(id);
+      if (header != 0L) {
+        inode = new INodeFile(id);
+        inode.asFile().setHeaderLongWithoutDB(header);
+      } else {
+        inode = new INodeDirectory(id);
+      }
+      INodeKeyedObjects.getCache().put(
+        new CompositeKey((Long)id,
+        new ImmutablePair<>(inode.getParentId(), inode.getLocalName())), inode);
+    }
+    return inode;
+  }
+
+  public INode get(long parentId, String childName) {
+    INode inode = INodeKeyedObjects.getCache().getIfPresent(Pair.class,
+      new ImmutablePair<>((Long)parentId, childName)); 
+    if (inode == null) {
+      long id = DatabaseINode.getChild(parentId, childName);
+      if (id == -1) return null;
+      long header = DatabaseINode.getHeader(id);
+      if (header != 0L) {
+        inode = new INodeFile(id);
+        inode.asFile().setHeaderLongWithoutDB(header);
+      } else {
+        inode = new INodeDirectory(id);
+      }
+      INodeKeyedObjects.getCache().put(
+        new CompositeKey((Long)id,
+        new ImmutablePair<>(parentId, childName)), inode);
+    }
+    return inode;
   }
 
   public boolean find(long id) {
