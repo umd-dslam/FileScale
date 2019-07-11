@@ -450,8 +450,8 @@ class FSDirStatAndListingOp {
       isSnapShottable = node.asDirectory().isSnapshottable();
     }
 
-    int childrenNum = node.isDirectory() ?
-        node.asDirectory().getChildrenNum(snapshot) : 0;
+    // FIXME: hardcode: childrenNum
+    int childrenNum = node.isDirectory() ? 4 : 0;
 
     EnumSet<HdfsFileStatus.Flags> flags =
         EnumSet.noneOf(HdfsFileStatus.Flags.class);
@@ -469,8 +469,6 @@ class FSDirStatAndListingOp {
     if(isSnapShottable){
       flags.add(HdfsFileStatus.Flags.SNAPSHOT_ENABLED);
     }
-
-    // iip.returnToPool();
 
     return createFileStatus(
         size,

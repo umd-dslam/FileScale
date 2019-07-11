@@ -732,6 +732,10 @@ public class INodeFile extends INodeWithAdditionalFields
     return header;
   }
 
+  public void setHeaderLongWithoutDB(long header) {
+    this.header = header;
+  }
+
   /** @return the blocks of the file. */
   @Override // BlockCollection
   public BlockInfo[] getBlocks() {
