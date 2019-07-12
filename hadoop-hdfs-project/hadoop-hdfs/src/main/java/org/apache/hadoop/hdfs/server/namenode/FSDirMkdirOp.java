@@ -213,8 +213,6 @@ class FSDirMkdirOp {
     INodeKeyedObjects.getCache().put(new CompositeKey((Long)inodeId,
       new ImmutablePair<>(parent.getLastINode().getId(), dir.getLocalName())),
       dir);
-    // INodeDirectory dir = INodeKeyedObjects.getInstance().getINodeDirectory(inodeId);
-    // dir.InitINodeDirectory(parent.getLastINode(), inodeId, name, permission, timestamp);
 
     INodesInPath iip =
         fsd.addLastINode(parent, dir, DFSUtil.bytes2String(name), permission.getPermission(), true);

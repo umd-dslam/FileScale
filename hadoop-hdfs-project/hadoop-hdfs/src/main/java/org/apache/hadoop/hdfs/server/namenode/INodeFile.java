@@ -261,32 +261,6 @@ public class INodeFile extends INodeWithAdditionalFields
         preferredBlockSize, (byte) 0, CONTIGUOUS);
   }
 
-
-  public void InitINodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
-      long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
-      long preferredBlockSize, byte storagePolicyID, BlockType blockType) {
-    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, atime,
-      HeaderFormat.toLong(preferredBlockSize,
-        HeaderFormat.getBlockLayoutRedundancy(
-          blockType, replication, ecPolicyID), storagePolicyID
-        )
-      );
-    header = HeaderFormat.toLong(preferredBlockSize,
-      HeaderFormat.getBlockLayoutRedundancy(
-        blockType, replication, ecPolicyID), storagePolicyID
-      );
-    if (blklist != null && blklist.length > 0) {
-      for (BlockInfo b : blklist) {
-        Preconditions.checkArgument(b.getBlockType() == blockType);
-      }
-    }
-    setBlocks(blklist);
-  }
-
-  public void updateINodeFile() {
-    super.updateINode(header);
-  }
-
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
       long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
       long preferredBlockSize, byte storagePolicyID, BlockType blockType) {
@@ -362,6 +336,24 @@ public class INodeFile extends INodeWithAdditionalFields
     this(that);
     Preconditions.checkArgument(!that.isWithSnapshot());
     this.addSnapshotFeature(diffs);
+  }
+
+  // Copy InodeFile
+  private void InitINodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
+      long atime, long header, INodeDirectory parent) {
+    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, atime, header, parent);
+    this.header = header;
+  }
+
+  public void updateINodeFile() {
+    super.updateINode(header);
+  }
+
+  public INodeFile copyINodeFile() {
+    INodeFile inode = new INodeFile(this.getId());
+    inode.InitINodeFile(getId(), getLocalNameBytes(),
+      getPermissionStatus(), getModificationTime(), getAccessTime(), getHeaderLong(), getParent());
+    return inode;
   }
 
   /** @return true unconditionally. */

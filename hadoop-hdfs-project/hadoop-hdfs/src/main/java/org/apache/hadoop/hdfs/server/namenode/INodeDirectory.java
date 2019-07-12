@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.fs.PathIsNotDirectoryException;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.PermissionStatus;
@@ -73,24 +74,26 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   static final byte[] ROOT_NAME = DFSUtil.string2Bytes("");
 
-  public void InitINodeDirectory(long id, byte[] name, PermissionStatus permissions,
-      long mtime) {
-    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, 0L, 0L);
-  }
-
-  public void updateINodeDirectory() {
-    super.updateINode(0L);
-  }
-
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime) {
     super(id, name, permissions, mtime, 0L, 0L);
   }
 
+  public void updateINodeDirectory() {
+    super.updateINode(0L);
+  }
+
+  public INodeDirectory copyINodeDirectory() {
+    INodeDirectory inode = new INodeDirectory(getId());
+    inode.InitINodeDirectory(getParent(), getId(), getLocalNameBytes(),
+      getPermissionStatus(), getModificationTime(), getAccessTime());
+    return inode;
+  }
+
   public void InitINodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
-      long mtime) {
-    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, 0L);
+      long mtime, long atime) {
+    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime);
   }
 
   public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
@@ -605,7 +608,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     //   DatabaseINode.addChild(node.getId(), node.getLocalName(), getId());
     // }, Database.getInstance().getExecutorService());
 
-    node.setParentWithoutUpdateDB(getId());
+    node.setParent(getId());
 
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
@@ -631,17 +634,33 @@ public class INodeDirectory extends INodeWithAdditionalFields
     // CompletableFuture.runAsync(() -> {
     //   DatabaseINode.addChild(node.getId(), name, this.getId());
     // }, Database.getInstance().getExecutorService());
+    INode inode = null;
+    
+    if (node.getParentId() != getId() || node.getLocalName() != name) {
+      node.setParent(getId());
+      node.setLocalName(DFSUtil.string2Bytes(name));
+      // update object cache
+      if (node.isDirectory()) {
+        inode = node.asDirectory().copyINodeDirectory();
+        INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long)node.getId());
+        INodeKeyedObjects.getCache().put(new CompositeKey(inode.getId(),
+          new ImmutablePair<>(getId(), name)), inode.asDirectory());
+      } else {
+        inode = node.asFile().copyINodeFile();
+        INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long)node.getId());
+        INodeKeyedObjects.getCache().put(new CompositeKey(inode.getId(),
+          new ImmutablePair<>(getId(), name)), inode.asFile());
+      }
+    }
 
-    node.setParentWithoutUpdateDB(getId());
-
-    if (node.getGroupName() == null) {
-      node.setGroup(getGroupName());
+    if (inode.getGroupName() == null) {
+      inode.setGroup(getGroupName());
     }
 
     if (setModTime) {
       // update modification time of the parent directory
       // updateModificationTime(node.getModificationTime(), latestSnapshotId);
-      long mtime = node.getModificationTime();
+      long mtime = inode.getModificationTime();
       setModificationTime(mtime);
       // CompletableFuture.runAsync(() -> {
       //   DatabaseINode.setModificationTime(getId(), mtime);
