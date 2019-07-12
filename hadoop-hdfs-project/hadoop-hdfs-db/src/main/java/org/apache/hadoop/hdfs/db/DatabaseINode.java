@@ -74,7 +74,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("checkInodeExistence [GET]: (" + id + "," + exist + ")");
+      LOG.info("checkInodeExistence [GET]: (" + childId + "," + exist + ")");
     }
     return exist;
   }
@@ -156,8 +156,16 @@ public class DatabaseINode {
       if (env.equals("VOLT")) {
         try {
           obj.getVoltClient()
-              .callProcedure(new NullCallback(),
-                  "InsertINode", id, pid, name, accessTime, modificationTime, permission, header);
+              .callProcedure(
+                  new NullCallback(),
+                  "InsertINode",
+                  id,
+                  pid,
+                  name,
+                  accessTime,
+                  modificationTime,
+                  permission,
+                  header);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -240,7 +248,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "SetModificationTime", id, modificationTime);
+          obj.getVoltClient()
+              .callProcedure(new NullCallback(), "SetModificationTime", id, modificationTime);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -268,7 +277,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "UpdateModificationTime", id, childId);
+          obj.getVoltClient()
+              .callProcedure(new NullCallback(), "UpdateModificationTime", id, childId);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -646,7 +656,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          VoltTable[] results = obj.getVoltClient().callProcedure("GetChild", parentId, childName).getResults();
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("GetChild", parentId, childName).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -927,7 +938,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "AddChild", childId, childName, parentId);
+          obj.getVoltClient()
+              .callProcedure(new NullCallback(), "AddChild", childId, childName, parentId);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -944,14 +956,13 @@ public class DatabaseINode {
         pst.executeUpdate();
         pst.close();
       }
-      if (LOG.isInfoEnabled()) {
-        LOG.info("addChild: [OK] UPSERT (" + childId + "," + parentId + "," + childName + ")");
-      }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.out.println(ex.getMessage());
     }
-
+    if (LOG.isInfoEnabled()) {
+      LOG.info("addChild: [OK] UPSERT (" + childId + "," + parentId + "," + childName + ")");
+    }
     return true;
   }
 
@@ -1008,7 +1019,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "InsertUc", id, clientName, clientMachine);
+          obj.getVoltClient()
+              .callProcedure(new NullCallback(), "InsertUc", id, clientName, clientMachine);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -1363,7 +1375,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "InsertXAttr", id, namespace, name, value);
+          obj.getVoltClient()
+              .callProcedure(new NullCallback(), "InsertXAttr", id, namespace, name, value);
         } catch (Exception e) {
           e.printStackTrace();
         }

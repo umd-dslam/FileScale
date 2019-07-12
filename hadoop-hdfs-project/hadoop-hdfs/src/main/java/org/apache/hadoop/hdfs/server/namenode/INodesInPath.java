@@ -153,11 +153,11 @@ public class INodesInPath {
    */
   static INodesInPath resolve(final INodeDirectory startingDir,
       final byte[][] components) {
-    return resolve(startingDir, components, false);
+    return resolve(startingDir, components, false, false);
   }
 
   static INodesInPath resolve(final INodeDirectory startingDir,
-      byte[][] components, final boolean isRaw) {
+      byte[][] components, final boolean isRaw, boolean isCreate) {
     Preconditions.checkArgument(startingDir.compareTo(components[0]) == 0);
     // we keeps a root reference in memory but we still need to borrow
     // root dir again since it had been returned to pool before.
@@ -244,7 +244,15 @@ public class INodesInPath {
         inodes = Arrays.copyOf(inodes, components.length);
       } else {
         // normal case, and also for resolving file/dir under snapshot root
-        curNode = dir.getChild(childName, isSnapshot ? snapshotId : CURRENT_STATE_ID);
+        if (isCreate && count == components.length - 1) {
+          curNode = INodeKeyedObjects.getCache().getIfPresent(Pair.class,
+            new ImmutablePair<>((Long)curNode.getId(), DFSUtil.bytes2String(childName)));
+          if (curNode == null) {
+            break;
+          }
+        } else {
+          curNode = dir.getChild(childName, isSnapshot ? snapshotId : CURRENT_STATE_ID);
+        }
       }
     }
     return new INodesInPath(inodes, components, isRaw, isSnapshot, snapshotId);

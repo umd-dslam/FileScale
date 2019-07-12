@@ -497,11 +497,13 @@ public abstract class INodeWithAdditionalFields extends INode {
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getXAttrFeature();
     }
+    // FIXME: disable XAttr
+    // if(!XAttrFeature.isFileXAttr(getId())) {
+    //   return null;
+    // }
+    // return new XAttrFeature(getId());
 
-    if(!XAttrFeature.isFileXAttr(getId())) {
-      return null;
-    }
-    return new XAttrFeature(getId());
+    return null;
   }
   
   @Override

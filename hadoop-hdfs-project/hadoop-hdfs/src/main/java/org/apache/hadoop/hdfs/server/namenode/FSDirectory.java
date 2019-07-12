@@ -708,7 +708,12 @@ public class FSDirectory implements Closeable {
       }
     }
     components = resolveComponents(components, this);
-    INodesInPath iip = INodesInPath.resolve(rootDir, components, isRaw);
+    INodesInPath iip;
+    if (isCreate) {
+      iip = INodesInPath.resolve(rootDir, components, isRaw, true);
+    } else {
+      iip = INodesInPath.resolve(rootDir, components, isRaw, false);
+    }
     // verify all ancestors are dirs and traversable.  note that only
     // methods that create new namespace items have the signature to throw
     // PNDE
@@ -1331,15 +1336,15 @@ public class FSDirectory implements Closeable {
     // always verify inode name
     verifyINodeName(inode.getLocalNameBytes());
 
-    final QuotaCounts counts = inode.computeQuotaUsage(getBlockStoragePolicySuite());
-    updateCount(existing, pos, counts, checkQuota);
+    // final QuotaCounts counts = inode.computeQuotaUsage(getBlockStoragePolicySuite());
+    // updateCount(existing, pos, counts, checkQuota);
 
     // boolean isRename = (inode.getParent() != null);
 
     final boolean added = parent.addChild(inode, name, true,
         existing.getLatestSnapshotId());
     if (!added) {
-      updateCountNoQuotaCheck(existing, pos, counts.negation());
+      // updateCountNoQuotaCheck(existing, pos, counts.negation());
       return null;
     } else {
       // if (!isRename) {
