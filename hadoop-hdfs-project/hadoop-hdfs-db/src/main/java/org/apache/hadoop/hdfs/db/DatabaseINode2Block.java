@@ -19,9 +19,6 @@ public class DatabaseINode2Block {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode2Block.class);
 
   public static void insert(final long id, final long blockId, final int idx) {
-    if (LOG.isInfoEnabled()) {
-      LOG.info("INode2Block [insert]: (" + id + "," + blockId + "," + idx + ")");
-    }
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       Connection conn = obj.getConnection();
@@ -37,6 +34,9 @@ public class DatabaseINode2Block {
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("INode2Block [insert]: (" + id + "," + blockId + "," + idx + ")");
     }
   }
 
@@ -310,7 +310,8 @@ public class DatabaseINode2Block {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          VoltTable[] results = obj.getVoltClient().callProcedure("GetBlockIds", inodeId).getResults();
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("GetBlockIds", inodeId).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
