@@ -70,7 +70,7 @@ public class Database {
         pool.setMaxTotal(Integer.parseInt(num));
       }
 
-      pool.setMinIdle(16);
+      pool.setMinIdle(64);
       pool.setMaxIdle(500);
       pool.setBlockWhenExhausted(true);
       pool.setMaxWaitMillis(30 * 1000);
@@ -85,7 +85,7 @@ public class Database {
     try {
       String num = System.getenv("ASYNC_EXECUTOR_NUM");
       if (num == null) {
-        executor = Executors.newFixedThreadPool(16);
+        executor = Executors.newFixedThreadPool(64);
       } else {
         executor = Executors.newFixedThreadPool(Integer.parseInt(num));
       }
