@@ -733,10 +733,6 @@ class FSDirWriteFileOp {
       long id, byte[] localName, PermissionStatus permissions, long mtime, long atime,
       Short replication, Byte ecPolicyID, long preferredBlockSize,
       byte storagePolicyId, BlockType blockType, INodeDirectory parent) {
-    // INodeFile file = INodeKeyedObjects.getInstance().getINodeFile(id);
-    // file.InitINodeFile(id, localName, permissions, mtime, atime,
-    //     BlockInfo.EMPTY_ARRAY, replication, ecPolicyID, preferredBlockSize,
-    //     storagePolicyId, blockType);
     INodeFile file = new INodeFile(id, localName, permissions, mtime, atime,
         BlockInfo.EMPTY_ARRAY, replication, ecPolicyID, preferredBlockSize,
         storagePolicyId, blockType, parent);
