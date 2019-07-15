@@ -76,7 +76,8 @@ public class INodeMap {
       long header = DatabaseINode.getHeader(id);
       if (header != 0L) {
         inode = new INodeFile(id);
-        inode.asFile().setHeaderLongWithoutDB(header);
+        inode.asFile().setHeaderLong(header);
+        inode.asFile().setNumBlocks();
       } else {
         inode = new INodeDirectory(id);
       }
@@ -96,7 +97,8 @@ public class INodeMap {
       long header = DatabaseINode.getHeader(id);
       if (header != 0L) {
         inode = new INodeFile(id);
-        inode.asFile().setHeaderLongWithoutDB(header);
+        inode.asFile().setHeaderLong(header);
+        inode.asFile().setNumBlocks();
       } else {
         inode = new INodeDirectory(id);
       }
@@ -108,9 +110,6 @@ public class INodeMap {
   }
 
   public boolean find(long id) {
-    // if (INodeKeyedObjects.getInstance().isInFilePool(id)
-    // ||  INodeKeyedObjects.getInstance().isInDirectoryPool(id)
-    // ||  DatabaseINode.checkInodeExistence(id)) {
     if (INodeKeyedObjects.getCache().getIfPresent(Long.class, id) != null
       || DatabaseINode.checkInodeExistence(id)) {
       return true;

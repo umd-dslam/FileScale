@@ -26,51 +26,78 @@ import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 /**
  * Feature for under-construction file.
  */
 @InterfaceAudience.Private
 public class FileUnderConstructionFeature implements INode.Feature {
+  private String clientName;
+  private String clientMachine;
 
-  private static FileUnderConstructionFeature instance; 
-
-  public static FileUnderConstructionFeature getInstance() {
-    if (instance == null) {
-      instance = new FileUnderConstructionFeature();
-    }
-    return instance;
-  }
-
-  public FileUnderConstructionFeature() {}
+  public FileUnderConstructionFeature() {} 
 
   public FileUnderConstructionFeature(final long id, final String clientName, final String clientMachine) {
+    this.clientName = clientName;
+    this.clientMachine = clientMachine;
     CompletableFuture.runAsync(() -> {
       DatabaseINode.insertUc(id, clientName, clientMachine);
     }, Database.getInstance().getExecutorService());
   }
 
-  public static void createFileUnderConstruction(final long id, final String clientName, final String clientMachine) {
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.insertUc(id, clientName, clientMachine);
-    }, Database.getInstance().getExecutorService());
+  public void updateFileUnderConstruction(final String clientName, final String clientMachine) {
+    this.clientName = clientName;
+    this.clientMachine = clientMachine;
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.insertUc(id, clientName, clientMachine);
+    // }, Database.getInstance().getExecutorService());
   }
 
-  public static Boolean isFileUnderConstruction(final long id) {
-    return DatabaseINode.checkUCExistence(id);
+  public String getClientName(final long id) {
+    if (this.clientName == null) {
+      this.clientName = DatabaseINode.getUcClientName(id);
+    }
+    return this.clientName;
   }
 
-  public static String getClientName(final long id) {
-    return DatabaseINode.getUcClientName(id);
+  public void setClientName(final long id, String clientName) {
+    this.clientName = clientName;
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setUcClientName(id, clientName);
+    // }, Database.getInstance().getExecutorService());
   }
 
-  public static void setClientName(final long id, String clientName) {
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.setUcClientName(id, clientName);
-    }, Database.getInstance().getExecutorService());
+  public String getClientMachine(final long id) {
+    if (this.clientMachine == null) {
+      this.clientMachine = DatabaseINode.getUcClientMachine(id);
+    }
+    return this.clientMachine;
   }
 
-  public static String getClientMachine(final long id) {
-    return DatabaseINode.getUcClientMachine(id);
+  public void setClientMachine(final long id, String clientMachine) {
+    this.clientMachine = clientMachine;
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.setUcClientMachine(id, clientMachine);
+    // }, Database.getInstance().getExecutorService());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if ((o == null) || (o.getClass() != this.getClass())) {
+      return false;
+    }
+    FileUnderConstructionFeature other = (FileUnderConstructionFeature) o;
+    return new EqualsBuilder()
+        .append(clientName, other.clientName)
+        .append(clientMachine, other.clientMachine)
+        .isEquals();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(this.clientName).append(this.clientMachine).toHashCode();
   }
 
   /**
