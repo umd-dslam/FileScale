@@ -23,7 +23,7 @@ import static org.apache.hadoop.hdfs.protocol.BlockType.STRIPED;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.NO_SNAPSHOT_ID;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -68,6 +68,8 @@ import com.google.common.base.Preconditions;
 @InterfaceAudience.Private
 public class INodeFile extends INodeWithAdditionalFields
     implements INodeFileAttributes, BlockCollection {
+
+  private AtomicInteger blockNum = new AtomicInteger(0);
 
   /**
    * Erasure Coded striped blocks have replication factor of 1.
@@ -733,18 +735,18 @@ public class INodeFile extends INodeWithAdditionalFields
     return header;
   }
 
-  public void setHeaderLongWithoutDB(long header) {
+  public void setHeaderLong(long header) {
     this.header = header;
   }
 
   /** @return the blocks of the file. */
   @Override // BlockCollection
   public BlockInfo[] getBlocks() {
-    List<Long> blockIds = DatabaseINode2Block.getBlockIds(getId());
-
-    if (blockIds.size() == 0) {
+    if (blockNum.get() == 0) {
       return BlockInfo.EMPTY_ARRAY;
     }
+
+    List<Long> blockIds = DatabaseINode2Block.getBlockIds(getId());
 
     ArrayList<BlockInfo> blklist = new ArrayList<>();
     for(long blockId : blockIds) {
@@ -816,7 +818,9 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   void addBlock(BlockInfo newblock) {
     Preconditions.checkArgument(newblock.isStriped() == this.isStriped());
-    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), numBlocks());
+    int bnum = blockNum.get();
+    DatabaseINode2Block.insert(getId(), newblock.getBlockId(), bnum);
+    blockNum.incrementAndGet();    
   }
 
   /** Set the blocks. */
@@ -839,6 +843,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   /** Clear all blocks of the file. */
   public void clearBlocks() {
+    blockNum.getAndSet(0);
     DatabaseINode2Block.deleteViaBcId(this.getId());
   }
 
@@ -1169,7 +1174,11 @@ public class INodeFile extends INodeWithAdditionalFields
 
   @Override
   public int numBlocks() {
-    return DatabaseINode2Block.getNumBlocks(getId());
+    return blockNum.get();
+  }
+
+  public void setNumBlocks() {
+    blockNum.set(DatabaseINode2Block.getNumBlocks(getId()));
   }
 
   @VisibleForTesting
