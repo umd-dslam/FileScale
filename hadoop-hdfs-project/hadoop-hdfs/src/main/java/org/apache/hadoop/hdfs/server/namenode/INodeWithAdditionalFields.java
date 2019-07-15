@@ -405,12 +405,6 @@ public abstract class INodeWithAdditionalFields extends INode {
     // features = arr;
   }
 
-  protected void removeUCFeature(long id) {
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.removeUc(id);
-    }, Database.getInstance().getExecutorService());
-  }
-
   protected void removeXAttrFeature(long id) {
     CompletableFuture.runAsync(() -> {
       DatabaseINode.removeXAttr(id);

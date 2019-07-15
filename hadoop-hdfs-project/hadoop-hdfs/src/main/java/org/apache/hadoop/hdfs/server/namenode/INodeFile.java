@@ -253,6 +253,7 @@ public class INodeFile extends INodeWithAdditionalFields
   }
 
   private long header = -1L;
+  private FileUnderConstructionFeature uc = null;
 
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
             long atime, BlockInfo[] blklist, short replication,
@@ -384,19 +385,27 @@ public class INodeFile extends INodeWithAdditionalFields
    * otherwise, return null.
    */
   public final FileUnderConstructionFeature getFileUnderConstructionFeature() {
-    return FileUnderConstructionFeature.getInstance();
+    return uc;
+  }
+
+  private void removeUCFeature(long id) {
+    uc = null;
+    // CompletableFuture.runAsync(() -> {
+    //   DatabaseINode.removeUc(id);
+    // }, Database.getInstance().getExecutorService());
   }
 
   /** Is this file under construction? */
   @Override // BlockCollection
   public boolean isUnderConstruction() {
-    return FileUnderConstructionFeature.isFileUnderConstruction(getId());
+    if (uc == null) return false;
+    return true;
   }
 
   INodeFile toUnderConstruction(String clientName, String clientMachine) {
     Preconditions.checkState(!isUnderConstruction(),
         "file is already under construction");
-    FileUnderConstructionFeature.createFileUnderConstruction(getId(), clientName, clientMachine);
+    uc = new FileUnderConstructionFeature(getId(), clientName, clientMachine);
     return this;
   }
 
@@ -406,7 +415,7 @@ public class INodeFile extends INodeWithAdditionalFields
    */
   void toCompleteFile(long mtime, int numCommittedAllowed, short minReplication) {
     Preconditions.checkState(isUnderConstruction(), "File %s is not under construction", this);
-    // assertAllBlocksComplete(numCommittedAllowed, minReplication);
+    assertAllBlocksComplete(numCommittedAllowed, minReplication);
     removeUCFeature(getId());
     setModificationTime(mtime);
   }

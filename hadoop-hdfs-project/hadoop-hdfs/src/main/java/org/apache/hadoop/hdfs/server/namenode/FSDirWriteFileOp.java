@@ -402,9 +402,9 @@ class FSDirWriteFileOp {
     if (newNode == null) {
       throw new IOException("Unable to add " + src +  " to namespace");
     }
-    // fsn.leaseManager.addLease(
-    //     newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()),
-    //     newNode.getId());
+    fsn.leaseManager.addLease(
+        newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()),
+        newNode.getId());
     if (feInfo != null) {
       FSDirEncryptionZoneOp.setFileEncryptionInfo(fsd, iip, feInfo,
           XAttrSetFlag.CREATE);
@@ -561,7 +561,7 @@ class FSDirWriteFileOp {
       INodeFile newNode = newINodeFile(fsd.allocateNewInodeId(), localName, permissions,
           modTime, modTime, replicationFactor, ecPolicyID, preferredBlockSize,
           blockType, existing.getINode(existing.length() - 1).asDirectory());
-      // newNode.toUnderConstruction(clientName, clientMachine);
+      newNode.toUnderConstruction(clientName, clientMachine);
       newiip = fsd.addINode(existing, newNode, permissions.getPermission());
     } finally {
       fsd.writeUnlock();
@@ -689,8 +689,7 @@ class FSDirWriteFileOp {
       inode = iip.getLastINode();
       pendingFile = fsn.checkLease(iip, holder, fileId);
     } catch (LeaseExpiredException lee) {
-      if (inode != null && inode.isFile() &&
-          !inode.asFile().isUnderConstruction()) {
+      if (inode != null && inode.isFile() && !inode.asFile().isUnderConstruction()) {
         // This could be a retry RPC - i.e the client tried to close
         // the file, but missed the RPC response. Thus, it is trying
         // again to close the file. If the file still exists and

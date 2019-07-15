@@ -3352,7 +3352,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       src = iip.getPath();
       final INodeFile pendingFile = checkLease(iip, clientName, fileId);
       if (lastBlockLength > 0) {
-        pendingFile.getFileUnderConstructionFeature().updateLengthOfLastBlock(
+        FileUnderConstructionFeature.updateLengthOfLastBlock(
             pendingFile, lastBlockLength);
       }
       FSDirWriteFileOp.persistBlocks(dir, src, pendingFile, false);
@@ -3537,7 +3537,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       final INodeFile fileINode, final INodesInPath iip,
       final Block commitBlock) throws IOException {
     assert hasWriteLock();
-    Preconditions.checkArgument(fileINode.isUnderConstruction());
+    // Preconditions.checkArgument(fileINode.isUnderConstruction());
     blockManager.commitOrCompleteLastBlock(fileINode, commitBlock, iip);
   }
 
@@ -3568,7 +3568,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
 
     pendingFile.recordModification(latestSnapshot);
     // FIXME: getClientName must be called before toCompleteFile 
-    String holder = FileUnderConstructionFeature.getClientName(pendingFile.getId());
+    String holder = uc.getClientName(pendingFile.getId());
 
     // The file is no longer pending.
     // Create permanent INode, update blocks. No need to replace the inode here
@@ -4020,8 +4020,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   private void closeFile(String path, INodeFile file) {
     assert hasWriteLock();
     // file is closed
-    NameNode.stateChangeLog.debug("closeFile: {} with {} blocks is persisted" +
-        " to the file system", path, file.getBlocks().length);
+    LOG.info("closeFile: {} with {} blocks is persisted to the file system",
+      path, file.getBlocks().length);
   }
 
   /**
