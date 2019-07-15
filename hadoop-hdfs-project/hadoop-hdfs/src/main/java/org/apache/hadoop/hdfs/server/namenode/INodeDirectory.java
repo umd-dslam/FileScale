@@ -634,9 +634,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
     // CompletableFuture.runAsync(() -> {
     //   DatabaseINode.addChild(node.getId(), name, this.getId());
     // }, Database.getInstance().getExecutorService());
-    INode inode = null;
-    
-    if (node.getParentId() != getId() || node.getLocalName() != name) {
+    INode inode = node;
+
+    if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
       node.setParent(getId());
       node.setLocalName(DFSUtil.string2Bytes(name));
       // update object cache

@@ -1,6 +1,6 @@
 package org.apache.hadoop.hdfs.db;
 
-class DatabaseUtils {
+public class DatabaseUtils {
   public static String getStackTrace() {
     String o = "Printing stack trace:\n";
     StackTraceElement[] elements = Thread.currentThread().getStackTrace();

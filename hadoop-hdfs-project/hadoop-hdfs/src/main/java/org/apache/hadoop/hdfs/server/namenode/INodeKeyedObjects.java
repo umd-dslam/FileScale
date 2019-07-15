@@ -112,7 +112,7 @@ public class INodeKeyedObjects {
                         || cause == RemovalCause.EXPIRED
                         || cause == RemovalCause.SIZE) {
                       if (LOG.isInfoEnabled()) {
-                        LOG.info("Cache Evicted: INode=%s", ((CompositeKey) keys).getK1());
+                        LOG.info("Cache Evicted: INode = " + ((CompositeKey) keys).getK1());
                       }
                       // stored procedure: update inode in db
                       INode inode = (INode) value;
@@ -123,7 +123,7 @@ public class INodeKeyedObjects {
                       }
                     }
                   })
-              .maximumSize(10_000);
+              .maximumSize(100_000);
       cache =
           new IndexedCache.Builder<CompositeKey, INode>()
               .withIndex(Long.class, ck -> ck.getK1())
