@@ -69,8 +69,6 @@ import com.google.common.base.Preconditions;
 public class INodeFile extends INodeWithAdditionalFields
     implements INodeFileAttributes, BlockCollection {
 
-  private AtomicInteger blockNum = new AtomicInteger(0);
-
   /**
    * Erasure Coded striped blocks have replication factor of 1.
    */
@@ -256,6 +254,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   private long header = -1L;
   private FileUnderConstructionFeature uc = null;
+  private AtomicInteger blockNum = new AtomicInteger(0);
 
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
             long atime, BlockInfo[] blklist, short replication,

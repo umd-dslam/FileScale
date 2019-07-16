@@ -5,9 +5,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class CompositeKey {
-  Long k1;
-  String k2;
-  Pair<Long, String> k3;
+  Long k1;    // INode ID
+  String k2;  
+  Pair<Long, String> k3;  // <Parent ID, INode Name>
 
   CompositeKey(Long k1, String k2, Pair<Long, String> k3) {
     this.k1 = k1;

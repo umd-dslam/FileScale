@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.fs.PathIsNotDirectoryException;
@@ -73,6 +74,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public static final int DEFAULT_FILES_PER_DIRECTORY = 2;
 
   static final byte[] ROOT_NAME = DFSUtil.string2Bytes("");
+
+  private HashSet<Long> children = new HashSet<>();
 
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
@@ -506,16 +509,18 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
   
   private ReadOnlyList<INode> getCurrentChildrenList() {
-    List<Long> childrenIds = DatabaseINode.getChildrenIds(getId());
-    List<INode> children = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
-    for(long id : childrenIds){
+    if (children.isEmpty()) {
+      children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
+    }
+    List<INode> childs = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
+    for(long id : children){
       INode child = FSDirectory.getInstance().getInode(id);
       if(child != null) {
-        children.add(child);
+        childs.add(child);
       }
     }
-    return children == null ? ReadOnlyList.Util.<INode> emptyList()
-        : ReadOnlyList.Util.asReadOnlyList(children);
+    return childs == null ? ReadOnlyList.Util.<INode> emptyList()
+        : ReadOnlyList.Util.asReadOnlyList(childs);
   }
 
   /**
@@ -560,14 +565,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
    * @return true if the child is removed; false if the child is not found.
    */
   public boolean removeChild(final INode child) {
-    // final int i = searchChildren(child.getLocalNameBytes());
-    // if (i < 0) {
-    //   return false;
-    // }
-
-    // final INode removed = children.remove(i);
-    // Preconditions.checkState(removed == childId);
-    return true;
+    return children.remove(child.getId());
   }
 
   /**
@@ -609,7 +607,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     // }, Database.getInstance().getExecutorService());
 
     node.setParent(getId());
-
+    children.add(node.getId());
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
     }
@@ -638,6 +636,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
       node.setParent(getId());
+      children.add(node.getId());
       node.setLocalName(DFSUtil.string2Bytes(name));
       // update object cache
       if (node.isDirectory()) {
@@ -723,8 +722,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
   private QuotaCounts computeDirectoryQuotaUsage(BlockStoragePolicySuite bsps,
       byte blockStoragePolicyId, QuotaCounts counts, boolean useCache,
       int lastSnapshotId) {
-
-    List<Long> children = DatabaseINode.getChildrenIds(getId());
+    if (children.isEmpty()) {
+      children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
+    }
     if (!children.isEmpty()) {
       for (long childId : children) {
         INode child = FSDirectory.getInstance().getInode(childId);
