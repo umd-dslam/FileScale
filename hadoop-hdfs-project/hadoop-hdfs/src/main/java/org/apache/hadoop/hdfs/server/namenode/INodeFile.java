@@ -328,9 +328,6 @@ public class INodeFile extends INodeWithAdditionalFields
     // FIXME: change later
     // this.features = that.features;
     header = that.getHeaderLong(); 
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.setHeader(getId(), header);
-    // }, Database.getInstance().getExecutorService());
     setBlocks(that);
   }
   
@@ -391,9 +388,6 @@ public class INodeFile extends INodeWithAdditionalFields
 
   private void removeUCFeature(long id) {
     uc = null;
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.removeUc(id);
-    // }, Database.getInstance().getExecutorService());
   }
 
   /** Is this file under construction? */
@@ -630,10 +624,6 @@ public class INodeFile extends INodeWithAdditionalFields
         ~HeaderFormat.MAX_REDUNDANCY) | replication;
     header = HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.
         combine(layoutRedundancy, head);
-
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.setHeader(getId(), header);
-    // }, Database.getInstance().getExecutorService());
   }
 
   /** Set the replication factor of this file. */
@@ -685,9 +675,6 @@ public class INodeFile extends INodeWithAdditionalFields
   private void setStoragePolicyID(byte storagePolicyId) {
     header = HeaderFormat.STORAGE_POLICY_ID.BITS.combine(storagePolicyId,
       getHeaderLong());
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.setHeader(getId(), header);
-    // }, Database.getInstance().getExecutorService());
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,

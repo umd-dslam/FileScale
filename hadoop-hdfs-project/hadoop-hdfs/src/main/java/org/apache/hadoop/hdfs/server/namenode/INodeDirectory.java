@@ -602,16 +602,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public boolean addChild(INode node) {
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.addChild(node.getId(), node.getLocalName(), getId());
-    // }, Database.getInstance().getExecutorService());
-
     node.setParent(getId());
     children.add(node.getId());
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
     }
-
     return true;
   }
 
@@ -629,14 +624,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return sf.addChild(this, node, setModTime, latestSnapshotId);
     }
 
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.addChild(node.getId(), name, this.getId());
-    // }, Database.getInstance().getExecutorService());
     INode inode = node;
-
+    children.add(node.getId());
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
       node.setParent(getId());
-      children.add(node.getId());
       node.setLocalName(DFSUtil.string2Bytes(name));
       // update object cache
       if (node.isDirectory()) {
@@ -661,9 +652,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
       // updateModificationTime(node.getModificationTime(), latestSnapshotId);
       long mtime = inode.getModificationTime();
       setModificationTime(mtime);
-      // CompletableFuture.runAsync(() -> {
-      //   DatabaseINode.setModificationTime(getId(), mtime);
-      // }, Database.getInstance().getExecutorService());
     }
     return true;
   }
