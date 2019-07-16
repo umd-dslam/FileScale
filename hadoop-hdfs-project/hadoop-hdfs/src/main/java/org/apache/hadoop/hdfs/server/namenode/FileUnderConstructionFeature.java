@@ -50,9 +50,6 @@ public class FileUnderConstructionFeature implements INode.Feature {
   public void updateFileUnderConstruction(final String clientName, final String clientMachine) {
     this.clientName = clientName;
     this.clientMachine = clientMachine;
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.insertUc(id, clientName, clientMachine);
-    // }, Database.getInstance().getExecutorService());
   }
 
   public String getClientName(final long id) {
@@ -64,9 +61,6 @@ public class FileUnderConstructionFeature implements INode.Feature {
 
   public void setClientName(final long id, String clientName) {
     this.clientName = clientName;
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.setUcClientName(id, clientName);
-    // }, Database.getInstance().getExecutorService());
   }
 
   public String getClientMachine(final long id) {
@@ -78,9 +72,6 @@ public class FileUnderConstructionFeature implements INode.Feature {
 
   public void setClientMachine(final long id, String clientMachine) {
     this.clientMachine = clientMachine;
-    // CompletableFuture.runAsync(() -> {
-    //   DatabaseINode.setUcClientMachine(id, clientMachine);
-    // }, Database.getInstance().getExecutorService());
   }
 
   @Override
