@@ -272,15 +272,7 @@ class FSDirDeleteOp {
       for (Long id : ids) {
         INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, id); 
       }
-      // for (Long id : ids) {
-        // if (INodeKeyedObjects.getInstance().isInDirectoryPool(id)) {
-        //   INodeKeyedObjects.getInstance().clearDirectory(id);
-        // } else {
-        //   INodeKeyedObjects.getInstance().clearFile(id); 
-        // }
-      // }
     } else if (targetNode.isFile()) {
-      // INodeKeyedObjects.getInstance().clearFile(targetNode.getId());
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, targetNode.getId());
     }
 

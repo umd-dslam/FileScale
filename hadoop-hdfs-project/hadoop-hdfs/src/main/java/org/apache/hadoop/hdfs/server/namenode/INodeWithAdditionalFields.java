@@ -131,12 +131,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.modificationTime = modificationTime;
     this.accessTime = accessTime;
 
-    CompletableFuture.runAsync(() -> {
-      DatabaseINode.insertInode(id,
-        parent != null ? parent.getId() : DatabaseINode.LONG_NULL,
-        name != null && name.length > 0 ? DFSUtil.bytes2String(name) : null,
-        accessTime, modificationTime, permission, header);
-    }, Database.getInstance().getExecutorService());
+    INodeKeyedObjects.getBackupSet().add(id);
   }
 
   public void InitINodeWithAdditionalFields(INode parent, long id, byte[] name,
