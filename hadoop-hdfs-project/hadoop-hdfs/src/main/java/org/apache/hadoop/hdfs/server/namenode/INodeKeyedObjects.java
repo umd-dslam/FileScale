@@ -38,12 +38,19 @@ public class INodeKeyedObjects {
           public void run() {
             int i = 0;
             Iterator<Long> iterator = concurrentHashSet.iterator();
+            if (LOG.isInfoEnabled()) {
+              LOG.info("Sync files/directories from cache to database.");
+            }
             while (iterator.hasNext()) {
               INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
               if (inode.isDirectory()) {
                 inode.asDirectory().updateINodeDirectory();
               } else {
                 inode.asFile().updateINodeFile();
+                FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+                if (uc != null) {
+                  uc.updateFileUnderConstruction(inode.getId());
+                }
               }
               iterator.remove();
               if (++i >= num) break;
@@ -69,6 +76,7 @@ public class INodeKeyedObjects {
   public static IndexedCache<CompositeKey, INode> getCache() {
     if (cache == null) {
       concurrentHashSet = ConcurrentHashMap.newKeySet();
+      BackupSetToDB();
       // https://github.com/ben-manes/caffeine/wiki/Removal
       Caffeine<Object, Object> cfein =
           Caffeine.newBuilder()
@@ -87,6 +95,10 @@ public class INodeKeyedObjects {
                         inode.asDirectory().updateINodeDirectory();
                       } else {
                         inode.asFile().updateINodeFile();
+                        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+                        if (uc != null) {
+                          uc.updateFileUnderConstruction(inode.getId());
+                        }
                       }
                     }
                   })

@@ -42,14 +42,12 @@ public class FileUnderConstructionFeature implements INode.Feature {
   public FileUnderConstructionFeature(final long id, final String clientName, final String clientMachine) {
     this.clientName = clientName;
     this.clientMachine = clientMachine;
+  }
+
+  public void updateFileUnderConstruction(final long id) {
     CompletableFuture.runAsync(() -> {
       DatabaseINode.insertUc(id, clientName, clientMachine);
     }, Database.getInstance().getExecutorService());
-  }
-
-  public void updateFileUnderConstruction(final String clientName, final String clientMachine) {
-    this.clientName = clientName;
-    this.clientMachine = clientMachine;
   }
 
   public String getClientName(final long id) {
