@@ -4,6 +4,7 @@ import static java.util.concurrent.TimeUnit.*;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.*;
 import org.apache.commons.lang3.tuple.Pair;
@@ -35,17 +36,17 @@ public class INodeKeyedObjects {
     final Runnable updateToDB =
         new Runnable() {
           public void run() {
-            if (concurrentHashSet.size() >= num) {
-              int i = 0;
-              for (Long id : concurrentHashSet) {
-                INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, id);
-                if (inode.isDirectory()) {
-                  inode.asDirectory().updateINodeDirectory();
-                } else {
-                  inode.asFile().updateINodeFile();
-                }
-                if (++i >= num) break;
+            int i = 0;
+            Iterator<Long> iterator = concurrentHashSet.iterator();
+            while (iterator.hasNext()) {
+              INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
+              if (inode.isDirectory()) {
+                inode.asDirectory().updateINodeDirectory();
+              } else {
+                inode.asFile().updateINodeFile();
               }
+              iterator.remove();
+              if (++i >= num) break;
             }
           }
         };
