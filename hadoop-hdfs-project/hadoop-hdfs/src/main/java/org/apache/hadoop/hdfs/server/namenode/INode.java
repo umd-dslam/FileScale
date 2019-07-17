@@ -695,8 +695,6 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   /** @return the parent directory */
   public final INodeDirectory getParent() {
     long id = getParentId(); 
-    // return id == DatabaseINode.LONG_NULL ? null : 
-    //     INodeKeyedObjects.getInstance().getINodeDirectory(id); 
   
     if (id == DatabaseINode.LONG_NULL) {
       return null;

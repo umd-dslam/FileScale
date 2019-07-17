@@ -1,100 +1,73 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import static java.util.concurrent.TimeUnit.*;
+
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class INodeKeyedObjects {
-  private static INodeKeyedObjects instance;
-
-  static boolean use_cache = true;
   private static IndexedCache<CompositeKey, INode> cache;
 
-  private INodeFileKeyedObjectPool filePool;
-  private INodeDirectoryKeyedObjectPool directoryPool;
+  private static Set<Long> concurrentHashSet;
+
+  private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
   static final Logger LOG = LoggerFactory.getLogger(INodeKeyedObjects.class);
 
-  INodeKeyedObjects() {
-    if (!use_cache) {
-      try {
-        initializePool();
-      } catch (Exception e) {
-        e.printStackTrace();
-        System.exit(0);
-      }
+  INodeKeyedObjects() {}
+
+  public static Set<Long> getBackupSet() {
+    if (concurrentHashSet == null) {
+      ConcurrentHashMap<Long, Integer> map = new ConcurrentHashMap<>();
+      concurrentHashSet = map.newKeySet();
     }
+    return concurrentHashSet;
   }
 
-  public static INodeKeyedObjects getInstance() {
-    if (instance == null) {
-      instance = new INodeKeyedObjects();
-    }
-    return instance;
-  }
+  public static void BackupSetToDB() {
+    final int num = 1000;
 
-  public void returnToFilePool(final Long id, final INodeFile inode) {
-    filePool.returnToPool(id, inode);
-  }
+    final Runnable updateToDB =
+        new Runnable() {
+          public void run() {
+            int i = 0;
+            Iterator<Long> iterator = concurrentHashSet.iterator();
+            if (LOG.isInfoEnabled()) {
+              LOG.info("Sync files/directories from cache to database.");
+            }
+            while (iterator.hasNext()) {
+              INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
+              if (inode.isDirectory()) {
+                inode.asDirectory().updateINodeDirectory();
+              } else {
+                inode.asFile().updateINodeFile();
+                FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+                if (uc != null) {
+                  uc.updateFileUnderConstruction(inode.getId());
+                }
+              }
+              iterator.remove();
+              if (++i >= num) break;
+            }
+          }
+        };
 
-  public void returnToDirectoryPool(final Long id, final INodeDirectory inode) {
-    directoryPool.returnToPool(id, inode);
-  }
+    final ScheduledFuture<?> updateHandle = scheduler.schedule(updateToDB, 5, SECONDS);
 
-  public boolean isInFilePool(final Long id) {
-    return filePool.isInFilePool(id);
-  }
-
-  public boolean isInDirectoryPool(final Long id) {
-    return directoryPool.isInDirectoryPool(id);
-  }
-
-  public void clearFile(final Long id) {
-    filePool.clear(id);
-  }
-
-  public void clearDirectory(final Long id) {
-    directoryPool.clear(id);
-  }
-
-  public INodeFile getINodeFile(final Long id) {
-    return filePool.getObject(id);
-  }
-
-  public INodeDirectory getINodeDirectory(final Long id) {
-    return directoryPool.getObject(id);
-  }
-
-  // A helper method to initialize the pool using the config and object-factory.
-  private void initializePool() throws Exception {
-    try {
-      // https://commons.apache.org/proper/commons-pool/api-2.0/org/apache/commons/pool2/impl/DefaultEvictionPolicy.html
-
-      filePool = new INodeFileKeyedObjectPool(new INodeFileKeyedObjFactory());
-      String size = System.getenv("MAX_FILEPOOL_SIZE");
-      if (size == null) {
-        filePool.setMaxTotal(10000);
-      } else {
-        filePool.setMaxTotal(Integer.parseInt(size));
-      }
-      filePool.setMaxIdlePerKey(1);
-      filePool.setMaxTotalPerKey(1);
-
-      directoryPool = new INodeDirectoryKeyedObjectPool(new INodeDirectoryKeyedObjFactory());
-      size = System.getenv("MAX_DIRECTORYPOOL_SIZE");
-      if (size == null) {
-        directoryPool.setMaxTotal(50000);
-      } else {
-        directoryPool.setMaxTotal(Integer.parseInt(size));
-      }
-      directoryPool.setMaxIdlePerKey(1);
-      directoryPool.setMaxTotalPerKey(1);
-    } catch (Exception e) {
-      e.printStackTrace();
-      System.exit(0);
-    }
+    scheduler.schedule(
+        new Runnable() {
+          public void run() {
+            updateHandle.cancel(true);
+          }
+        },
+        60 * 60,
+        SECONDS);
   }
 
   // --------------------------------------------------------
@@ -102,6 +75,8 @@ public class INodeKeyedObjects {
 
   public static IndexedCache<CompositeKey, INode> getCache() {
     if (cache == null) {
+      concurrentHashSet = ConcurrentHashMap.newKeySet();
+      BackupSetToDB();
       // https://github.com/ben-manes/caffeine/wiki/Removal
       Caffeine<Object, Object> cfein =
           Caffeine.newBuilder()
@@ -120,6 +95,10 @@ public class INodeKeyedObjects {
                         inode.asDirectory().updateINodeDirectory();
                       } else {
                         inode.asFile().updateINodeFile();
+                        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+                        if (uc != null) {
+                          uc.updateFileUnderConstruction(inode.getId());
+                        }
                       }
                     }
                   })
