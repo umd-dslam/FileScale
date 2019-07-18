@@ -74,3 +74,9 @@ bench/*.jar
 .factorypath
 voltdb-ent-9.0.tar.gz
 voltdb-ent
+
+benchmark/hopfs/hops
+benchmark/hopfs/META-INF
+libndbclient.so*
+
+storedprocs.jar
