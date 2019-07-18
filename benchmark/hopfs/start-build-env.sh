@@ -66,26 +66,11 @@ RUN groupadd --non-unique -g ${GROUP_ID} ${USER_NAME}
 RUN useradd -g ${GROUP_ID} -u ${USER_ID} -k /root -m ${USER_NAME}
 RUN echo "${USER_NAME} ALL=NOPASSWD: ALL" > "/etc/sudoers.d/hadoop-build-${USER_ID}"
 ENV HOME /home/${USER_NAME}
-ENV PATH $PATH:/opt/cmake/bin:/opt/protobuf/bin
-ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
 
 RUN sudo apt-get update && sudo apt-get install -y wget net-tools vim ssh
 
-RUN git clone https://github.com/hopshadoop/hops-metadata-dal
-RUN cd hops-metadata-dal && git checkout master && mvn clean install -DskipTests
-RUN cd ..
-
-RUN cd /tmp
-RUN wget https://bbc1.sics.se/archiva/repository/Hops/com/mysql/ndb/clusterj-native/7.6.10/clusterj-native-7.6.10-natives-linux.jar
-RUN unzip clusterj-native-7.6.10-natives-linux.jar
-RUN cp libndbclient.so /usr/lib && rm -rf clusterj-native-7.6.10-natives-linux.jar && cd .. 
-
-RUN git clone https://github.com/hopshadoop/hops-metadata-dal-impl-ndb
-RUN cd hops-metadata-dal-impl-ndb && git checkout master && mvn clean install -DskipTests
-RUN cd ..
-
-RUN git clone https://github.com/hopshadoop/hops
-RUN cd hops && git checkout master && mvn package -Pdist,native -DskipTests -Dtar
+ENV PATH $PATH:/opt/cmake/bin:/opt/protobuf/bin
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
 UserSpecificDocker
 
 #If this env varible is empty, docker will be started
@@ -98,7 +83,8 @@ DOCKER_INTERACTIVE_RUN=${DOCKER_INTERACTIVE_RUN-"-i -t"}
 # builds because the dependencies are downloaded only once.
 docker run --rm=true $DOCKER_INTERACTIVE_RUN \
   -d --net=host \
-  -w "/home/${USER_NAME}/hops" \
+  -v "${PWD}:/home/${USER_NAME}/hopfs${V_OPTS:-}" \
+  -w "/home/${USER_NAME}/hopfs" \
   -v "${HOME}/.m2:/home/${USER_NAME}/.m2${V_OPTS:-}" \
   -u "${USER_NAME}" \
   --name hopfs-dev \
