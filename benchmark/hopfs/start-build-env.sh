@@ -85,7 +85,7 @@ RUN cd hops-metadata-dal-impl-ndb && git checkout master && mvn clean install -D
 RUN cd ..
 
 RUN git clone https://github.com/hopshadoop/hops
-RUN cd hops && git checkout master && mvn package -Pdist,native,docs -DskipTests -Dtar
+RUN cd hops && git checkout master && mvn package -Pdist,native -DskipTests -Dtar
 UserSpecificDocker
 
 #If this env varible is empty, docker will be started
