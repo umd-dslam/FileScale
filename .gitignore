@@ -77,6 +77,5 @@ voltdb-ent
 
 benchmark/hopfs/hops
 benchmark/hopfs/META-INF
-libndbclient.so*
 
 storedprocs.jar
