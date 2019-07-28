@@ -67,7 +67,15 @@ RUN useradd -g ${GROUP_ID} -u ${USER_ID} -k /root -m ${USER_NAME}
 RUN echo "${USER_NAME} ALL=NOPASSWD: ALL" > "/etc/sudoers.d/hadoop-build-${USER_ID}"
 ENV HOME /home/${USER_NAME}
 
-RUN sudo apt-get update && sudo apt-get install -y wget net-tools vim ssh
+RUN sudo apt-get update && sudo apt-get install -y wget net-tools vim ssh mysql-client
+RUN wget https://dev.mysql.com/get/Downloads/MySQL-Cluster-7.5/mysql-cluster-gpl-7.5.15-linux-glibc2.12-x86_64.tar.gz
+RUN tar zxvf mysql-cluster-gpl-7.5.15-linux-glibc2.12-x86_64.tar.gz -C /usr/local/
+RUN cd /usr/local/ && ln -s mysql-cluster-gpl-7.5.15-linux-glibc2.12-x86_64 mysql 
+RUN cd /usr/local/mysql && cp bin/ndbd /usr/local/bin/ndbd && cp bin/ndbmtd /usr/local/bin/ndbmtd
+RUN cd /usr/local/mysql && cp bin/ndb_mgm* /usr/local/bin
+
+RUN groupadd mysql
+RUN useradd -g mysql -s /bin/false mysql
 
 ENV PATH $PATH:/opt/cmake/bin:/opt/protobuf/bin
 ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
@@ -82,7 +90,8 @@ DOCKER_INTERACTIVE_RUN=${DOCKER_INTERACTIVE_RUN-"-i -t"}
 # system.  And this also is a significant speedup in subsequent
 # builds because the dependencies are downloaded only once.
 docker run --rm=true $DOCKER_INTERACTIVE_RUN \
-  -d --net=host \
+  -d --net=cluster \
+  --ip=192.168.0.10 \
   -v "${PWD}:/home/${USER_NAME}/hopfs${V_OPTS:-}" \
   -w "/home/${USER_NAME}/hopfs" \
   -v "${HOME}/.m2:/home/${USER_NAME}/.m2${V_OPTS:-}" \
