@@ -70,7 +70,6 @@ import org.apache.hadoop.tools.protocolPB.GetUserMappingsProtocolPB;
  * {@link NameNodeProxies#createProxy(Configuration, URI, Class)}, which will
  * create either an HA- or non-HA-enabled client proxy as appropriate.
  */
-@InterfaceAudience.Private
 public class NameNodeProxies {
   
   private static final Logger LOG =

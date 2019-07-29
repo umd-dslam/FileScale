@@ -1,6 +1,6 @@
 package org.apache.hadoop.hdfs;
 
-import com.bytedance.hadoop.hdfs.server.MiniNNProxy;
+import edu.umd.hadoop.hdfs.server.MiniNNProxy;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;

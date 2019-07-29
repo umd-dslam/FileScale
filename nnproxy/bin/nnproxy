@@ -33,11 +33,11 @@ case $COMMAND in
 esac
 
 if [ "$COMMAND" = "proxy" ] ; then
-  CLASS='com.bytedance.hadoop.hdfs.server.ProxyMain'
+  CLASS='edu.umd.hadoop.hdfs.server.ProxyMain'
 elif [ "$COMMAND" = "dump" ] ; then
-  CLASS='com.bytedance.hadoop.hdfs.tools.DumpMount'
+  CLASS='edu.umd.hadoop.hdfs.tools.DumpMount'
 elif [ "$COMMAND" = "load" ] ; then
-  CLASS='com.bytedance.hadoop.hdfs.tools.LoadMount'
+  CLASS='edu.umd.hadoop.hdfs.tools.LoadMount'
 fi
 
 exec $HADOOP_HOME/bin/hadoop jar $NNPROXY_HOME/../lib/hadoop-nnproxy*.jar $CLASS "$@"

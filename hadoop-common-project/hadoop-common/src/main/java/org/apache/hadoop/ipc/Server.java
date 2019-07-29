@@ -363,7 +363,13 @@ public abstract class Server {
    */
   public static InetAddress getRemoteIp() {
     Call call = CurCall.get();
-    return (call != null ) ? call.getHostInetAddress() : null;
+    if (call == null) {
+      return null;
+    }
+    if (call.clientAddress != null) {
+      return call.clientAddress;
+    }
+    return (call != null) ? call.getHostInetAddress() : null;
   }
 
   /**
@@ -715,6 +721,7 @@ public abstract class Server {
     private final CallerContext callerContext; // the call context
     private boolean deferredResponse = false;
     private int priorityLevel;
+    private final InetAddress clientAddress;
     // the priority level assigned by scheduler, 0 by default
 
     Call() {
@@ -724,21 +731,21 @@ public abstract class Server {
 
     Call(Call call) {
       this(call.callId, call.retryCount, call.rpcKind, call.clientId,
-          call.traceScope, call.callerContext);
+          call.traceScope, call.callerContext, call.clientAddress);
     }
 
     Call(int id, int retryCount, RPC.RpcKind kind, byte[] clientId) {
-      this(id, retryCount, kind, clientId, null, null);
+      this(id, retryCount, kind, clientId, null, null, null);
     }
 
     @VisibleForTesting // primarily TestNamenodeRetryCache
     public Call(int id, int retryCount, Void ignore1, Void ignore2,
         RPC.RpcKind kind, byte[] clientId) {
-      this(id, retryCount, kind, clientId, null, null);
+      this(id, retryCount, kind, clientId, null, null, null);
     }
 
     Call(int id, int retryCount, RPC.RpcKind kind, byte[] clientId,
-        TraceScope traceScope, CallerContext callerContext) {
+        TraceScope traceScope, CallerContext callerContext, InetAddress clientAddress) {
       this.callId = id;
       this.retryCount = retryCount;
       this.timestamp = Time.now();
@@ -746,6 +753,7 @@ public abstract class Server {
       this.clientId = clientId;
       this.traceScope = traceScope;
       this.callerContext = callerContext;
+      this.clientAddress = clientAddress;
     }
 
     @Override
@@ -859,13 +867,13 @@ public abstract class Server {
     RpcCall(Connection connection, int id, int retryCount) {
       this(connection, id, retryCount, null,
           RPC.RpcKind.RPC_BUILTIN, RpcConstants.DUMMY_CLIENT_ID,
-          null, null);
+          null, null, null);
     }
 
     RpcCall(Connection connection, int id, int retryCount,
         Writable param, RPC.RpcKind kind, byte[] clientId,
-        TraceScope traceScope, CallerContext context) {
-      super(id, retryCount, kind, clientId, traceScope, context);
+        TraceScope traceScope, CallerContext context, InetAddress clientAddress) {
+      super(id, retryCount, kind, clientId, traceScope, context, clientAddress);
       this.connection = connection;
       this.rpcRequest = param;
     }
@@ -924,16 +932,24 @@ public abstract class Server {
         t = t.getCause();
       }
       logException(Server.LOG, t, this);
-      if (t instanceof RpcServerException) {
+      if (t instanceof ProxyRpcServerException) {
+        ProxyRpcServerException prse = ((ProxyRpcServerException)t);
+        responseParams.returnStatus = prse.getRpcStatusProto();
+        responseParams.detailedErr = prse.getRpcErrorCodeProto();
+        responseParams.errorClass = prse.errorClass;
+        responseParams.error = prse.errorMessage;
+      } else if (t instanceof RpcServerException) {
         RpcServerException rse = ((RpcServerException) t);
         responseParams.returnStatus = rse.getRpcStatusProto();
         responseParams.detailedErr = rse.getRpcErrorCodeProto();
+        responseParams.errorClass = t.getClass().getName();
+        responseParams.error = StringUtils.stringifyException(t);
       } else {
         responseParams.returnStatus = RpcStatusProto.ERROR;
         responseParams.detailedErr = RpcErrorCodeProto.ERROR_APPLICATION;
+        responseParams.errorClass = t.getClass().getName();
+        responseParams.error = StringUtils.stringifyException(t);
       }
-      responseParams.errorClass = t.getClass().getName();
-      responseParams.error = StringUtils.stringifyException(t);
       // Remove redundant error class name from the beginning of the
       // stack trace
       String exceptionHdr = responseParams.errorClass + ": ";
@@ -2522,10 +2538,20 @@ public abstract class Server {
                 .build();
       }
 
+ 
+      InetAddress clientAddress = null;
+      if (header.hasClientAddress()) {
+        try {
+          clientAddress = InetAddress.getByName(header.getClientAddress());
+        } catch (UnknownHostException e) {
+          LOG.warn("Invalid client address:" + header.getClientAddress());
+          clientAddress = null;
+        }
+      }
       RpcCall call = new RpcCall(this, header.getCallId(),
           header.getRetryCount(), rpcRequest,
           ProtoUtil.convert(header.getRpcKind()),
-          header.getClientId().toByteArray(), traceScope, callerContext);
+          header.getClientId().toByteArray(), traceScope, callerContext, clientAddress);
 
       // Save the priority level assignment by the scheduler
       call.setPriorityLevel(callQueue.getPriorityLevel(call));
