@@ -369,8 +369,7 @@ public abstract class Server {
     if (call.clientAddress != null) {
       return call.clientAddress;
     }
-    return (call.connection != null) ? call.connection
-      .getHostInetAddress() : null;
+    return (call != null) ? call.getHostInetAddress() : null;
   }
 
   /**
