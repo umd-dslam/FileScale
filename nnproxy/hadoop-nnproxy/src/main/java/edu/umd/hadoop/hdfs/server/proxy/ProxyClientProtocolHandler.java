@@ -11,8 +11,12 @@ import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.BatchedRemoteIterator.BatchedEntries;
+import org.apache.hadoop.hdfs.AddBlockFlag;
 import org.apache.hadoop.hdfs.inotify.EventBatchList;
 import org.apache.hadoop.hdfs.protocol.*;
+import org.apache.hadoop.hdfs.protocol.SnapshotDiffReportListing;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants.ReencryptAction;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
@@ -72,15 +76,14 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
     }
 
     @Override
-    public HdfsFileStatus create(String src, FsPermission masked, String clientName, EnumSetWritable<CreateFlag> flag, boolean createParent, short replication, long blockSize, CryptoProtocolVersion[] supportedVersions) throws AccessControlException, AlreadyBeingCreatedException, DSQuotaExceededException, FileAlreadyExistsException, FileNotFoundException, NSQuotaExceededException, ParentNotDirectoryException, SafeModeException, UnresolvedLinkException, SnapshotAccessControlException, IOException {
+    public HdfsFileStatus create(String src, FsPermission masked,
+        String clientName, EnumSetWritable<CreateFlag> flag,
+        boolean createParent, short replication, long blockSize,
+        CryptoProtocolVersion[] supportedVersions, String ecPolicyName)
+        throws IOException {
         RouteInfo routeInfo = router.route(src);
-        return routeInfo.upstream.create(routeInfo.realPath, masked, clientName, flag, createParent, replication, blockSize, supportedVersions);
-    }
-
-    @Override
-    public LocatedBlock append(String src, String clientName) throws AccessControlException, DSQuotaExceededException, FileNotFoundException, SafeModeException, UnresolvedLinkException, SnapshotAccessControlException, IOException {
-        RouteInfo routeInfo = router.route(src);
-        return routeInfo.upstream.append(routeInfo.realPath, clientName);
+        return routeInfo.upstream.create(routeInfo.realPath, masked, clientName, flag, createParent,
+            replication, blockSize, supportedVersions, ecPolicyName);
     }
 
     @Override
@@ -117,12 +120,6 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
     public void abandonBlock(ExtendedBlock b, long fileId, String src, String holder) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException {
         RouteInfo routeInfo = router.route(src);
         routeInfo.upstream.abandonBlock(b, fileId, routeInfo.realPath, holder);
-    }
-
-    @Override
-    public LocatedBlock addBlock(String src, String clientName, ExtendedBlock previous, DatanodeInfo[] excludeNodes, long fileId, String[] favoredNodes) throws AccessControlException, FileNotFoundException, NotReplicatedYetException, SafeModeException, UnresolvedLinkException, IOException {
-        RouteInfo routeInfo = router.route(src);
-        return routeInfo.upstream.addBlock(routeInfo.realPath, clientName, previous, excludeNodes, fileId, favoredNodes);
     }
 
     @Override
@@ -271,11 +268,6 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
     }
 
     @Override
-    public void saveNamespace() throws AccessControlException, IOException {
-        throw new IOException("Invalid operation, do not use proxy");
-    }
-
-    @Override
     public long rollEdits() throws AccessControlException, IOException {
         throw new IOException("Invalid operation, do not use proxy");
     }
@@ -338,12 +330,6 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
     public ContentSummary getContentSummary(String path) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException {
         RouteInfo routeInfo = router.route(path);
         return routeInfo.upstream.getContentSummary(routeInfo.realPath);
-    }
-
-    @Override
-    public void setQuota(String path, long namespaceQuota, long diskspaceQuota) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, SnapshotAccessControlException, IOException {
-        RouteInfo routeInfo = router.route(path);
-        routeInfo.upstream.setQuota(routeInfo.realPath, namespaceQuota, diskspaceQuota);
     }
 
     @Override
@@ -567,4 +553,177 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
         throw new IOException("Invalid operation, do not use proxy");
     }
 
+    @Override
+    public void satisfyStoragePolicy(String path) throws IOException {
+        RouteInfo routeInfo = router.route(path);
+        routeInfo.upstream.satisfyStoragePolicy(routeInfo.realPath);
+    }
+
+    @Override
+    public BatchedRemoteIterator.BatchedEntries<OpenFileEntry> listOpenFiles(long prevId,
+        EnumSet<OpenFilesIterator.OpenFilesType> openFilesTypes, String path) throws IOException {
+        RouteInfo routeInfo = router.route(path);
+        return routeInfo.upstream.listOpenFiles(prevId, openFilesTypes, routeInfo.realPath);
+    }
+
+    @Deprecated
+    @Override
+    public BatchedRemoteIterator.BatchedEntries<OpenFileEntry> listOpenFiles(long prevId)
+        throws IOException {
+        return router.getRoot().upstream.listOpenFiles(prevId);
+    }
+
+    @Override
+    public QuotaUsage getQuotaUsage(String path) throws IOException {
+        RouteInfo routeInfo = router.route(path);
+        return routeInfo.upstream.getQuotaUsage(routeInfo.realPath);
+    }
+
+    @Override
+    public ErasureCodingPolicyInfo[] getErasureCodingPolicies()
+        throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+  
+    @Override
+    public Map<String, String> getErasureCodingCodecs() throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+  
+    @Override
+    public AddErasureCodingPolicyResponse[] addErasureCodingPolicies(
+        ErasureCodingPolicy[] policies) throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+  
+    @Override
+    public void removeErasureCodingPolicy(String ecPolicyName)
+        throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+  
+    @Override
+    public void disableErasureCodingPolicy(String ecPolicyName)
+        throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+  
+    @Override
+    public void enableErasureCodingPolicy(String ecPolicyName)
+        throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+  
+    @Override
+    public ErasureCodingPolicy getErasureCodingPolicy(String src)
+        throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        return routeInfo.upstream.getErasureCodingPolicy(routeInfo.realPath);
+    }
+  
+    @Override
+    public void setErasureCodingPolicy(String src, String ecPolicyName)
+        throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        routeInfo.upstream.setErasureCodingPolicy(routeInfo.realPath, ecPolicyName);
+    }
+  
+    @Override
+    public void unsetErasureCodingPolicy(String src) throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        routeInfo.upstream.unsetErasureCodingPolicy(routeInfo.realPath);
+    }
+  
+    @Override
+    public void reencryptEncryptionZone(String zone, ReencryptAction action)
+        throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+  
+    @Override
+    public BatchedEntries<ZoneReencryptionStatus> listReencryptionStatus(
+        long prevId) throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+
+    @Override
+    public SnapshotDiffReportListing getSnapshotDiffReportListing(
+        String snapshotRoot, String earlierSnapshotName, String laterSnapshotName,
+        byte[] startPath, int index) throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+
+    @Override
+    public void setQuota(String path, long namespaceQuota, long storagespaceQuota,
+        StorageType type) throws IOException {
+        RouteInfo routeInfo = router.route(path);
+        routeInfo.upstream.setQuota(routeInfo.realPath, namespaceQuota, storagespaceQuota, type);
+    }
+
+    @Override
+    public HdfsLocatedFileStatus getLocatedFileInfo(String src,
+        boolean needBlockToken) throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        return routeInfo.upstream.getLocatedFileInfo(routeInfo.realPath, needBlockToken);
+    }
+
+    @Override
+    public boolean upgradeStatus() throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+
+    @Override
+    public boolean saveNamespace(long timeWindow, long txGap) throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+
+    @Override
+    public ECBlockGroupStats getECBlockGroupStats() throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+
+    @Override
+    public ReplicatedBlockStats getReplicatedBlockStats() throws IOException {
+        throw new IOException("Invalid operation, do not use proxy");
+    }
+
+    @Override
+    public boolean truncate(String src, long newLength, String clientName)
+        throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        return routeInfo.upstream.truncate(routeInfo.realPath, newLength, clientName);
+    }
+
+    /**
+     * Excluded and favored nodes are not verified and will be ignored by
+     * placement policy if they are not in the same nameservice as the file.
+     */
+    @Override
+    public LocatedBlock addBlock(String src, String clientName,
+        ExtendedBlock previous, DatanodeInfo[] excludedNodes, long fileId,
+        String[] favoredNodes, EnumSet<AddBlockFlag> addBlockFlags)
+        throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        return routeInfo.upstream.addBlock(routeInfo.realPath, clientName, previous, excludedNodes,
+            fileId, favoredNodes, addBlockFlags);
+    }
+
+    @Override
+    public BlockStoragePolicy getStoragePolicy(String path) throws IOException {
+        RouteInfo routeInfo = router.route(path);
+        return routeInfo.upstream.getStoragePolicy(routeInfo.realPath);
+    }
+
+    @Override
+    public void unsetStoragePolicy(String src) throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        routeInfo.upstream.unsetStoragePolicy(routeInfo.realPath);
+    }
+
+    @Override
+    public LastBlockWithStatus append(String src, final String clientName,
+        final EnumSetWritable<CreateFlag> flag) throws IOException {
+        RouteInfo routeInfo = router.route(src);
+        return routeInfo.upstream.append(routeInfo.realPath, clientName, flag);
+    }
 }

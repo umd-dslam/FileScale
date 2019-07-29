@@ -1,6 +1,5 @@
 package edu.umd.hadoop.hdfs.server;
 
-import edu.umd.hadoop.hdfs.BDManifest;
 import edu.umd.hadoop.hdfs.server.cache.CacheRegistry;
 import edu.umd.hadoop.hdfs.server.mount.BlockPoolRegistry;
 import edu.umd.hadoop.hdfs.server.mount.MountsManager;
@@ -61,7 +60,7 @@ public class NNProxy {
         });
         this.cacheRegistry.start();
         this.server.start();
-        LOG.info("Started nnproxy, revision " + BDManifest.getBuildNumber());
+        LOG.info("Started nnproxy... ");
     }
 
     public void shutdown() {
