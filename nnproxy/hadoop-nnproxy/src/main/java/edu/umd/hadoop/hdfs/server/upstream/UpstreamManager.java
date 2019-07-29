@@ -132,8 +132,8 @@ public class UpstreamManager {
             UserGroupInformation.setLoginUser(null);
         }
         URI fsUri = URI.create(ticket.fs);
-        NameNodeProxiesClient.ProxyAndInfo proxyAndInfo = NameNodeProxiesClient.createProxy(conf, fsUri, ClientProtocol.class);
-        NameNodeProxiesClient.ProxyAndInfo nnProxyAndInfo = NameNodeProxiesClient.createProxy(conf, fsUri, NamenodeProtocol.class);
+        NameNodeProxies.ProxyAndInfo proxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, ClientProtocol.class);
+        NameNodeProxies.ProxyAndInfo nnProxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, NamenodeProtocol.class);
         LOG.info("New upstream: " + ticket.user + "@" + ticket.fs);
         ClientProtocol clientProtocol = (ClientProtocol) proxyAndInfo.getProxy();
         return new Upstream(wrapWithThrottle(ticket.fs, clientProtocol, ClientProtocol.class), proxyAndInfo, nnProxyAndInfo);
