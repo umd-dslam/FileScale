@@ -34,7 +34,7 @@ public class TestProxyFs {
     public void setUp() throws Exception {
         conf = new Configuration();
         conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 3);
-        conf.setBoolean(DFSConfigKeys.DFS_WEBHDFS_ENABLED_KEY, true);
+        // conf.setBoolean(DFSConfigKeys.DFS_WEBHDFS_ENABLED_KEY, true);
         conf.setInt("dfs.namenode.fs-limits.min-block-size", 1024);
         cluster = new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
         cluster.waitActive();

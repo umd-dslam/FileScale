@@ -22,6 +22,7 @@
         <hadoop.common>${hadoop.home}/share/hadoop/common/hadoop-common-3.3.0-SNAPSHOT.jar</hadoop.common>
         <hadoop.client>${hadoop.home}/share/hadoop/hdfs/hadoop-hdfs-client-3.3.0-SNAPSHOT.jar</hadoop.client>
         <hadoop.hdfs>${hadoop.home}/share/hadoop/hdfs/hadoop-hdfs-3.3.0-SNAPSHOT.jar</hadoop.hdfs>
+        <hadoop.hdfs.test>${hadoop.home}/share/hadoop/hdfs/hadoop-hdfs-3.3.0-SNAPSHOT-tests.jar</hadoop.hdfs.test>
         <hadoop.annotations>${hadoop.home}/share/hadoop/common/lib/hadoop-annotations-3.3.0-SNAPSHOT.jar</hadoop.annotations>
         <google.protobuf.version>3.9.0</google.protobuf.version>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -92,6 +93,20 @@
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
             <version>${zookeeper.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs-tests</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>system</scope>
+            <systemPath>${hadoop.hdfs.test}</systemPath>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/junit/junit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

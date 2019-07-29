@@ -11,6 +11,7 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.NameNodeProxies;
+import org.apache.hadoop.hdfs.NameNodeProxiesClient;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.security.SaslRpcServer;
@@ -42,13 +43,13 @@ public class UpstreamManager {
 
     public static class Upstream {
         public final ClientProtocol protocol;
-        public final NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyAndInfo;
-        public final NameNodeProxies.ProxyAndInfo<NamenodeProtocol> nnProxyAndInfo;
+        public final NameNodeProxiesClient.ProxyAndInfo<ClientProtocol> proxyAndInfo;
+        public final NameNodeProxiesClient.ProxyAndInfo<NamenodeProtocol> nnProxyAndInfo;
         public volatile int fsIndex;
 
         public Upstream(ClientProtocol protocol,
-                        NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyAndInfo,
-                        NameNodeProxies.ProxyAndInfo<NamenodeProtocol> nnProxyAndInfo) {
+                        NameNodeProxiesClient.ProxyAndInfo<ClientProtocol> proxyAndInfo,
+                        NameNodeProxiesClient.ProxyAndInfo<NamenodeProtocol> nnProxyAndInfo) {
             this.protocol = protocol;
             this.proxyAndInfo = proxyAndInfo;
             this.nnProxyAndInfo = nnProxyAndInfo;
@@ -132,8 +133,8 @@ public class UpstreamManager {
             UserGroupInformation.setLoginUser(null);
         }
         URI fsUri = URI.create(ticket.fs);
-        NameNodeProxies.ProxyAndInfo proxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, ClientProtocol.class);
-        NameNodeProxies.ProxyAndInfo nnProxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, NamenodeProtocol.class);
+        NameNodeProxiesClient.ProxyAndInfo proxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, ClientProtocol.class);
+        NameNodeProxiesClient.ProxyAndInfo nnProxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, NamenodeProtocol.class);
         LOG.info("New upstream: " + ticket.user + "@" + ticket.fs);
         ClientProtocol clientProtocol = (ClientProtocol) proxyAndInfo.getProxy();
         return new Upstream(wrapWithThrottle(ticket.fs, clientProtocol, ClientProtocol.class), proxyAndInfo, nnProxyAndInfo);
