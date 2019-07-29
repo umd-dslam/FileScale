@@ -1,6 +1,6 @@
-package com.bytedance.hadoop.hdfs.server;
+package edu.umd.hadoop.hdfs.server;
 
-import com.bytedance.hadoop.hdfs.ProxyConfig;
+import edu.umd.hadoop.hdfs.ProxyConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;

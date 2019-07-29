@@ -1,8 +1,8 @@
-package com.bytedance.hadoop.hdfs.server.cache;
+package edu.umd.hadoop.hdfs.server.cache;
 
-import com.bytedance.hadoop.hdfs.ProxyConfig;
-import com.bytedance.hadoop.hdfs.server.NNProxy;
-import com.bytedance.hadoop.hdfs.server.upstream.UpstreamManager;
+import edu.umd.hadoop.hdfs.ProxyConfig;
+import edu.umd.hadoop.hdfs.server.NNProxy;
+import edu.umd.hadoop.hdfs.server.upstream.UpstreamManager;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;

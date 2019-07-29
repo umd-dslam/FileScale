@@ -1,6 +1,6 @@
-package com.bytedance.hadoop.hdfs.server.quota;
+package edu.umd.hadoop.hdfs.server.quota;
 
-import com.bytedance.hadoop.hdfs.server.NNProxy;
+import edu.umd.hadoop.hdfs.server.NNProxy;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.classification.InterfaceAudience;

@@ -1,6 +1,6 @@
-package com.bytedance.hadoop.hdfs.server.mount;
+package edu.umd.hadoop.hdfs.server.mount;
 
-import com.bytedance.hadoop.hdfs.ProxyConfig;
+import edu.umd.hadoop.hdfs.ProxyConfig;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.StringUtils;
@@ -145,7 +145,7 @@ public class MountsManager extends AbstractService {
     @VisibleForTesting
     protected void installMountTable(List<MountEntry> entries) {
         LOG.info("Installed mount table: " + entries);
-        List<String> fs = new ArrayList<>();
+        List<String> fs = new ArrayList<String>();
         for (MountEntry entry : entries) {
             if (entry.mountPoint.equals("/")) {
                 root = entry;

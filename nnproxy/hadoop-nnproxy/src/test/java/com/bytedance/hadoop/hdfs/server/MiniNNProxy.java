@@ -1,7 +1,7 @@
-package com.bytedance.hadoop.hdfs.server;
+package edu.umd.hadoop.hdfs.server;
 
-import com.bytedance.hadoop.hdfs.server.NNProxy;
-import com.bytedance.hadoop.hdfs.server.mount.MountsManager;
+import edu.umd.hadoop.hdfs.server.NNProxy;
+import edu.umd.hadoop.hdfs.server.mount.MountsManager;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DFSClient;

@@ -1,4 +1,4 @@
-package com.bytedance.hadoop.hdfs.server.exception;
+package edu.umd.hadoop.hdfs.server.exception;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;

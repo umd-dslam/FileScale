@@ -1,4 +1,4 @@
-package com.bytedance.hadoop.hdfs;
+package edu.umd.hadoop.hdfs;
 
 /** */
 public class ProxyConfig {

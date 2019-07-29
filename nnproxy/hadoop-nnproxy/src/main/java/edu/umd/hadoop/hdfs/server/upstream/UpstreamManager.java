@@ -1,8 +1,8 @@
-package com.bytedance.hadoop.hdfs.server.upstream;
+package edu.umd.hadoop.hdfs.server.upstream;
 
-import com.bytedance.hadoop.hdfs.ProxyConfig;
-import com.bytedance.hadoop.hdfs.server.NNProxy;
-import com.bytedance.hadoop.hdfs.server.quota.ThrottleInvocationHandler;
+import edu.umd.hadoop.hdfs.ProxyConfig;
+import edu.umd.hadoop.hdfs.server.NNProxy;
+import edu.umd.hadoop.hdfs.server.quota.ThrottleInvocationHandler;
 import com.google.common.base.Function;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -132,8 +132,8 @@ public class UpstreamManager {
             UserGroupInformation.setLoginUser(null);
         }
         URI fsUri = URI.create(ticket.fs);
-        NameNodeProxies.ProxyAndInfo proxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, ClientProtocol.class);
-        NameNodeProxies.ProxyAndInfo nnProxyAndInfo = NameNodeProxies.createProxy(conf, fsUri, NamenodeProtocol.class);
+        NameNodeProxiesClient.ProxyAndInfo proxyAndInfo = NameNodeProxiesClient.createProxy(conf, fsUri, ClientProtocol.class);
+        NameNodeProxiesClient.ProxyAndInfo nnProxyAndInfo = NameNodeProxiesClient.createProxy(conf, fsUri, NamenodeProtocol.class);
         LOG.info("New upstream: " + ticket.user + "@" + ticket.fs);
         ClientProtocol clientProtocol = (ClientProtocol) proxyAndInfo.getProxy();
         return new Upstream(wrapWithThrottle(ticket.fs, clientProtocol, ClientProtocol.class), proxyAndInfo, nnProxyAndInfo);

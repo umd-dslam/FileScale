@@ -1,7 +1,7 @@
-package com.bytedance.hadoop.hdfs.server.proxy;
+package edu.umd.hadoop.hdfs.server.proxy;
 
-import com.bytedance.hadoop.hdfs.server.NNProxy;
-import com.bytedance.hadoop.hdfs.ProxyConfig;
+import edu.umd.hadoop.hdfs.server.NNProxy;
+import edu.umd.hadoop.hdfs.ProxyConfig;
 import com.google.protobuf.BlockingService;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;

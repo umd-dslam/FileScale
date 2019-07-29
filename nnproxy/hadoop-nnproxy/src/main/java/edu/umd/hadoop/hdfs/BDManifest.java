@@ -1,4 +1,4 @@
-package com.bytedance.hadoop.hdfs;
+package edu.umd.hadoop.hdfs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,7 +1,7 @@
-package com.bytedance.hadoop.hdfs.server;
+package edu.umd.hadoop.hdfs.tools;
 
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.classification.InterfaceStability;
+import edu.umd.hadoop.hdfs.server.mount.MountsManager;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.util.Tool;
@@ -9,25 +9,25 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@InterfaceAudience.Private
-@InterfaceStability.Stable
-public class ProxyMain implements Tool {
+/** */
+public class LoadMount implements Tool {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ProxyMain.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LoadMount.class);
 
     Configuration conf;
 
     public static void main(String[] args) throws Exception {
-        ProxyMain main = new ProxyMain();
+        LoadMount main = new LoadMount();
         System.exit(ToolRunner.run(new HdfsConfiguration(), main, args));
     }
 
     @Override
     public int run(String[] args) throws Exception {
-        NNProxy nnProxy = new NNProxy(conf);
-        nnProxy.start();
-        nnProxy.join();
-        LOG.info("NNProxy halted");
+        String mounts = IOUtils.toString(System.in);
+        MountsManager mountsManager = new MountsManager();
+        mountsManager.init(conf);
+        mountsManager.start();
+        mountsManager.load(mounts);
         return 0;
     }
 

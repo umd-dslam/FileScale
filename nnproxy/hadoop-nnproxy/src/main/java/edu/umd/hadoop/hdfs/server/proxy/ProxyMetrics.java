@@ -1,4 +1,4 @@
-package com.bytedance.hadoop.hdfs.server.proxy;
+package edu.umd.hadoop.hdfs.server.proxy;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;

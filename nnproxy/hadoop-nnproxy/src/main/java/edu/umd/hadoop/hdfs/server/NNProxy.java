@@ -1,13 +1,13 @@
-package com.bytedance.hadoop.hdfs.server;
+package edu.umd.hadoop.hdfs.server;
 
-import com.bytedance.hadoop.hdfs.BDManifest;
-import com.bytedance.hadoop.hdfs.server.cache.CacheRegistry;
-import com.bytedance.hadoop.hdfs.server.mount.BlockPoolRegistry;
-import com.bytedance.hadoop.hdfs.server.mount.MountsManager;
-import com.bytedance.hadoop.hdfs.server.proxy.ProxyMetrics;
-import com.bytedance.hadoop.hdfs.server.proxy.ProxyServer;
-import com.bytedance.hadoop.hdfs.server.proxy.RpcInvocationProxy;
-import com.bytedance.hadoop.hdfs.server.upstream.UpstreamManager;
+import edu.umd.hadoop.hdfs.BDManifest;
+import edu.umd.hadoop.hdfs.server.cache.CacheRegistry;
+import edu.umd.hadoop.hdfs.server.mount.BlockPoolRegistry;
+import edu.umd.hadoop.hdfs.server.mount.MountsManager;
+import edu.umd.hadoop.hdfs.server.proxy.ProxyMetrics;
+import edu.umd.hadoop.hdfs.server.proxy.ProxyServer;
+import edu.umd.hadoop.hdfs.server.proxy.RpcInvocationProxy;
+import edu.umd.hadoop.hdfs.server.upstream.UpstreamManager;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
