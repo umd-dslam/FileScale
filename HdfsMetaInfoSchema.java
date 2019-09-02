@@ -47,9 +47,9 @@ public class HdfsMetaInfoSchema {
       // create inode table in Postgres
       String sql1 = "";
       String[] tableNames = new String[] {
-        "hdfs", "namespace", "inodes", "stringtable", "inodexattrs", "inodeuc",
-        "inode2block", "datablocks", "blockstripes", "block2storage", "storage",
-        "delegationkeys", "persisttokens"};
+        "hdfs", "namespace", "inodes", "mount", "namenodes", "stringtable",
+        "inodexattrs", "inodeuc", "inode2block", "datablocks", "blockstripes",
+        "block2storage", "storage", "delegationkeys", "persisttokens"};
       for (String tableName : tableNames) {
         if (env.equals("VOLT")) {
           sql1 += String.format("DROP TABLE %s IF EXISTS;", tableName);
@@ -69,6 +69,13 @@ public class HdfsMetaInfoSchema {
               + "   transactionId bigint, rollingUpgradeStartTime bigint,"
               + "   lastAllocatedStripedBlockId bigint"
               + ");"
+              + "CREATE TABLE mount("
+              + "   namenode varchar, path varchar, readOnly smallint"
+              + "   PRIMARY KEY(namenode, path)"
+              + ");"
+              + "CREATE VIEW namenodes("
+              + "   namenode varchar"
+              + ") AS SELECT DISTINCT namenode FROM mount;"
               + "CREATE TABLE stringtable("
               + "   id int primary key, str varchar"
               + ");"

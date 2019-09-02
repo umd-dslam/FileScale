@@ -25,7 +25,6 @@ public class DumpMount implements Tool {
         MountsManager mountsManager = new MountsManager();
         mountsManager.init(conf);
         mountsManager.start();
-        mountsManager.waitUntilInstalled();
         System.out.println(mountsManager.dump());
         return 0;
     }
