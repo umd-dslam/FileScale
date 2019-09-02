@@ -27,6 +27,7 @@ public class Router {
 
     public static final Pattern TRASH_PATTERN = Pattern.compile("/user/[^/]+/.Trash/[^/]+/(.+)");
 
+    final String defaultNN = "hdfs://localhost:9000"; 
     final NNProxy nnProxy;
     final Configuration conf;
     final UpstreamManager upstreamManager;
@@ -50,7 +51,8 @@ public class Router {
         }
         String fs = nnProxy.getMounts().resolve(logicalPath);
         if (fs == null) {
-            throw new IOException("Not resolved: " + path);
+            // mount to default path
+            fs = defaultNN;
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("Resolved: " + path + " -> " + fs + path);
