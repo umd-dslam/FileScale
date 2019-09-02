@@ -2,8 +2,11 @@ package org.apache.hadoop.hdfs.db;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.apache.commons.lang.StringUtils;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
@@ -21,8 +24,7 @@ public class DatabaseMountTable {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient()
-              .callProcedure(new NullCallback(), "InsertMountEntries", namenodes, paths, readonlys);
+          obj.getVoltClient().callProcedure("InsertMountEntries", namenodes, paths, readonlys);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -38,7 +40,7 @@ public class DatabaseMountTable {
         for (int i = 0; i < namenodes.length; ++i) {
           pst.setString(i * 3 + 1, namenodes[i]);
           pst.setString(i * 3 + 2, paths[i]);
-          pst.setInteger(i * 3 + 3, readonlys[i]);
+          pst.setLong(i * 3 + 3, readonlys[i]);
         }
         pst.executeUpdate();
         pst.close();
@@ -59,8 +61,7 @@ public class DatabaseMountTable {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          VoltTable[] results =
-              obj.getVoltClient().callProcedure(new NullCallback(), "GetAllNameNodes");
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetAllNameNodes").getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -100,7 +101,7 @@ public class DatabaseMountTable {
       if (env.equals("VOLT")) {
         try {
           VoltTable[] results =
-              obj.getVoltClient().callProcedure(new NullCallback(), "GetNameNode", filePath);
+              obj.getVoltClient().callProcedure("GetNameNode", filePath).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -120,15 +121,15 @@ public class DatabaseMountTable {
         ResultSet rs = pst.executeQuery();
         String namenode = null;
         String path = null;
-        Integer readOnly = null;
+        Long readOnly = null;
         while (rs.next()) {
           namenode = rs.getString(1);
           path = rs.getString(2);
-          readOnly = rs.getInteger(3);
+          readOnly = rs.getLong(3);
         }
 
         if (namenode != null) {
-          if (readOnly == 1) {
+          if (readOnly == 1L) {
             sql =
                 "SELECT namenode FROM mount WHERE readOnly = 1 AND path = ? ORDER BY random() LIMIT 1;";
             pst = conn.prepareStatement(sql);
@@ -150,7 +151,7 @@ public class DatabaseMountTable {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("getNameNode: (" + path + ", " + res + ")");
+      LOG.info("getNameNode: (" + filePath + ", " + res + ")");
     }
     return res;
   }
@@ -163,7 +164,7 @@ public class DatabaseMountTable {
       if (env.equals("VOLT")) {
         try {
           VoltTable[] results =
-              obj.getVoltClient().callProcedure(new NullCallback(), "IsMountPoint", filePath);
+              obj.getVoltClient().callProcedure("IsMountPoint", filePath).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -206,7 +207,7 @@ public class DatabaseMountTable {
       if (env.equals("VOLT")) {
         try {
           VoltTable[] results =
-              obj.getVoltClient().callProcedure(new NullCallback(), "IsUnified", filePath);
+              obj.getVoltClient().callProcedure("IsUnified", filePath).getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -249,8 +250,7 @@ public class DatabaseMountTable {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          VoltTable[] results =
-              obj.getVoltClient().callProcedure(new NullCallback(), "IsUnified", filePath);
+          VoltTable[] results = obj.getVoltClient().callProcedure("DumpMountTable").getResults();
           VoltTable result = results[0];
           result.resetRowPosition();
           while (result.advanceRow()) {
@@ -269,7 +269,7 @@ public class DatabaseMountTable {
         Connection conn = obj.getConnection();
         PreparedStatement pst = conn.prepareStatement(sql);
         ResultSet rs = pst.executeQuery();
-        while (rs.next()) {}
+        while (rs.next()) {
           res.append(rs.getString(1));
           res.append('\t');
           res.append(rs.getString(2));

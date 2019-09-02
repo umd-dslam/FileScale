@@ -1,9 +1,8 @@
 package edu.umd.hadoop.hdfs.server.mount;
 
 import edu.umd.hadoop.hdfs.ProxyConfig;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
@@ -103,6 +102,6 @@ public class MountsManager extends AbstractService {
         DatabaseMountTable.insertEntries(
             namenodes.toArray(new String[namenodes.size()]),
             paths.toArray(new String[paths.size()]),
-            readonlys.toArray(new String[readonlys.size()]));        
+            readonlys.toArray(new Integer[readonlys.size()]));        
     }
 }
