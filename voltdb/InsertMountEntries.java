@@ -3,7 +3,7 @@ import org.voltdb.*;
 public class InsertMountEntries extends VoltProcedure {
 
   public final SQLStmt sql =
-      new SQLStmt("UNSERT INTO mount(namenode, path, readOnly) VALUES (?, ?, ?);");
+      new SQLStmt("UPSERT INTO mount(namenode, path, readOnly) VALUES (?, ?, ?);");
 
   public long run(final String[] namenodes, final String[] paths, final Integer[] readonlys)
       throws VoltAbortException {

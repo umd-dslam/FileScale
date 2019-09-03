@@ -47,7 +47,7 @@ public class HdfsMetaInfoSchema {
       // create inode table in Postgres
       String sql1 = "";
       String[] tableNames = new String[] {
-        "hdfs", "namespace", "inodes", "mount", "namenodes", "stringtable",
+        "hdfs", "namespace", "inodes", "namenodes", "mount", "stringtable",
         "inodexattrs", "inodeuc", "inode2block", "datablocks", "blockstripes",
         "block2storage", "storage", "delegationkeys", "persisttokens"};
       for (String tableName : tableNames) {
@@ -70,11 +70,11 @@ public class HdfsMetaInfoSchema {
               + "   lastAllocatedStripedBlockId bigint"
               + ");"
               + "CREATE TABLE mount("
-              + "   namenode varchar, path varchar, readOnly smallint"
+              + "   namenode varchar, path varchar, readOnly smallint,"
               + "   PRIMARY KEY(namenode, path)"
               + ");"
               + "CREATE VIEW namenodes("
-              + "   namenode varchar"
+              + "   namenode"
               + ") AS SELECT DISTINCT namenode FROM mount;"
               + "CREATE TABLE stringtable("
               + "   id int primary key, str varchar"
