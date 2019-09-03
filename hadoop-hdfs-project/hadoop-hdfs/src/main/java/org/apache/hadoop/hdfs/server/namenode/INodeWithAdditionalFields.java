@@ -228,6 +228,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     } else {
       this.name = null;
     }
+    INodeKeyedObjects.getBackupSet().add(getId());
   }
 
   /** Clone the {@link PermissionStatus}. */
@@ -243,10 +244,12 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   private final void setPermission(long perm) {
     permission = perm; 
+    INodeKeyedObjects.getBackupSet().add(getId());
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
     permission = f.BITS.combine(n, getPermissionLong());
+    INodeKeyedObjects.getBackupSet().add(getId());
   }
 
   @Override
@@ -344,6 +347,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final void setModificationTime(long modificationTime) {
     this.modificationTime = modificationTime;
+    INodeKeyedObjects.getBackupSet().add(getId());
   }
 
   @Override
@@ -364,6 +368,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final void setAccessTime(long accessTime) {
     this.accessTime = accessTime;
+    INodeKeyedObjects.getBackupSet().add(getId());
   }
 
   protected void addFeature(Feature f) {
