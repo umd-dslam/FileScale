@@ -244,11 +244,11 @@ public class DatabaseMountTable {
   }
 
   public static void dumpMountTable() {
-    System.out.println("============================================");
-    System.out.println("               Mount Table                  ");
-    System.out.println("============================================");
     try {
       DatabaseConnection obj = new DatabaseConnection();
+      System.out.println("============================================");
+      System.out.println("               Mount Table                  ");
+      System.out.println("============================================");
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
