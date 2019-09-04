@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.db;
 
+import dnl.utils.text.table.TextTable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -242,29 +243,38 @@ public class DatabaseMountTable {
     return res;
   }
 
-  public static String dumpMountTable() {
-    StringBuilder res = new StringBuilder();
-    res.append("namenode\tpath\treadOnly");
+  public static void dumpMountTable() {
+    System.out.print("============================================");
+    System.out.print("               Mount Table                  ");
+    System.out.print("============================================");
     try {
-      DatabaseConnection obj = Database.getInstance().getConnection();
+      DatabaseConnection obj = new DatabaseConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
           VoltTable[] results = obj.getVoltClient().callProcedure("DumpMountTable").getResults();
           VoltTable result = results[0];
+          Object[][] tuples = new Object[result.getRowCount()][];
+          String[] columnNames = {"NameNode", "Path", "ReadOnly"};
+
+          int i = 0;
           result.resetRowPosition();
           while (result.advanceRow()) {
-            res.append(result.getString(0));
-            res.append('\t');
-            res.append(result.getString(1));
-            res.append('\t');
-            res.append(result.getLong(2));
-            res.append('\n');
+            tuples[i++] =
+                new Object[] {result.getString(0), result.getString(1), result.getLong(2)};
           }
+
+          TextTable tt = new TextTable(columnNames, tuples);
+          // this adds the numbering on the left
+          tt.setAddRowNumbering(true);
+          // sort by the first column
+          tt.setSort(0);
+          tt.printTable();
         } catch (Exception e) {
           e.printStackTrace();
         }
       } else {
+        StringBuilder res = new StringBuilder();
         String sql = "SELECT namenode, path, readOnly FROM mount ORDER BY namenode ASC;";
         Connection conn = obj.getConnection();
         PreparedStatement pst = conn.prepareStatement(sql);
@@ -280,13 +290,11 @@ public class DatabaseMountTable {
         rs.close();
         pst.close();
       }
-      Database.getInstance().retConnection(obj);
+      if (res.length() != 0) {
+        System.out.print(res.toString());
+      }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-    if (LOG.isInfoEnabled()) {
-      LOG.info("dumpMountTable ...");
-    }
-    return res.toString();
   }
 }

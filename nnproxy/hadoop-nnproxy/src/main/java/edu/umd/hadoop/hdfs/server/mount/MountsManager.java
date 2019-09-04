@@ -79,8 +79,8 @@ public class MountsManager extends AbstractService {
     @Override
     protected void serviceStop() throws Exception {}
 
-    public String dump() {
-        return DatabaseMountTable.dumpMountTable();
+    public void dump() {
+        DatabaseMountTable.dumpMountTable();
     }
 
     public void load(String mounts) throws Exception {
