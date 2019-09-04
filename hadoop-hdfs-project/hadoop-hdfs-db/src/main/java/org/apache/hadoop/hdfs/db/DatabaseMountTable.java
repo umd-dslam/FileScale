@@ -289,9 +289,10 @@ public class DatabaseMountTable {
         }
         rs.close();
         pst.close();
-      }
-      if (res.length() != 0) {
-        System.out.print(res.toString());
+
+        if (res.length() != 0) {
+          System.out.print(res.toString());
+        }
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());

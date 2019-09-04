@@ -1,8 +1,9 @@
 #!/bin/bash
+
 NNPROXY_HOME=`dirname $0`
 
-DEFAULT_LIBEXEC_DIR=$HADOOP_HOME/libexec
-HADOOP_LIBEXEC_DIR=${HADOOP_LIBEXEC_DIR:-$DEFAULT_LIBEXEC_DIR}
+HADOOP_DEFAULT_LIBEXEC_DIR=$HADOOP_HOME/libexec
+HADOOP_LIBEXEC_DIR=${HADOOP_LIBEXEC_DIR:-$HADOOP_DEFAULT_LIBEXEC_DIR}
 . $HADOOP_LIBEXEC_DIR/hdfs-config.sh
 
 function print_usage(){
@@ -40,4 +41,4 @@ elif [ "$COMMAND" = "load" ] ; then
   CLASS='edu.umd.hadoop.hdfs.tools.LoadMount'
 fi
 
-exec $HADOOP_HOME/bin/hadoop jar $NNPROXY_HOME/../lib/hadoop-nnproxy*.jar $CLASS "$@"
+exec $HADOOP_HOME/bin/hadoop jar $NNPROXY_HOME/../hadoop-nnproxy/target/hadoop-nnproxy*.jar $CLASS "$@"
