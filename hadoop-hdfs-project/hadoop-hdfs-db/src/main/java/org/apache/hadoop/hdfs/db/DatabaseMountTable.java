@@ -244,9 +244,9 @@ public class DatabaseMountTable {
   }
 
   public static void dumpMountTable() {
-    System.out.print("============================================");
-    System.out.print("               Mount Table                  ");
-    System.out.print("============================================");
+    System.out.println("============================================");
+    System.out.println("               Mount Table                  ");
+    System.out.println("============================================");
     try {
       DatabaseConnection obj = new DatabaseConnection();
       String env = System.getenv("DATABASE");
