@@ -28,8 +28,8 @@ public class NNProxy {
     @VisibleForTesting
     protected MountsManager mounts;
     protected final UpstreamManager upstreamManager;
-    protected final BlockPoolRegistry blockPoolRegistry;
-    protected final CacheRegistry cacheRegistry;
+    protected final BlockPoolRegistry blockPoolRegistry = null;
+    protected final CacheRegistry cacheRegistry = null;
     protected final RpcInvocationProxy router;
     protected final ProxyServer server;
 
@@ -42,8 +42,8 @@ public class NNProxy {
         this.mounts = new MountsManager();
 
         this.upstreamManager = new UpstreamManager(this, conf);
-        this.blockPoolRegistry = new BlockPoolRegistry(this, conf, upstreamManager);
-        this.cacheRegistry = new CacheRegistry(this, conf, upstreamManager);
+        // this.blockPoolRegistry = new BlockPoolRegistry(this, conf, upstreamManager);
+        // this.cacheRegistry = new CacheRegistry(this, conf, upstreamManager);
         this.router = new RpcInvocationProxy(this, conf, upstreamManager);
 
         this.server = new ProxyServer(this, conf, router);
@@ -58,13 +58,13 @@ public class NNProxy {
                 shutdown();
             }
         });
-        this.cacheRegistry.start();
+        // this.cacheRegistry.start();
         this.server.start();
         LOG.info("Started nnproxy... ");
     }
 
     public void shutdown() {
-        this.cacheRegistry.shutdown();
+        // this.cacheRegistry.shutdown();
         LOG.info("Gracefully shutting down nnproxy...");
         this.router.shutdown();
         this.server.shutdown();
