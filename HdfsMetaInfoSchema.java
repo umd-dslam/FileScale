@@ -70,7 +70,7 @@ public class HdfsMetaInfoSchema {
               + "   lastAllocatedStripedBlockId bigint"
               + ");"
               + "CREATE TABLE mount("
-              + "   namenode varchar, path varchar, readOnly smallint,"
+              + "   namenode varchar, path varchar, readOnly int,"
               + "   PRIMARY KEY(namenode, path)"
               + ");"
               + "CREATE VIEW namenodes("

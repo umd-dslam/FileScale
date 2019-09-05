@@ -91,17 +91,21 @@ public class MountsManager extends AbstractService {
 
         List<String> namenodes = new ArrayList<String>();
         List<String> paths = new ArrayList<String>();
-        List<Integer> readonlys = new ArrayList<Integer>();
+        List<Long> readonlys = new ArrayList<Long>();
 
         for (int i = 0; i < splitted.length; i = i + 3) {
             namenodes.add(splitted[i]);
-            paths.add((splitted[i + 1]).replaceAll("/$", "")); 
-            readonlys.add(Integer.valueOf(splitted[i + 2]));
+            if (splitted[i + 1].length() > 1) { 
+                paths.add((splitted[i + 1]).replaceAll("/$", ""));
+            } else {
+                paths.add(splitted[i + 1]); 
+            }
+            readonlys.add(Long.valueOf(splitted[i + 2]));
         }
 
-        DatabaseMountTable.insertEntries(
+        DatabaseMountTable.loadEntries(
             namenodes.toArray(new String[namenodes.size()]),
             paths.toArray(new String[paths.size()]),
-            readonlys.toArray(new Integer[readonlys.size()]));        
+            readonlys.toArray(new Long[readonlys.size()]));        
     }
 }

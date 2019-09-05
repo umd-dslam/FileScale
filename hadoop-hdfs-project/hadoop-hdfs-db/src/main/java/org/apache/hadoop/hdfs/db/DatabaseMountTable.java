@@ -19,7 +19,7 @@ public class DatabaseMountTable {
   public DatabaseMountTable() {}
 
   public static void insertEntries(
-      final String[] namenodes, final String[] paths, final Integer[] readonlys) {
+      final String[] namenodes, final String[] paths, final Long[] readonlys) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
@@ -243,6 +243,7 @@ public class DatabaseMountTable {
     return res;
   }
 
+  // Run a command-line from user
   public static void dumpMountTable() {
     try {
       DatabaseConnection obj = new DatabaseConnection();
@@ -296,6 +297,43 @@ public class DatabaseMountTable {
       }
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
+    }
+  }
+
+  // Run a command-line from user
+  public static void loadEntries(
+      final String[] namenodes, final String[] paths, final Long[] readonlys) {
+    try {
+      DatabaseConnection obj = new DatabaseConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure("InsertMountEntries", namenodes, paths, readonlys);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        String sql =
+            "INSERT INTO mount("
+                + " namenode, path, readOnly"
+                + ") VALUES (?, ?, ?) ON CONFLICT(namenode, path) DO NOTHING;";
+        sql = StringUtils.repeat(sql, namenodes.length);
+
+        Connection conn = obj.getConnection();
+        PreparedStatement pst = conn.prepareStatement(sql);
+        for (int i = 0; i < namenodes.length; ++i) {
+          pst.setString(i * 3 + 1, namenodes[i]);
+          pst.setString(i * 3 + 2, paths[i]);
+          pst.setLong(i * 3 + 3, readonlys[i]);
+        }
+        pst.executeUpdate();
+        pst.close();
+      }
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("loadEntries ...");
     }
   }
 }
