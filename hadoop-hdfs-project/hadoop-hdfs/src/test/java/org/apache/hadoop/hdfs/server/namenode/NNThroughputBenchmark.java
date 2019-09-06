@@ -1521,13 +1521,14 @@ public class NNThroughputBenchmark implements Tool {
       } else {
         DistributedFileSystem dfs = (DistributedFileSystem)
             FileSystem.get(getConf());
-        nameNodeProto = DFSTestUtil.getNamenodeProtocolProxy(config, nnUri,
+        URI nnRealUri = URI.create("hdfs://localhost:9000");
+        nameNodeProto = DFSTestUtil.getNamenodeProtocolProxy(config, nnRealUri,
             UserGroupInformation.getCurrentUser());
         clientProto = dfs.getClient().getNamenode();
         dataNodeProto = new DatanodeProtocolClientSideTranslatorPB(
-            DFSUtilClient.getNNAddress(nnUri), config);
+            DFSUtilClient.getNNAddress(nnRealUri), config);
         refreshUserMappingsProto =
-            DFSTestUtil.getRefreshUserMappingsProtocolProxy(config, nnUri);
+            DFSTestUtil.getRefreshUserMappingsProtocolProxy(config, nnRealUri);
         getBlockPoolId(dfs);
       }
       // run each benchmark
