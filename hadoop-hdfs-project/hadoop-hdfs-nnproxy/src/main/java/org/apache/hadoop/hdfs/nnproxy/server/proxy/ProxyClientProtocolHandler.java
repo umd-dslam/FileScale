@@ -317,7 +317,8 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
   @Override
   public boolean setSafeMode(HdfsConstants.SafeModeAction action, boolean isChecked)
       throws IOException {
-    if (action.equals(HdfsConstants.SafeModeAction.SAFEMODE_GET)) {
+    if (action.equals(HdfsConstants.SafeModeAction.SAFEMODE_GET)
+      || action.equals(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE)) {
       // FIXME: properly handle
       return false;
     }
