@@ -1,3 +1,0 @@
-[submodule "hadoop-hdfs-project/commons-pool2"]
-	path = hadoop-hdfs-project/commons-pool2
-	url = https://github.com/DSL-UMD/commons-pool2
