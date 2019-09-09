@@ -25,7 +25,6 @@ public class NNProxy {
     private static final Logger LOG = LoggerFactory.getLogger(NNProxy.class);
 
     protected final Configuration conf;
-    @VisibleForTesting
     protected MountsManager mounts;
     protected final UpstreamManager upstreamManager;
     protected final BlockPoolRegistry blockPoolRegistry = null;
@@ -52,7 +51,7 @@ public class NNProxy {
     public void start() throws IOException, InterruptedException {
         this.mounts.init(conf);
         this.mounts.start();
-        // this.mounts.waitUntilInstalled();
+        this.mounts.waitUntilInstalled();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 shutdown();

@@ -1,7 +1,5 @@
 package org.apache.hadoop.hdfs.nnproxy.server.proxy;
 
-import org.apache.hadoop.hdfs.nnproxy.server.NNProxy;
-import org.apache.hadoop.hdfs.nnproxy.server.upstream.UpstreamManager;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
@@ -17,6 +15,8 @@ import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.AddBlockFlag;
 import org.apache.hadoop.hdfs.inotify.EventBatchList;
+import org.apache.hadoop.hdfs.nnproxy.server.NNProxy;
+import org.apache.hadoop.hdfs.nnproxy.server.upstream.UpstreamManager;
 import org.apache.hadoop.hdfs.protocol.*;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.ReencryptAction;
 import org.apache.hadoop.hdfs.protocol.SnapshotDiffReportListing;
@@ -52,13 +52,12 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
   }
 
   void ensureCanRename(String path) throws IOException {
-    if (nnProxy.getMounts().isMountPointOrUnified(path)) {
+    if (nnProxy.getMounts().isMountPoint(path)) {
+      throw new IOException("Cannot rename a mount point (" + path + ")");
+    }
+    if (!nnProxy.getMounts().isUnified(path)) {
       throw new IOException(
-          "Cannot rename a mount point ("
-              + path
-              + "). Or, Cannot rename a non-unified directory "
-              + path
-              + " (contains mount point).");
+          "Cannot rename a non-unified directory " + path + " (contains mount point)");
     }
   }
 
@@ -318,7 +317,7 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
   public boolean setSafeMode(HdfsConstants.SafeModeAction action, boolean isChecked)
       throws IOException {
     if (action.equals(HdfsConstants.SafeModeAction.SAFEMODE_GET)
-      || action.equals(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE)) {
+        || action.equals(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE)) {
       // FIXME: properly handle
       return false;
     }
