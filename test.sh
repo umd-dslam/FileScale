@@ -1,6 +1,9 @@
 # copy the following command lines into test.sh
 set -xe
 
+kill $(jps | grep 'NameNode' | awk '{print $1}') || true
+kill $(jps | grep 'DataNode' | awk '{print $1}') || true
+
 export DATABASE="VOLT"
 
 # compile stored procedures
@@ -10,7 +13,6 @@ cd ~/hadoop/voltdb && bash create_procedures.sh
 
 # restart hadoop hdfs
 cd $HADOOP_HOME
-kill $(jps | grep '[NameNode,DataNode]' | awk '{print $1}') || true
 rm -rf ~/hadoop/data/*
 rm -rf ~/hadoop/name/*
 rm -rf ~/hadoop/tmp/*
