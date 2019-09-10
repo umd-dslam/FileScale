@@ -3,9 +3,8 @@ package org.apache.hadoop.hdfs.nnproxy.server.mount;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import dnl.utils.text.table.TextTable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -28,9 +27,9 @@ public class MountsManager extends AbstractService {
   private static final Logger LOG = LoggerFactory.getLogger(MountsManager.class);
 
   static class MountEntry {
-    final String fsUri;
-    final String mountPoint;
-    final String[] attributes;
+    public final String fsUri;
+    public final String mountPoint;
+    public final String[] attributes;
 
     public MountEntry(String fsUri, String mountPoint, String[] attributes) {
       this.fsUri = fsUri;
@@ -57,6 +56,8 @@ public class MountsManager extends AbstractService {
   ImmutableList<String> allFs;
   MountEntry root;
   NodeCache nodeCache;
+  Map<String, List<MountEntry>> lookupMap;
+  Random rand;
 
   @VisibleForTesting protected volatile boolean installed;
 
@@ -90,6 +91,7 @@ public class MountsManager extends AbstractService {
             sessionTimeout,
             connectionTimeout,
             new ExponentialBackoffRetry(retryBaseSleep, maxRetries));
+    rand = new Random();
     installed = false;
   }
 
@@ -117,6 +119,43 @@ public class MountsManager extends AbstractService {
       chosen = root;
     }
     return chosen.fsUri;
+  }
+
+  public String resolveOpt(String path) {
+    MountEntry chosen = null;
+    if (path == null) {
+      chosen = root;
+    } else {
+      chosen = resolveParentPath(path, path);
+      if (chosen == null) {
+        StringBuilder seg = new StringBuilder(path.length());
+        seg.append(path);
+        for (int i = path.length() - 1; i >= 0; i--) {
+          if (path.charAt(i) == '/') {
+            seg.setLength(i);
+            MountEntry entry = resolveParentPath(seg.toString(), path);
+            if (entry != null) {
+              chosen = entry;
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (chosen == null) {
+      chosen = root;
+    }
+    return chosen.fsUri;
+  }
+
+  private MountEntry resolveParentPath(String parent, String path) {
+    Map<String, List<MountEntry>> entries = this.lookupMap;
+    List<MountEntry> mounts = entries.get(parent);
+    if (mounts == null) {
+      LOG.debug("resolve not found");
+      return null;
+    }
+    return mounts.get(rand.nextInt(mounts.size()));
   }
 
   /**
@@ -166,6 +205,7 @@ public class MountsManager extends AbstractService {
     }
     this.allFs = ImmutableList.copyOf(fs);
     this.mounts = ImmutableList.copyOf(entries);
+    this.lookupMap = buildLookupMap(entries);
     this.installed = true;
   }
 
@@ -255,5 +295,21 @@ public class MountsManager extends AbstractService {
 
   public void load(String mounts) throws Exception {
     framework.setData().forPath(zkMountTablePath, mounts.getBytes());
+  }
+
+  protected Map<String, List<MountEntry>> buildLookupMap(List<MountEntry> entries) {
+    Map<String, List<MountEntry>> lookupMap = new HashMap<>();
+    for (MountEntry entry : entries) {
+      List<MountEntry> mounts = lookupMap.get(entry.mountPoint);
+      if (mounts == null) {
+        mounts = new ArrayList<>();
+        lookupMap.put(entry.mountPoint, mounts);
+      }
+      mounts.add(entry);
+      if (entry.mountPoint.equals("/")) {
+        lookupMap.put("", mounts);
+      }
+    }
+    return lookupMap;
   }
 }
