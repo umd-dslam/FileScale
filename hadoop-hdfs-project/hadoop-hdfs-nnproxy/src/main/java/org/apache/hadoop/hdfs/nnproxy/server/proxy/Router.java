@@ -49,7 +49,7 @@ public class Router {
             logicalPath = "/" + mch.group(1);
             LOG.debug("Hit trash pattern: " + path + " -> " + logicalPath);
         }
-        String fs = nnProxy.getMounts().resolve(logicalPath);
+        String fs = nnProxy.getMounts().resolveOpt(logicalPath);
         if (fs == null) {
             // mount to default path
             fs = defaultNN;
