@@ -79,3 +79,4 @@ benchmark/hopfs/hops
 benchmark/hopfs/META-INF
 
 storedprocs.jar
+bench
