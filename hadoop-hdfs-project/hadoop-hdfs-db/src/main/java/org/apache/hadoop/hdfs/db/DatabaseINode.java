@@ -726,7 +726,7 @@ public class DatabaseINode {
       if (env.equals("VOLT")) {
         // call a stored procedure
         try {
-          obj.getVoltClient().callProcedure("RemoveChild", id);
+          obj.getVoltClient().callProcedure(new NullCallback(), "RemoveChild", id);
         } catch (Exception e) {
           e.printStackTrace();
         }
