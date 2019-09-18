@@ -633,11 +633,17 @@ public class INodeDirectory extends INodeWithAdditionalFields
       if (node.isDirectory()) {
         inode = node.asDirectory().copyINodeDirectory();
         INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long)node.getId());
+        inode.asDirectory().updateINodeDirectory();
         INodeKeyedObjects.getCache().put(new CompositeKey(inode.getId(),
           new ImmutablePair<>(getId(), name)), inode.asDirectory());
       } else {
         inode = node.asFile().copyINodeFile();
         INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long)node.getId());
+        inode.asFile().updateINodeFile();
+        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+        if (uc != null) {
+          uc.updateFileUnderConstruction(inode.getId());
+        }
         INodeKeyedObjects.getCache().put(new CompositeKey(inode.getId(),
           new ImmutablePair<>(getId(), name)), inode.asFile());
       }

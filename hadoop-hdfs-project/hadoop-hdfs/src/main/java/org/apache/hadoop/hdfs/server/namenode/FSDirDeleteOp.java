@@ -267,14 +267,7 @@ class FSDirDeleteOp {
 
     // ADD(gangliao): Remove inode from Postgres
     DatabaseINode.removeChild(targetNode.getId());
-    if (targetNode.isDirectory()) {
-      List<Long> ids = DatabaseINode.getChildIds(targetNode.getId());
-      for (Long id : ids) {
-        INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, id); 
-      }
-    } else if (targetNode.isFile()) {
-      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, targetNode.getId());
-    }
+    INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, targetNode.getId()); 
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "

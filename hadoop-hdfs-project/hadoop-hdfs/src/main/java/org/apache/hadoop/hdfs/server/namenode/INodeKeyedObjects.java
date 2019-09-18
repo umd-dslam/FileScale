@@ -93,8 +93,7 @@ public class INodeKeyedObjects {
           Caffeine.newBuilder()
               .removalListener(
                   (Object keys, Object value, RemovalCause cause) -> {
-                    if (cause == RemovalCause.EXPLICIT
-                        || cause == RemovalCause.COLLECTED
+                    if (cause == RemovalCause.COLLECTED
                         || cause == RemovalCause.EXPIRED
                         || cause == RemovalCause.SIZE) {
                       if (LOG.isInfoEnabled()) {
