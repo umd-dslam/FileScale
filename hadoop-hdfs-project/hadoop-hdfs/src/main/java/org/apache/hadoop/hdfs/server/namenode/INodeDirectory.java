@@ -716,10 +716,12 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (!children.isEmpty()) {
       for (long childId : children) {
         INode child = FSDirectory.getInstance().getInode(childId);
-        final byte childPolicyId = child.getStoragePolicyIDForQuota(
-            blockStoragePolicyId);
-        counts.add(child.computeQuotaUsage(bsps, childPolicyId, useCache,
-            lastSnapshotId));
+        if (child != null) {
+          final byte childPolicyId = child.getStoragePolicyIDForQuota(
+              blockStoragePolicyId);
+          counts.add(child.computeQuotaUsage(bsps, childPolicyId, useCache,
+              lastSnapshotId));
+        }
       }
     }
     return computeQuotaUsage4CurrentDirectory(bsps, blockStoragePolicyId,
