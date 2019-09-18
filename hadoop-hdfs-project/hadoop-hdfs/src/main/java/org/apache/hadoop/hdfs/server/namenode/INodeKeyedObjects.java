@@ -58,7 +58,7 @@ public class INodeKeyedObjects {
           }
         };
 
-    final ScheduledFuture<?> updateHandle = scheduler.scheduleAtFixedRate(updateToDB, 5, 5, SECONDS);
+    final ScheduledFuture<?> updateHandle = scheduler.scheduleAtFixedRate(updateToDB, 10 * 60, 60 * 60, SECONDS);
 
     scheduler.schedule(
         new Runnable() {
@@ -66,7 +66,7 @@ public class INodeKeyedObjects {
             updateHandle.cancel(true);
           }
         },
-        60 * 60,
+        60 * 60 * 24,
         SECONDS);
   }
 
