@@ -58,7 +58,8 @@ public class INodeKeyedObjects {
           }
         };
 
-    final ScheduledFuture<?> updateHandle = scheduler.scheduleAtFixedRate(updateToDB, 10 * 60, 60 * 60, SECONDS);
+    final ScheduledFuture<?> updateHandle =
+        scheduler.scheduleAtFixedRate(updateToDB, 10 * 60, 60 * 60, SECONDS);
 
     scheduler.schedule(
         new Runnable() {
@@ -77,6 +78,16 @@ public class INodeKeyedObjects {
     if (cache == null) {
       concurrentHashSet = ConcurrentHashMap.newKeySet();
       BackupSetToDB();
+
+      // Assuming each INode has 600 bytes, then
+      // 10000000 * 600 / 2^30 = 5.58 GB.
+      // The default object cache has 5.58 GB.
+      int num = 10000000;
+      String cacheNum = System.getenv("OBJECT_CACHE_SIZE");
+      if (cacheNum != null) {
+        num = Integer.parseInt(cacheNum);
+      }
+
       // https://github.com/ben-manes/caffeine/wiki/Removal
       Caffeine<Object, Object> cfein =
           Caffeine.newBuilder()
@@ -95,14 +106,15 @@ public class INodeKeyedObjects {
                         inode.asDirectory().updateINodeDirectory();
                       } else {
                         inode.asFile().updateINodeFile();
-                        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+                        FileUnderConstructionFeature uc =
+                            inode.asFile().getFileUnderConstructionFeature();
                         if (uc != null) {
                           uc.updateFileUnderConstruction(inode.getId());
                         }
                       }
                     }
                   })
-              .maximumSize(100_000);
+              .maximumSize(num);
       cache =
           new IndexedCache.Builder<CompositeKey, INode>()
               .withIndex(Long.class, ck -> ck.getK1())
