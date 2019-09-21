@@ -80,3 +80,4 @@ benchmark/hopfs/META-INF
 
 storedprocs.jar
 bench/hdfs
+bench/voltfs

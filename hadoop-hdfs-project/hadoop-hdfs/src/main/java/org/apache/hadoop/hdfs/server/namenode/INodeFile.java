@@ -832,8 +832,10 @@ public class INodeFile extends INodeWithAdditionalFields
 
   /** Clear all blocks of the file. */
   public void clearBlocks() {
-    blockNum.getAndSet(0);
-    DatabaseINode2Block.deleteViaBcId(this.getId());
+    if (numBlocks() != 0) { 
+      blockNum.getAndSet(0);
+      DatabaseINode2Block.deleteViaBcId(this.getId());
+    }
   }
 
   private void updateRemovedUnderConstructionFiles(
