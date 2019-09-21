@@ -719,14 +719,20 @@ public class DatabaseINode {
     return res;
   }
 
-  public static void removeChild(final long id) {
+  public static List<Long> removeChild(final long id) {
+    List<Long> childIds = new ArrayList<>();
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         // call a stored procedure
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "RemoveChild", id);
+          VoltTable[] results = obj.getVoltClient().callProcedure(new NullCallback(), "RemoveChild", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            childIds.add(result.getLong(0));
+          }
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -755,6 +761,7 @@ public class DatabaseINode {
     if (LOG.isInfoEnabled()) {
       LOG.info("removeChild: " + id);
     }
+    return childIds; 
   }
 
   public static List<String> getPathComponents(final long childId) {
