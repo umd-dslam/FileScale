@@ -14,7 +14,7 @@ public class RemoveChild extends VoltProcedure {
               + " SELECT id FROM cte;");
   public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
 
-  public VoltTable[] run(long id) throws VoltAbortException {
+  public long run(long id) throws VoltAbortException {
     voltQueueSQL(sql1, id);
     VoltTable[] results = voltExecuteSQL();
 
@@ -25,6 +25,6 @@ public class RemoveChild extends VoltProcedure {
       voltQueueSQL(sql2, results[0].fetchRow(i).getLong(0));
     }
     voltExecuteSQL();
-    return results;
+    return 1;
   }
 }

@@ -266,11 +266,8 @@ class FSDirDeleteOp {
     }
 
     // ADD(gangliao): Remove inode from Database
-    List<Long> ids = DatabaseINode.removeChild(targetNode.getId());
+    DatabaseINode.removeChild(targetNode.getId());
     INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, targetNode.getId());
-    for (Long id : ids) {
-      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, id); 
-    }
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "
