@@ -344,6 +344,12 @@ public class INodeFile extends INodeWithAdditionalFields
     this.header = header;
   }
 
+  public void InitINodeFile(long parent, long id, byte[] name, long permissions, long mtime,
+      long atime, long header) {
+    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header);
+    this.header = header;
+  }
+
   public void updateINodeFile() {
     super.updateINode(header);
   }

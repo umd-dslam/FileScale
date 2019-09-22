@@ -24,6 +24,174 @@ public class DatabaseINode {
 
   public DatabaseINode() {}
 
+  public class LoadINode {
+    public final long parent;
+    public final long id;
+    public final String name;
+    public final long permission;
+    public final long modificationTime;
+    public final long accessTime;
+    public final long header;
+
+    LoadINode(
+        long parent,
+        long id,
+        String name,
+        long permission,
+        long modificationTime,
+        long accessTime,
+        long header) {
+      this.parent = parent;
+      this.id = id;
+      this.name = name;
+      this.permission = permission;
+      this.modificationTime = modificationTime;
+      this.accessTime = accessTime;
+      this.header = header;
+    }
+
+    long getParent() {
+      return parent;
+    }
+
+    long getId() {
+      return id;
+    }
+
+    String getName() {
+      return name;
+    }
+
+    long getPermission() {
+      return permission;
+    }
+
+    long getModificationTime() {
+      return modificationTime;
+    }
+
+    long getAccessTime() {
+      return accessTime;
+    }
+
+    long getHeader() {
+      return header;
+    }
+  }
+
+  public static LoadINode loadINode(final long id) {
+    LoadINode res = null;
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("LoadINode", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res =
+                new LoadINode(
+                    result.getLong(0),
+                    result.getLong(1),
+                    result.getString(2),
+                    result.getLong(3),
+                    result.getLong(4),
+                    result.getLong(5),
+                    result.getLong(6));
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql =
+            "SELECT parent, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          res =
+              new LoadINode(
+                  rs.getLong(1),
+                  rs.getLong(2),
+                  rs.getString(3),
+                  rs.getLong(4),
+                  rs.getLong(5),
+                  rs.getLong(6),
+                  rs.getLong(7));
+        }
+        rs.close();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Load INode [GET]: (" + id + ")");
+    }
+    return res;
+  }
+
+  public static LoadINode loadINode(final long parentId, final String childName) {
+    LoadINode res = null;
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("LoadINodeV2", parentId, childName).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res =
+                new LoadINode(
+                    result.getLong(0),
+                    result.getLong(1),
+                    result.getString(2),
+                    result.getLong(3),
+                    result.getLong(4),
+                    result.getLong(5),
+                    result.getLong(6));
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql =
+            "SELECT parent, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE parent = ? AND name = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          res =
+              new LoadINode(
+                  rs.getLong(1),
+                  rs.getLong(2),
+                  rs.getString(3),
+                  rs.getLong(4),
+                  rs.getLong(5),
+                  rs.getLong(6),
+                  rs.getLong(7));
+        }
+        rs.close();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Load INode [GET]: (" + id + ")");
+    }
+    return res;
+  }
+
   public static boolean checkInodeExistence(final long parentId, final String childName) {
     boolean exist = false;
     try {
