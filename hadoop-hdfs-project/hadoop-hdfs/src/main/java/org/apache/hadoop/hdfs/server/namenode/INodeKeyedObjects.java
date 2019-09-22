@@ -42,6 +42,7 @@ public class INodeKeyedObjects {
               LOG.info("Sync files/directories from cache to database.");
             }
             while (iterator.hasNext()) {
+              // TODO: Batching update to DB
               INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
               if (inode.isDirectory()) {
                 inode.asDirectory().updateINodeDirectory();

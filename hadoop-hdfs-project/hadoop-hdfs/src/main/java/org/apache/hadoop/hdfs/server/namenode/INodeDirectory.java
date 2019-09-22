@@ -99,6 +99,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
     super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime);
   }
 
+  public void InitINodeDirectory(long parent, long id, byte[] name, long permissions,
+      long mtime, long atime, long header) {
+    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header);
+  }
+
   public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
       long mtime) {
     super(parent, id, name, permissions, mtime, 0L);
