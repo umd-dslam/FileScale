@@ -16,6 +16,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.db.*;
 
 /** Storing all the {@link INode}s and maintaining the mapping between INode ID and INode. */
