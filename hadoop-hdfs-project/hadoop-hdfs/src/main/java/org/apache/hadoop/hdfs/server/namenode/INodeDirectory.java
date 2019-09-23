@@ -570,6 +570,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
    * @return true if the child is removed; false if the child is not found.
    */
   public boolean removeChild(final INode child) {
+    if (children.isEmpty()) {
+      return true;
+    }
     return children.remove(child.getId());
   }
 
