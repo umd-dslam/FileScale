@@ -181,21 +181,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   public void updateINode(long header) {
-    // CompletableFuture.runAsync(() -> {
-    LOG.info(
-        Long.toString(id)
-            + " "
-            + Long.toString(getParentId())
-            + " "
-            + ((name != null && name.length > 0) ? DFSUtil.bytes2String(name) : null)
-            + " "
-            + Long.toString(accessTime)
-            + " "
-            + Long.toString(modificationTime)
-            + " "
-            + Long.toString(permission)
-            + " "
-            + Long.toString(header));
+    CompletableFuture.runAsync(() -> {
     DatabaseINode.insertInode(
         id,
         getParentId(),
@@ -204,7 +190,7 @@ public abstract class INodeWithAdditionalFields extends INode {
         modificationTime,
         permission,
         header);
-    // }, Database.getInstance().getExecutorService());
+    }, Database.getInstance().getExecutorService());
   }
 
   INodeWithAdditionalFields(
