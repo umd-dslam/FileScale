@@ -79,7 +79,7 @@ public class DatabaseINode {
     }
   }
 
-  public static LoadINode loadINode(final long id) {
+  public LoadINode loadINode(final long id) {
     LoadINode res = null;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
@@ -135,7 +135,7 @@ public class DatabaseINode {
     return res;
   }
 
-  public static LoadINode loadINode(final long parentId, final String childName) {
+  public LoadINode loadINode(final long parentId, final String childName) {
     LoadINode res = null;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
@@ -165,7 +165,8 @@ public class DatabaseINode {
         String sql =
             "SELECT parent, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE parent = ? AND name = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setLong(1, id);
+        pst.setLong(1, parentId);
+        pst.setString(2, childName);
         ResultSet rs = pst.executeQuery();
         while (rs.next()) {
           res =
@@ -187,7 +188,7 @@ public class DatabaseINode {
     }
 
     if (LOG.isInfoEnabled()) {
-      LOG.info("Load INode [GET]: (" + id + ")");
+      LOG.info("Load INode [GET]: (" + parentId + ", " + childName + ")");
     }
     return res;
   }
