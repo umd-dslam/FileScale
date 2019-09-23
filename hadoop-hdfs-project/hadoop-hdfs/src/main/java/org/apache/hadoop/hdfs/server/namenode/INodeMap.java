@@ -57,6 +57,7 @@ public class INodeMap {
     INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, id);
     if (inode == null) {
       DatabaseINode.LoadINode node = new DatabaseINode().loadINode(id);
+      if (node == null) return null;
       byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
       if (node.header != 0L) {
         inode = new INodeFile(node.id);
@@ -98,6 +99,7 @@ public class INodeMap {
             .getIfPresent(Pair.class, new ImmutablePair<>((Long) parentId, childName));
     if (inode == null) {
       DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parentId, childName);
+      if (node == null) return null;
       byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
       if (node.header != 0L) {
         inode = new INodeFile(node.id);
