@@ -409,7 +409,11 @@ public class NNThroughputBenchmark implements Tool {
       localCumulativeTime = 0;
       arg1 = statsOp.getExecutionArgument(daemonId);
       try {
-        benchmarkOne();
+        if (statsOp.getOpName() == "open") {
+          benchmarkTwo();
+        } else {
+          benchmarkOne();
+        }
       } catch(IOException ex) {
         LOG.error("StatsDaemon " + daemonId + " failed: \n" 
             + StringUtils.stringifyException(ex));
@@ -423,6 +427,17 @@ public class NNThroughputBenchmark implements Tool {
 
     void benchmarkOne() throws IOException {
       for(int idx = 0; idx < opsPerThread; idx++) {
+        if((localNumOpsExecuted+1) % statsOp.ugcRefreshCount == 0)
+          refreshUserMappingsProto.refreshUserToGroupsMappings();
+        long stat = statsOp.executeOp(daemonId, idx, arg1);
+        localNumOpsExecuted++;
+        localCumulativeTime += stat;
+      }
+    }
+
+    // For Cache Layer Testing
+    void benchmarkTwo() throws IOException {
+      for(int idx = opsPerThread - 1; idx >= 0; idx--) {
         if((localNumOpsExecuted+1) % statsOp.ugcRefreshCount == 0)
           refreshUserMappingsProto.refreshUserToGroupsMappings();
         long stat = statsOp.executeOp(daemonId, idx, arg1);
