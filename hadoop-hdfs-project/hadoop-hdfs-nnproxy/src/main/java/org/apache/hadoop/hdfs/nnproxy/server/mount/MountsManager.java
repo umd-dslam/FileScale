@@ -294,7 +294,11 @@ public class MountsManager extends AbstractService {
   }
 
   public void load(String mounts) throws Exception {
-    framework.setData().forPath(zkMountTablePath, mounts.getBytes());
+    if (framework.checkExists().forPath(zkMountTablePath) == null) {
+      framework.create().creatingParentsIfNeeded().forPath(zkMountTablePath, mounts.getBytes());
+    } else {
+      framework.setData().forPath(zkMountTablePath, mounts.getBytes());
+    }
   }
 
   protected Map<String, List<MountEntry>> buildLookupMap(List<MountEntry> entries) {
