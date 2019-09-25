@@ -275,9 +275,9 @@ public class MountsManager extends AbstractService {
   public void dump() {
     ImmutableList<MountEntry> entries = this.mounts;
     StringBuilder result = new StringBuilder();
-    System.out.println("============================================");
-    System.out.println("               Mount Table                  ");
-    System.out.println("============================================");
+    System.out.println("\t\t\t============================================");
+    System.out.println("\t\t\t               Mount Table                  ");
+    System.out.println("\t\t\t============================================");
     String[] columnNames = {"NameNode", "Path", "Attributes"};
     Object[][] tuples = new Object[entries.size()][];
     int i = 0;
