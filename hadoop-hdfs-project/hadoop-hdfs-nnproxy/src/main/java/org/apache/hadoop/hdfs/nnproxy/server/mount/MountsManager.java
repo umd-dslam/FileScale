@@ -295,7 +295,7 @@ public class MountsManager extends AbstractService {
 
   public void load(String mounts) throws Exception {
     if (framework.checkExists().forPath(zkMountTablePath) == null) {
-      framework.create().creatingParentsIfNeeded().forPath(zkMountTablePath, mounts.getBytes());
+      framework.create().forPath(zkMountTablePath, mounts.getBytes());
     } else {
       framework.setData().forPath(zkMountTablePath, mounts.getBytes());
     }
