@@ -93,7 +93,7 @@ public class INodeKeyedObjects {
     // delay (5s), and subsequently with the given delay (5s) between the termination of one
     // execution and the commencement of the next.
     final ScheduledFuture<?> updateHandle =
-        scheduler.scheduleAtFixedRate(updateToDB, 5, 5, SECONDS);
+        scheduler.scheduleWithFixedDelay(updateToDB, 5, 5, SECONDS);
 
     scheduler.schedule(
         new Runnable() {
