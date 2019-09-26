@@ -92,14 +92,14 @@ public class INodeKeyedObjects {
     // Creates and executes a periodic action that becomes enabled first after the given initial
     // delay (1s), and subsequently with the given delay (2s) between the termination of one
     // execution and the commencement of the next.
-    long delay = 2L;
+    long delay = 300L;
     String delayStr = System.getenv("UPDATE_DB_TIME_DELAY");
     if (delayStr != null) {
       delay = Long.parseLong(delayStr);
     }
 
     final ScheduledFuture<?> updateHandle =
-        scheduler.scheduleWithFixedDelay(updateToDB, 1, delay, SECONDS);
+        scheduler.scheduleWithFixedDelay(updateToDB, 100, delay, MILLISECONDS);
 
     scheduler.schedule(
         new Runnable() {
