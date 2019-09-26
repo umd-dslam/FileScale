@@ -10,7 +10,11 @@ public class BatchUpdateINodes extends VoltProcedure {
   public final SQLStmt sql2 =
       new SQLStmt("UPSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);");
 
-  public long run(long[] longAttrs, String[] strAttrs, long[] fileIds, String[] fileAttrs)
+  public long run(
+      final long[] longAttrs,
+      final String[] strAttrs,
+      final long[] fileIds,
+      final String[] fileAttrs)
       throws VoltAbortException {
     for (int i = 0; i < strAttrs.length; ++i) {
       int idx = i * 6;
