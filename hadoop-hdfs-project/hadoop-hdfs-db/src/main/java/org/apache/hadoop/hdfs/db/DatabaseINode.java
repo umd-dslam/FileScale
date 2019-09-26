@@ -1635,4 +1635,44 @@ public class DatabaseINode {
       LOG.info("insertXAttrs: " + id);
     }
   }
+
+  public static void batchUpdateINodes(
+      final List<Long> longAttr,
+      final List<String> strAttr,
+      final List<Long> fileIds,
+      final List<String> fileAttr)
+      throws SQLException {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient()
+              .callProcedure(
+                  new NullCallback(),
+                  "BatchUpdateINodes",
+                  longAttr.toArray(new Long[longAttr.size()]),
+                  strAttr.toArray(new String[strAttr.size()]),
+                  fileIds.toArray(new Long[fileIds.size()]),
+                  fileAttr.toArray(new String[fileAttr.size()]));
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        // Connection conn = obj.getConnection();
+        // PreparedStatement pst = conn.prepareStatement(sql);
+        // pst.setLong(1, childId);
+        // pst.executeUpdate();
+        // pst.close();
+        // TODO: Support batch update in CockroachDB
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("batchUpdateINodes [UPDATE]");
+    }
+  }
 }
