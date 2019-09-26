@@ -38,13 +38,13 @@ public class INodeKeyedObjects {
     // We assume that each object size is 512 bytes, then the size of
     // concurrentHashSet should be 1024 which only records INode Id.
     // Note: Using INode Id, it's easy to find INode object in cache.
-    final int num = 1024;
-
+    
     final Runnable updateToDB =
         new Runnable() {
           public void run() {
             int i = 0;
-            if (concurrentHashSet.size() >= 1024) {
+            final int num = 1024;
+            if (concurrentHashSet.size() >= num) {
               Iterator<Long> iterator = concurrentHashSet.iterator();
               if (LOG.isInfoEnabled()) {
                 LOG.info("Sync files/directories from cache to database.");
@@ -90,10 +90,16 @@ public class INodeKeyedObjects {
         };
 
     // Creates and executes a periodic action that becomes enabled first after the given initial
-    // delay (5s), and subsequently with the given delay (5s) between the termination of one
+    // delay (1s), and subsequently with the given delay (2s) between the termination of one
     // execution and the commencement of the next.
+    long delay = 2L;
+    String delayStr = System.getenv("UPDATE_DB_TIME_DELAY");
+    if (delayStr != null) {
+      delay = Long.parseLong(delayStr);
+    }
+
     final ScheduledFuture<?> updateHandle =
-        scheduler.scheduleWithFixedDelay(updateToDB, 5, 5, SECONDS);
+        scheduler.scheduleWithFixedDelay(updateToDB, 1, delay, SECONDS);
 
     scheduler.schedule(
         new Runnable() {
