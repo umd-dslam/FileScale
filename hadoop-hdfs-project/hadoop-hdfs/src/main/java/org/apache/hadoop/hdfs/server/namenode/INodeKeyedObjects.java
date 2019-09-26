@@ -44,7 +44,7 @@ public class INodeKeyedObjects {
           public void run() {
             int i = 0;
             final int num = 1024;
-            if (concurrentHashSet.size() >= num) {
+            if (concurrentHashSet.size() > 0) {
               Iterator<Long> iterator = concurrentHashSet.iterator();
               if (LOG.isInfoEnabled()) {
                 LOG.info("Sync files/directories from cache to database.");
@@ -99,7 +99,7 @@ public class INodeKeyedObjects {
     }
 
     final ScheduledFuture<?> updateHandle =
-        scheduler.scheduleWithFixedDelay(updateToDB, 100, delay, MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(updateToDB, 100, delay, MICROSECONDS);
 
     scheduler.schedule(
         new Runnable() {
