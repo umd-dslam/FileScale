@@ -3,7 +3,7 @@ import org.voltdb.*;
 public class InsertUc extends VoltProcedure {
 
   public final SQLStmt sql =
-      new SQLStmt("INSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);");
+      new SQLStmt("UPSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);");
 
   public long run(final long id, final String clientName, final String clientMachine)
       throws VoltAbortException {

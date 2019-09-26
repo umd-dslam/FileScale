@@ -4,10 +4,13 @@ import static java.util.concurrent.TimeUnit.*;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.db.DatabaseINode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,36 +34,66 @@ public class INodeKeyedObjects {
   }
 
   public static void BackupSetToDB() {
-    final int num = 1000;
+    // In HDFS, the default log buffer size is 512 * 1024 bytes, or 512 KB.
+    // We assume that each object size is 512 bytes, then the size of
+    // concurrentHashSet should be 1024 which only records INode Id.
+    // Note: Using INode Id, it's easy to find INode object in cache.
+    final int num = 1024;
 
     final Runnable updateToDB =
         new Runnable() {
           public void run() {
             int i = 0;
-            Iterator<Long> iterator = concurrentHashSet.iterator();
-            if (LOG.isInfoEnabled()) {
-              LOG.info("Sync files/directories from cache to database.");
-            }
-            while (iterator.hasNext()) {
-              // TODO: Batching update to DB
-              INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
-              if (inode.isDirectory()) {
-                inode.asDirectory().updateINodeDirectory();
-              } else {
-                inode.asFile().updateINodeFile();
-                FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
-                if (uc != null) {
-                  uc.updateFileUnderConstruction(inode.getId());
-                }
+            if (concurrentHashSet.size() >= 1024) {
+              Iterator<Long> iterator = concurrentHashSet.iterator();
+              if (LOG.isInfoEnabled()) {
+                LOG.info("Sync files/directories from cache to database.");
               }
-              iterator.remove();
-              if (++i >= num) break;
+
+              List<Long> longAttr = new ArrayList<>();
+              List<String> strAttr = new ArrayList<>();
+
+              List<Long> fileIds = new ArrayList<>();
+              List<String> fileAttr = new ArrayList<>();
+              while (iterator.hasNext()) {
+                INode inode =
+                    INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
+
+                strAttr.add(inode.getLocalName());
+                longAttr.add(inode.getParentId());
+                longAttr.add(inode.getId());
+                longAttr.add(inode.getModificationTime());
+                longAttr.add(inode.getAccessTime());
+                longAttr.add(inode.getPermissionLong());
+                if (inode.isDirectory()) {
+                  longAttr.add(0L);
+                } else {
+                  longAttr.add(inode.asFile().getHeaderLong());
+                  FileUnderConstructionFeature uc =
+                      inode.asFile().getFileUnderConstructionFeature();
+                  if (uc != null) {
+                    fileIds.add(inode.getId());
+                    fileAttr.add(uc.getClientName(inode.getId()));
+                    fileAttr.add(uc.getClientMachine(inode.getId()));
+                  }
+                }
+                iterator.remove();
+                if (++i >= num) break;
+              }
+              try {
+                DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
             }
           }
         };
 
+    // Creates and executes a periodic action that becomes enabled first after the given initial
+    // delay (5s), and subsequently with the given delay (5s) between the termination of one
+    // execution and the commencement of the next.
     final ScheduledFuture<?> updateHandle =
-        scheduler.scheduleAtFixedRate(updateToDB, 10 * 60, 60 * 60, SECONDS);
+        scheduler.scheduleAtFixedRate(updateToDB, 5, 5, SECONDS);
 
     scheduler.schedule(
         new Runnable() {
