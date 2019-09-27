@@ -44,7 +44,7 @@ public class INodeKeyedObjects {
           public void run() {
             int i = 0;
             final int num = 1024;
-            if (concurrentHashSet.size() > 0) {
+            if (concurrentHashSet.size() >= num) {
               Iterator<Long> iterator = concurrentHashSet.iterator();
               if (LOG.isInfoEnabled()) {
                 LOG.info("Sync files/directories from cache to database.");
