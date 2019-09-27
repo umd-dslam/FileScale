@@ -1649,7 +1649,6 @@ public class DatabaseINode {
         try {
           obj.getVoltClient()
               .callProcedure(
-                  new NullCallback(),
                   "BatchUpdateINodes",
                   longAttr.toArray(new Long[longAttr.size()]),
                   strAttr.toArray(new String[strAttr.size()]),
