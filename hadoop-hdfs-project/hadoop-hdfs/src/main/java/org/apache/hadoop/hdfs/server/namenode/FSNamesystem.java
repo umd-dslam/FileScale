@@ -322,6 +322,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.LoggerFactory;
+import static java.util.concurrent.TimeUnit.*;
+import static org.awaitility.Awaitility.*;
+import static org.awaitility.Durations.*;
+import static org.hamcrest.Matchers.*;
 
 /**
  * FSNamesystem is a container of both transient
@@ -2544,6 +2548,11 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           toRemoveBlocks.clear();
         }
       }
+    }
+
+    String syncStr = System.getenv("SYNC_COMMAND_LOGGING");
+    if (syncStr != null && Boolean.parseBoolean(syncStr) == true) {
+      await().atMost(10, SECONDS).until(() -> INodeKeyedObjects.getBackupSet().size() < 1024);
     }
 
     return stat;
