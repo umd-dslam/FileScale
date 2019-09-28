@@ -33,59 +33,62 @@ public class INodeKeyedObjects {
     return concurrentHashSet;
   }
 
-  public static void BackupSetToDB() {
+  public static void syncUpdateDB() {
     // In HDFS, the default log buffer size is 512 * 1024 bytes, or 512 KB.
     // We assume that each object size is 512 bytes, then the size of
     // concurrentHashSet should be 1024 which only records INode Id.
     // Note: Using INode Id, it's easy to find INode object in cache.
-    
+    int i = 0;
+    final int num = 1024;
+    if (concurrentHashSet.size() >= num) {
+      Iterator<Long> iterator = concurrentHashSet.iterator();
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Sync files/directories from cache to database.");
+      }
+
+      List<Long> longAttr = new ArrayList<>();
+      List<String> strAttr = new ArrayList<>();
+
+      List<Long> fileIds = new ArrayList<>();
+      List<String> fileAttr = new ArrayList<>();
+      while (iterator.hasNext()) {
+        INode inode =
+            INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
+
+        strAttr.add(inode.getLocalName());
+        longAttr.add(inode.getParentId());
+        longAttr.add(inode.getId());
+        longAttr.add(inode.getModificationTime());
+        longAttr.add(inode.getAccessTime());
+        longAttr.add(inode.getPermissionLong());
+        if (inode.isDirectory()) {
+          longAttr.add(0L);
+        } else {
+          longAttr.add(inode.asFile().getHeaderLong());
+          FileUnderConstructionFeature uc =
+              inode.asFile().getFileUnderConstructionFeature();
+          if (uc != null) {
+            fileIds.add(inode.getId());
+            fileAttr.add(uc.getClientName(inode.getId()));
+            fileAttr.add(uc.getClientMachine(inode.getId()));
+          }
+        }
+        iterator.remove();
+        if (++i >= num) break;
+      }
+      try {
+        DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }    
+  }
+
+  public static void BackupSetToDB() {
     final Runnable updateToDB =
         new Runnable() {
           public void run() {
-            int i = 0;
-            final int num = 1024;
-            if (concurrentHashSet.size() >= num) {
-              Iterator<Long> iterator = concurrentHashSet.iterator();
-              if (LOG.isInfoEnabled()) {
-                LOG.info("Sync files/directories from cache to database.");
-              }
-
-              List<Long> longAttr = new ArrayList<>();
-              List<String> strAttr = new ArrayList<>();
-
-              List<Long> fileIds = new ArrayList<>();
-              List<String> fileAttr = new ArrayList<>();
-              while (iterator.hasNext()) {
-                INode inode =
-                    INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
-
-                strAttr.add(inode.getLocalName());
-                longAttr.add(inode.getParentId());
-                longAttr.add(inode.getId());
-                longAttr.add(inode.getModificationTime());
-                longAttr.add(inode.getAccessTime());
-                longAttr.add(inode.getPermissionLong());
-                if (inode.isDirectory()) {
-                  longAttr.add(0L);
-                } else {
-                  longAttr.add(inode.asFile().getHeaderLong());
-                  FileUnderConstructionFeature uc =
-                      inode.asFile().getFileUnderConstructionFeature();
-                  if (uc != null) {
-                    fileIds.add(inode.getId());
-                    fileAttr.add(uc.getClientName(inode.getId()));
-                    fileAttr.add(uc.getClientMachine(inode.getId()));
-                  }
-                }
-                iterator.remove();
-                if (++i >= num) break;
-              }
-              try {
-                DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
-              } catch (Exception e) {
-                e.printStackTrace();
-              }
-            }
+            syncUpdateDB();
           }
         };
 
@@ -117,7 +120,11 @@ public class INodeKeyedObjects {
   public static IndexedCache<CompositeKey, INode> getCache() {
     if (cache == null) {
       concurrentHashSet = ConcurrentHashMap.newKeySet();
-      BackupSetToDB();
+
+      String syncStr = System.getenv("SYNC_COMMAND_LOGGING");
+      if (syncStr == null || Boolean.parseBoolean(syncStr) == false) {
+        BackupSetToDB();
+      }
 
       // Assuming each INode has 600 bytes, then
       // 10000000 * 600 / 2^30 = 5.58 GB.
