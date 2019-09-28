@@ -36,12 +36,12 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
   </properties>
 
   <dependencies>
-    <dependency>
+    <!-- <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
         <version>4.0.1</version>
-        <scope>test</scope>
-    </dependency>
+        <scope>compile</scope>
+    </dependency> -->
     <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>commons-pool2</artifactId>
