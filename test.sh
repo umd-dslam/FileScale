@@ -1,7 +1,7 @@
 # copy the following command lines into test.sh
 set -xe
 
-./sbin/stop_dfs.sh
+./sbin/stop-dfs.sh
 
 export DATABASE="VOLT"
 
