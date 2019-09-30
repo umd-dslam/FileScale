@@ -1,8 +1,7 @@
 # copy the following command lines into test.sh
 set -xe
 
-kill $(jps | grep 'NameNode' | awk '{print $1}') || true
-kill $(jps | grep 'DataNode' | awk '{print $1}') || true
+./sbin/stop_dfs.sh
 
 export DATABASE="VOLT"
 
