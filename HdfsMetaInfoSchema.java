@@ -16,13 +16,18 @@ public class HdfsMetaInfoSchema {
   private HdfsMetaInfoSchema() throws SQLException {
     String env = System.getenv("DATABASE");
     try {
-      String url = "";
+      String url = null;
       Properties props = new Properties();
 
       if (env.equals("VOLT")) {
         Class.forName("org.voltdb.jdbc.Driver");
-        this.connection = DriverManager.getConnection(volt);
-        url = volt;
+        url = System.getenv("VOLTDB_SERVER");
+        if (url == null) {
+          url = volt;
+        } else {
+          url = "jdbc:voltdb://" + url + ":21212"; 
+        }
+        this.connection = DriverManager.getConnection(url);
       } else if (env.equals("COCKROACH")) {
         Class.forName("org.postgresql.Driver");
         props.setProperty("user", username);

@@ -23,18 +23,26 @@ public class DatabaseConnection {
 
   DatabaseConnection() throws SQLException {
     try {
-      String url = "";
+      String url = null;
+      String host = null;
       String env = System.getenv("DATABASE");
       Properties props = new Properties();
 
       if (env.equals("VOLT")) {
         Class.forName("org.voltdb.jdbc.Driver");
-        this.connection = DriverManager.getConnection(volt);
+        url = System.getenv("VOLTDB_SERVER");
+        if (url == null) {
+          host = "localhost";
+          url = volt;
+        } else {
+          host = url;
+          url = "jdbc:voltdb://" + url + ":21212"; 
+        }
+        this.connection = DriverManager.getConnection(url);
         ClientConfig config = new ClientConfig();
         config.setTopologyChangeAware(true);
         this.client = ClientFactory.createClient(config);
-        this.client.createConnection("localhost", 21212);
-        url = volt;
+        this.client.createConnection(host, 21212);
       } else if (env.equals("COCKROACH")) {
         Class.forName("org.postgresql.Driver");
         props.setProperty("user", username);
