@@ -37,7 +37,7 @@ public class BatchRemoveINodes extends VoltProcedure {
   public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
 
   public long run(long[] ids) throws VoltAbortException {
-    List<Long> set = new ArrayList<Long>(Arrays.asList(ids));
+    List<Long> set = Arrays.asList(ids);
 
     int i = 0;
     while (i < set.size()) {
@@ -53,8 +53,8 @@ public class BatchRemoveINodes extends VoltProcedure {
       }
     }
 
-    for (Long id : set) {
-      voltQueueSQL(sql2, id);
+    for (Long kid : set) {
+      voltQueueSQL(sql2, kid);
     }
 
     voltExecuteSQL();
