@@ -1642,7 +1642,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("BatchRemoveINodes", ids.toArray(new Long[ids.size()]));
+          long[] list = ids.stream().mapToLong(l -> l).toArray();
+          obj.getVoltClient().callProcedure("BatchRemoveINodes", list);
         } catch (Exception e) {
           e.printStackTrace();
         }
