@@ -93,43 +93,44 @@ public class INodeKeyedObjects {
       }
     }
 
-    List<Long> removeIds = new ArrayList<>();
-    long removeSize = concurrentRemoveSet.size();
-    if (removeSize >= num) {
-      if (LOG.isInfoEnabled()) {
-        LOG.info("Propagate removed files/directories from cache to database.");
-      }
-      i = 0;
-      Iterator<Long> iterator = concurrentRemoveSet.iterator();
-      while (iterator.hasNext()) {
-        removeIds.add(iterator.next());
-        iterator.remove();
-        if (++i >= num) break;
-      }
-
-      try {
-        if (removeIds.size() > 0) {
-          DatabaseINode.batchRemoveINodes(removeIds);
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    } else {
-      if (removeSize > 0 && preRemoveSize == removeSize) {
+    if (concurrentRemoveSet != null) {
+      List<Long> removeIds = new ArrayList<>();
+      long removeSize = concurrentRemoveSet.size();
+      if (removeSize >= num) {
         if (LOG.isInfoEnabled()) {
           LOG.info("Propagate removed files/directories from cache to database.");
         }
+        i = 0;
+        Iterator<Long> iterator = concurrentRemoveSet.iterator();
+        while (iterator.hasNext()) {
+          removeIds.add(iterator.next());
+          iterator.remove();
+          if (++i >= num) break;
+        }
+
         try {
-          removeIds = new ArrayList<Long>(concurrentRemoveSet);
-          concurrentRemoveSet.clear();
-          DatabaseINode.batchRemoveINodes(removeIds);
+          if (removeIds.size() > 0) {
+            DatabaseINode.batchRemoveINodes(removeIds);
+          }
         } catch (Exception e) {
           e.printStackTrace();
         }
+      } else {
+        if (removeSize > 0 && preRemoveSize == removeSize) {
+          if (LOG.isInfoEnabled()) {
+            LOG.info("Propagate removed files/directories from cache to database.");
+          }
+          try {
+            removeIds = new ArrayList<Long>(concurrentRemoveSet);
+            concurrentRemoveSet.clear();
+            DatabaseINode.batchRemoveINodes(removeIds);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
       }
+      preRemoveSize = concurrentRemoveSet.size();
     }
-
-    preRemoveSize = concurrentRemoveSet.size();
   }
 
   public static void BackupSetToDB() {
