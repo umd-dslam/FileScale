@@ -9,13 +9,13 @@ Removing the Exist Stored Procedures ...
 EOF
 
 
-EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd | sed '1,/^--- User Procedures ------------------------------------------$/d' | awk '{print $1}')
+EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd --servers=$1 | sed '1,/^--- User Procedures ------------------------------------------$/d' | awk '{print $1}')
 
 for procedure in $VOLTDB_PROCEDURES
 do
     if [[ $EXISTS_PRCEDURES == *"$procedure"* ]];
     then
-        echo "DROP PROCEDURE $procedure;" | sqlcmd;
+        echo "DROP PROCEDURE $procedure;" | sqlcmd --servers=$1;
     fi
 done
 
@@ -30,7 +30,7 @@ EOF
 rm -rf *.class
 javac *.java
 jar cvf storedprocs.jar *.class
-echo "LOAD CLASSES storedprocs.jar;" | sqlcmd 
+echo "LOAD CLASSES storedprocs.jar;" | sqlcmd --servers=$1 
 
 cat <<EOF
 ============================================
@@ -42,5 +42,5 @@ EOF
 
 for procedure in $VOLTDB_PROCEDURES
 do
-    echo "CREATE PROCEDURE FROM CLASS $procedure;" | sqlcmd;
+    echo "CREATE PROCEDURE FROM CLASS $procedure;" | sqlcmd --servers=$1;
 done

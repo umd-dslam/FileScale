@@ -9,13 +9,13 @@ Removing the Exist Stored Procedures ...
 EOF
 
 
-EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd | sed '1,/^--- User Procedures ------------------------------------------$/d' | awk '{print $1}')
+EXISTS_PRCEDURES=$(echo "show procedures" | sqlcmd --servers=$1 | sed '1,/^--- User Procedures ------------------------------------------$/d' | awk '{print $1}')
 
 for procedure in $VOLTDB_PROCEDURES
 do
     if [[ $EXISTS_PRCEDURES == *"$procedure"* ]];
     then
-        echo "DROP PROCEDURE $procedure;" | sqlcmd;
+        echo "DROP PROCEDURE $procedure;" | sqlcmd --servers=$1;
     fi
 done
 
