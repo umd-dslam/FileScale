@@ -169,6 +169,7 @@ public class INodeKeyedObjects {
   public static IndexedCache<CompositeKey, INode> getCache() {
     if (cache == null) {
       concurrentHashSet = ConcurrentHashMap.newKeySet();
+      concurrentRemoveSet = ConcurrentHashMap.newKeySet();
 
       String syncStr = System.getenv("SYNC_COMMAND_LOGGING");
       if (syncStr == null || Boolean.parseBoolean(syncStr) == false) {
