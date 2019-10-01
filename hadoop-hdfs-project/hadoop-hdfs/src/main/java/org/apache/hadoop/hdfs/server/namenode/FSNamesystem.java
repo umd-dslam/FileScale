@@ -3085,6 +3085,10 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       removeBlocks(toRemovedBlocks); // Incremental deletion of blocks
     }
     logAuditEvent(true, operationName, src);
+    String syncStr = System.getenv("SYNC_COMMAND_LOGGING");
+    if (syncStr != null && Boolean.parseBoolean(syncStr) == true) {
+      INodeKeyedObjects.syncUpdateDB();
+    }
     return ret;
   }
 
