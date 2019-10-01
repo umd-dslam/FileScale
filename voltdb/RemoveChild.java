@@ -53,8 +53,8 @@ public class RemoveChild extends VoltProcedure {
       }
     }
 
-    for (Long id : set) {
-      voltQueueSQL(sql2, id);
+    for (Long kid : set) {
+      voltQueueSQL(sql2, kid);
     }
 
     voltExecuteSQL();

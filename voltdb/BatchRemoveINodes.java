@@ -1,5 +1,5 @@
-import org.voltdb.*;
 import java.util.*;
+import org.voltdb.*;
 
 public class BatchRemoveINodes extends VoltProcedure {
 
@@ -37,7 +37,10 @@ public class BatchRemoveINodes extends VoltProcedure {
   public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
 
   public long run(long[] ids) throws VoltAbortException {
-    List<Long> set = Arrays.asList(ids);
+    List<Long> set = new ArrayList<>();
+    for (int i = 0; i < ids.length; ++i) {
+      set.add(ids[i]);
+    }
 
     int i = 0;
     while (i < set.size()) {
