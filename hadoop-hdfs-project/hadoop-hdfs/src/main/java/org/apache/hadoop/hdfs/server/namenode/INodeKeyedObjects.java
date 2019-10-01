@@ -94,7 +94,7 @@ public class INodeKeyedObjects {
     }
 
     List<Long> removeIds = new ArrayList<>();
-    long removeSize = concurrentHashSet.size();
+    long removeSize = concurrentRemoveSet.size();
     if (removeSize >= num) {
       if (LOG.isInfoEnabled()) {
         LOG.info("Propagate removed files/directories from cache to database.");
@@ -120,8 +120,8 @@ public class INodeKeyedObjects {
           LOG.info("Propagate removed files/directories from cache to database.");
         }
         try {
-          removeIds = new ArrayList<Long>(concurrentHashSet);
-          concurrentHashSet.clear();
+          removeIds = new ArrayList<Long>(concurrentRemoveSet);
+          concurrentRemoveSet.clear();
           DatabaseINode.batchRemoveINodes(removeIds);
         } catch (Exception e) {
           e.printStackTrace();
@@ -129,7 +129,7 @@ public class INodeKeyedObjects {
       }
     }
 
-    preRemoveSize = concurrentHashSet.size();
+    preRemoveSize = concurrentRemoveSet.size();
   }
 
   public static void BackupSetToDB() {

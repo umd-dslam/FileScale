@@ -1636,6 +1636,34 @@ public class DatabaseINode {
     }
   }
 
+  public static void batchRemoveINodes(final List<Long> ids) throws SQLException {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure("BatchRemoveINodes", ids.toArray(new Long[ids.size()]));
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        // Connection conn = obj.getConnection();
+        // PreparedStatement pst = conn.prepareStatement(sql);
+        // pst.setLong(1, childId);
+        // pst.executeUpdate();
+        // pst.close();
+        // TODO: Support batch update in CockroachDB
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("batchRemoveINodes [UPDATE]");
+    }
+  }
+
   public static void batchUpdateINodes(
       final List<Long> longAttr,
       final List<String> strAttr,
