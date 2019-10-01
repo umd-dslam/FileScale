@@ -38,6 +38,7 @@ public class RemoveChild extends VoltProcedure {
   public long run(long id) throws VoltAbortException {
     List<Long> set = new ArrayList<>();
     set.add(id);
+    voltQueueSQL(sql2, id);
 
     int i = 0;
     while (i < set.size()) {

@@ -39,6 +39,7 @@ public class BatchRemoveINodes extends VoltProcedure {
   public long run(long[] ids) throws VoltAbortException {
     List<Long> set = new ArrayList<>();
     for (int i = 0; i < ids.length; ++i) {
+      voltQueueSQL(sql2, id);
       set.add(ids[i]);
     }
 
