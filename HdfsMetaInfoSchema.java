@@ -96,6 +96,7 @@ public class HdfsMetaInfoSchema {
               + "   accessTime bigint, modificationTime bigint,"
               + "   header bigint, permission bigint"
               + ");"
+              + "PARTITION TABLE inodes ON COLUMN parent;"
               + "CREATE TABLE inodexattrs("
               + "   id bigint, namespace smallint, name varchar, value varchar"
               + ");"
