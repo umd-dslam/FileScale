@@ -265,8 +265,7 @@ class FSDirDeleteOp {
       targetNode.cleanSubtree(reclaimContext, CURRENT_STATE_ID, latestSnapshot);
     }
 
-    // ADD(gangliao): Remove inode from Database
-    DatabaseINode.removeChild(targetNode.getId());
+    INodeKeyedObjects.getRemoveSet().add(targetNode.getId());
     INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, targetNode.getId());
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {

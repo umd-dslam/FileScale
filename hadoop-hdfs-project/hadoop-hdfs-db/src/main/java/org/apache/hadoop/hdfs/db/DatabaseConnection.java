@@ -36,7 +36,7 @@ public class DatabaseConnection {
           url = volt;
         } else {
           host = url;
-          url = "jdbc:voltdb://" + url + ":21212"; 
+          url = "jdbc:voltdb://" + url + ":21212";
         }
         this.connection = DriverManager.getConnection(url);
         ClientConfig config = new ClientConfig();

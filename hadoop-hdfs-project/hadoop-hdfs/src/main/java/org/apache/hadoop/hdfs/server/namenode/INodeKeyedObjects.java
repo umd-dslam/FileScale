@@ -18,6 +18,8 @@ public class INodeKeyedObjects {
   private static IndexedCache<CompositeKey, INode> cache;
 
   private static Set<Long> concurrentHashSet;
+  private static Set<Long> concurrentRemoveSet;
+  private static long preRemoveSize = 0;
 
   private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -31,6 +33,14 @@ public class INodeKeyedObjects {
       concurrentHashSet = map.newKeySet();
     }
     return concurrentHashSet;
+  }
+
+  public static Set<Long> getRemoveSet() {
+    if (concurrentRemoveSet == null) {
+      ConcurrentHashMap<Long, Integer> map = new ConcurrentHashMap<>();
+      concurrentRemoveSet = map.newKeySet();
+    }
+    return concurrentRemoveSet;
   }
 
   public static void syncUpdateDB() {
@@ -52,8 +62,7 @@ public class INodeKeyedObjects {
       List<Long> fileIds = new ArrayList<>();
       List<String> fileAttr = new ArrayList<>();
       while (iterator.hasNext()) {
-        INode inode =
-            INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
+        INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
 
         strAttr.add(inode.getLocalName());
         longAttr.add(inode.getParentId());
@@ -65,8 +74,7 @@ public class INodeKeyedObjects {
           longAttr.add(0L);
         } else {
           longAttr.add(inode.asFile().getHeaderLong());
-          FileUnderConstructionFeature uc =
-              inode.asFile().getFileUnderConstructionFeature();
+          FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
           if (uc != null) {
             fileIds.add(inode.getId());
             fileAttr.add(uc.getClientName(inode.getId()));
@@ -77,11 +85,51 @@ public class INodeKeyedObjects {
         if (++i >= num) break;
       }
       try {
-        DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+        if (strAttr.size() > 0) {
+          DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+        }
       } catch (Exception e) {
         e.printStackTrace();
       }
-    }    
+    }
+
+    List<Long> removeIds = new ArrayList<>();
+    long removeSize = concurrentRemoveSet.size();
+    if (removeSize >= num) {
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Propagate removed files/directories from cache to database.");
+      }
+      i = 0;
+      Iterator<Long> iterator = concurrentRemoveSet.iterator();
+      while (iterator.hasNext()) {
+        removeIds.add(iterator.next());
+        iterator.remove();
+        if (++i >= num) break;
+      }
+
+      try {
+        if (removeIds.size() > 0) {
+          DatabaseINode.batchRemoveINodes(removeIds);
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      if (removeSize > 0 && preRemoveSize == removeSize) {
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Propagate removed files/directories from cache to database.");
+        }
+        try {
+          removeIds = new ArrayList<Long>(concurrentRemoveSet);
+          concurrentRemoveSet.clear();
+          DatabaseINode.batchRemoveINodes(removeIds);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }
+
+    preRemoveSize = concurrentRemoveSet.size();
   }
 
   public static void BackupSetToDB() {
