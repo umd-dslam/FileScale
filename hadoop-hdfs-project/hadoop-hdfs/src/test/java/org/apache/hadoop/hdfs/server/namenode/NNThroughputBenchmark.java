@@ -746,7 +746,8 @@ public class NNThroughputBenchmark implements Tool {
 
     @Override
     String getOpName() {
-      return OP_OPEN_NAME;
+      // FIXME: for testing
+      return "create";
     }
 
     @Override
