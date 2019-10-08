@@ -371,8 +371,8 @@ public class NNThroughputBenchmark implements Tool {
         type = getOpName();
         return true;
       }
-      // if(!getOpName().equals(type))
-      //   printUsage();
+      if(!getOpName().equals(type))
+        printUsage();
       return false;
     }
 
@@ -746,8 +746,7 @@ public class NNThroughputBenchmark implements Tool {
 
     @Override
     String getOpName() {
-      // FIXME: for testing
-      return "create";
+      return OP_OPEN_NAME;
     }
 
     @Override
@@ -781,12 +780,9 @@ public class NNThroughputBenchmark implements Tool {
       }
       // use the same files for open
       super.generateInputs(opsPerThread);
-      if(clientProto.getFileInfo(opCreate.getBaseDir()) != null
-          && clientProto.getFileInfo(getBaseDir()) == null) {
-        clientProto.rename(opCreate.getBaseDir(), getBaseDir());
-      }
-      if(clientProto.getFileInfo(getBaseDir()) == null) {
-        throw new IOException(getBaseDir() + " does not exist.");
+
+      if(clientProto.getFileInfo(opCreate.getBaseDir()) == null) {
+        throw new IOException(opCreate.getBaseDir() + " does not exist.");
       }
     }
 
@@ -796,8 +792,10 @@ public class NNThroughputBenchmark implements Tool {
     @Override
     long executeOp(int daemonId, int inputIdx, String ignore) 
     throws IOException {
+      String fname = fileNames[daemonId][inputIdx];
+      fname = fname.replace("open", "create");
       long start = Time.now();
-      clientProto.getBlockLocations(fileNames[daemonId][inputIdx], 0L, BLOCK_SIZE);
+      clientProto.getBlockLocations(fname, 0L, BLOCK_SIZE);
       long end = Time.now();
       return end-start;
     }
