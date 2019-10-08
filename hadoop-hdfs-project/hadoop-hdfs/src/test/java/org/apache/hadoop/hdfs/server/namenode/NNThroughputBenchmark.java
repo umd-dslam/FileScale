@@ -371,8 +371,8 @@ public class NNThroughputBenchmark implements Tool {
         type = getOpName();
         return true;
       }
-      if(!getOpName().equals(type))
-        printUsage();
+      // if(!getOpName().equals(type))
+      //   printUsage();
       return false;
     }
 
