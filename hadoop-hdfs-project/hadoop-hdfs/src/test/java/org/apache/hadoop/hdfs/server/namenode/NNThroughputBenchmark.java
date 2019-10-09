@@ -825,7 +825,9 @@ public class NNThroughputBenchmark implements Tool {
     long executeOp(int daemonId, int inputIdx, String ignore) 
     throws IOException {
       long start = Time.now();
-      clientProto.delete(fileNames[daemonId][inputIdx], false);
+      String fname = fileNames[daemonId][inputIdx];
+      fname = fname.replace("delete", "create");
+      clientProto.delete(fname, false);
       long end = Time.now();
       return end-start;
     }
