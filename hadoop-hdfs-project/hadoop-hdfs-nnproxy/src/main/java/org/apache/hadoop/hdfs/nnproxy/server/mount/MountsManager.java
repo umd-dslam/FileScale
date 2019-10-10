@@ -121,6 +121,15 @@ public class MountsManager extends AbstractService {
     return chosen.fsUri;
   }
 
+  public String resolveForBench(String path) {
+    String parent = "";
+    if (path.charAt(49) == '/')
+      parent = s.substring(0, 49);
+    else
+      parent = s.substring(0, 50);
+    return this.lookupMap.get(parent).get(0).fsUri;
+  }
+
   public String resolveOpt(String path) {
     MountEntry chosen = null;
     if (path == null) {

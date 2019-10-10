@@ -43,21 +43,27 @@ public class Router {
     }
 
     RouteInfo route(String path) throws IOException {
-        String logicalPath = path;
-        Matcher mch = TRASH_PATTERN.matcher(path);
-        if (mch.find()) {
-            logicalPath = "/" + mch.group(1);
-            LOG.debug("Hit trash pattern: " + path + " -> " + logicalPath);
+        String nnbench = System.getenv("NN_BECHMARK");
+        if (nnbench != null) {
+            String fs = nnProxy.getMounts().resolveForBench(path);
+            return new RouteInfo(getProtocol(fs), path, fs);
+        } else {
+            String logicalPath = path;
+            Matcher mch = TRASH_PATTERN.matcher(path);
+            if (mch.find()) {
+                logicalPath = "/" + mch.group(1);
+                LOG.debug("Hit trash pattern: " + path + " -> " + logicalPath);
+            }
+            String fs = nnProxy.getMounts().resolveOpt(logicalPath);
+            if (fs == null) {
+                // mount to default path
+                fs = defaultNN;
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Resolved: " + path + " -> " + fs + path);
+            }
+            return new RouteInfo(getProtocol(fs), path, fs);
         }
-        String fs = nnProxy.getMounts().resolveOpt(logicalPath);
-        if (fs == null) {
-            // mount to default path
-            fs = defaultNN;
-        }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Resolved: " + path + " -> " + fs + path);
-        }
-        return new RouteInfo(getProtocol(fs), path, fs);
     }
 
     ClientProtocol getProtocol(String fs) throws IOException {
