@@ -33,32 +33,44 @@ public class BatchRemoveINodes extends VoltProcedure {
   //   return 1;
   // }
 
+  public final SQLStmt sql0 = new SQLStmt("SELECT id FROM inodes WHERE id = ? and header != 0;");
   public final SQLStmt sql1 = new SQLStmt("SELECT id FROM inodes WHERE parent = ?");
   public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
 
   public long run(final long[] ids) throws VoltAbortException {
-    List<Long> set = new ArrayList<>();
     for (int i = 0; i < ids.length; ++i) {
-      voltQueueSQL(sql2, ids[i]);
-      set.add(ids[i]);
+      voltQueueSQL(sql0, ids[i]);
     }
 
-    int i = 0;
-    while (i < set.size()) {
-      long cid = set.get(i);
-      i++;
-      voltQueueSQL(sql1, cid);
-      VoltTable[] results = voltExecuteSQL();
-      if (results[0].getRowCount() < 1) {
-        continue;
+    VoltTable[] results = voltExecuteSQL();
+    if (results[0].getRowCount() == ids.length) {
+      for (int i = 0; i < ids.length; ++i) {
+        voltQueueSQL(sql2, ids[i]);
       }
-      for (int j = 0; j < results[0].getRowCount(); ++j) {
-        set.add(results[0].fetchRow(j).getLong(0));
+    } else {
+      List<Long> set = new ArrayList<>();
+      for (int i = 0; i < ids.length; ++i) {
+        voltQueueSQL(sql2, ids[i]);
+        set.add(ids[i]);
       }
-    }
 
-    for (Long kid : set) {
-      voltQueueSQL(sql2, kid);
+      int i = 0;
+      while (i < set.size()) {
+        long cid = set.get(i);
+        i++;
+        voltQueueSQL(sql1, cid);
+        VoltTable[] results = voltExecuteSQL();
+        if (results[0].getRowCount() < 1) {
+          continue;
+        }
+        for (int j = 0; j < results[0].getRowCount(); ++j) {
+          set.add(results[0].fetchRow(j).getLong(0));
+        }
+      }
+
+      for (Long kid : set) {
+        voltQueueSQL(sql2, kid);
+      }
     }
 
     voltExecuteSQL();
