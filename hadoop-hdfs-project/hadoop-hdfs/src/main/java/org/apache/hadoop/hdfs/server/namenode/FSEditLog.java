@@ -830,7 +830,7 @@ public class FSEditLog implements LogsPurgeable {
     }
 
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /** 
