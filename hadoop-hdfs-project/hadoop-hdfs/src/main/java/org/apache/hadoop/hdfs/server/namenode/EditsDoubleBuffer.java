@@ -31,6 +31,7 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.Writer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.hdfs.server.namenode.INodeKeyedObjects;
 
 import com.google.common.base.Preconditions;
 
@@ -92,8 +93,9 @@ public class EditsDoubleBuffer {
    * and resets it. Does not swap any buffers.
    */
   public void flushTo(OutputStream out) throws IOException {
-    bufReady.writeTo(out); // write data to file
-    bufReady.reset(); // erase all data in the buffer
+    // bufReady.writeTo(out); // write data to file
+    bufReady.syncDB();  // write data to database
+    bufReady.reset();   // erase all data in the buffer
   }
   
   public boolean shouldForceSync() {
@@ -157,6 +159,77 @@ public class EditsDoubleBuffer {
       }
       writer.writeOp(op);
       numTxns++;
+    }
+
+    public void syncDB() {
+      byte[] buf = this.getData();
+      byte[] remainingRawEdits = Arrays.copyOfRange(buf, 0, this.size());
+      ByteArrayInputStream bis = new ByteArrayInputStream(remainingRawEdits);
+      DataInputStream dis = new DataInputStream(bis);
+      FSEditLogLoader.PositionTrackingInputStream tracker =
+          new FSEditLogLoader.PositionTrackingInputStream(bis);
+      FSEditLogOp.Reader reader = FSEditLogOp.Reader.create(dis, tracker,
+          NameNodeLayoutVersion.CURRENT_LAYOUT_VERSION);
+      FSEditLogOp op;
+      LOG.INFO("The edits buffer is " + size() + " bytes long with " + numTxns +
+          " unflushed transactions.");
+      try {
+        List<Long> longAttr = new ArrayList<>();
+        List<String> strAttr = new ArrayList<>();
+  
+        List<Long> fileIds = new ArrayList<>();
+        List<String> fileAttr = new ArrayList<>();
+
+        List<Long> removeIds = new ArrayList<>();
+        while ((op = reader.readOp(false)) != null) {
+          if (op.getOpCode() == OP_ADD) {
+            AddOp addop = (AddOp)op;
+            INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, addop.getInodeId());
+            strAttr.add(inode.getLocalName());
+            longAttr.add(inode.getParentId());
+            longAttr.add(inode.getId());
+            longAttr.add(inode.getModificationTime());
+            longAttr.add(inode.getAccessTime());
+            longAttr.add(inode.getPermissionLong());
+            if (inode.isDirectory()) {
+              longAttr.add(0L);
+            } else {
+              longAttr.add(inode.asFile().getHeaderLong());
+              FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+              if (uc != null) {
+                fileIds.add(inode.getId());
+                fileAttr.add(uc.getClientName(inode.getId()));
+                fileAttr.add(uc.getClientMachine(inode.getId()));
+              }
+            }
+          } else if (op.getOpCode() == OP_DELETE) {
+            DeleteOp deleteop = (Delete)op;
+            removeIds.add(deleteop.getInodeId());
+          }
+        }
+
+        // Sync create files in DB
+        try {
+          if (strAttr.size() > 0) {
+            DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        // Sync delete files in DB
+        try {
+          if (removeIds.size() > 0) {
+            DatabaseINode.batchRemoveINodes(removeIds);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } catch (IOException ioe) {
+        // If any exceptions, print raw bytes and stop.
+        LOG.warn("Unable to sync remaining ops. Remaining raw bytes: " +
+            Hex.encodeHexString(remainingRawEdits), ioe);
+      }
     }
     
     @Override

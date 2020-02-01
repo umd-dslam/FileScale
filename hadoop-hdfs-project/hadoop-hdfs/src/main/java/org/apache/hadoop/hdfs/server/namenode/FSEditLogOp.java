@@ -460,6 +460,10 @@ public abstract class FSEditLogOp {
       erasureCodingPolicyId = ErasureCodeConstants.REPLICATION_POLICY_ID;
     }
 
+    long getInodeId() {
+      return inodeId;
+    }
+
     <T extends AddCloseOp> T setInodeId(long inodeId) {
       this.inodeId = inodeId;
       return (T)this;
@@ -1535,6 +1539,10 @@ public abstract class FSEditLogOp {
     DeleteOp setInodeId(long inodeId) {
       this.inodeId = inodeId;
       return this;
+    }
+
+    long getInodeId() {
+      return inodeId;
     }
 
     @Override
@@ -5063,10 +5071,8 @@ public abstract class FSEditLogOp {
      *
      * The minimum Op has:
      * 1-byte opcode
-     * 4-byte length
      * 8-byte txid
-     * 0-byte body
-     * 4-byte checksum
+     * 8-byte inodeid
      */
     private static final int MIN_OP_LENGTH = 17;
 
@@ -5077,39 +5083,28 @@ public abstract class FSEditLogOp {
      */
     private static final int OP_ID_LENGTH = 1;
 
-    /**
-     * The checksum length.
-     *
-     * Not included in the stored length.
-     */
-    private static final int CHECKSUM_LENGTH = 4;
-
-    private final Checksum checksum;
-
     LengthPrefixedReader(DataInputStream in, StreamLimiter limiter,
                          int logVersion) {
       super(in, limiter, logVersion);
-      this.checksum = DataChecksum.newCrc32();
     }
 
     @Override
     public FSEditLogOp decodeOp() throws IOException {
-      long txid = decodeOpFrame();
-      if (txid == HdfsServerConstants.INVALID_TXID) {
-        return null;
-      }
-      in.reset();
+      limiter.setLimit(maxOpSize);
       in.mark(maxOpSize);
+
       FSEditLogOpCodes opCode = FSEditLogOpCodes.fromByte(in.readByte());
       FSEditLogOp op = cache.get(opCode);
       if (op == null) {
         throw new IOException("Read invalid opcode " + opCode);
       }
+
+      long txid = in.readLong();
+      if (txid == HdfsServerConstants.INVALID_TXID) {
+        return null;
+      }
       op.setTransactionId(txid);
-      IOUtils.skipFully(in, 4 + 8); // skip length and txid
-      op.readFields(in, logVersion);
-      // skip over the checksum, which we validated above.
-      IOUtils.skipFully(in, CHECKSUM_LENGTH);
+      op.setInodeId(in.readLong());
       return op;
     }
 
@@ -5151,7 +5146,7 @@ public abstract class FSEditLogOp {
       if (opLength > maxOpSize) {
         throw new IOException("Op " + (int)opCodeByte + " has size " +
             opLength + ", but maxOpSize = " + maxOpSize);
-      } else  if (opLength < MIN_OP_LENGTH) {
+      } else if (opLength < MIN_OP_LENGTH) {
         throw new IOException("Op " + (int)opCodeByte + " has size " +
             opLength + ", but the minimum op size is " + MIN_OP_LENGTH);
       }
