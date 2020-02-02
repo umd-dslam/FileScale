@@ -1603,7 +1603,7 @@ public abstract class FSEditLogOp {
       XMLUtils.addSaxString(contentHandler, "TIMESTAMP",
           Long.toString(timestamp));
       XMLUtils.addSaxString(contentHandler, "INODEID",
-          Integer.toString(inodeId));
+          Long.toString(inodeId));
       appendRpcIdsToXml(contentHandler, rpcClientId, rpcCallId);
     }
     
@@ -5109,7 +5109,13 @@ public abstract class FSEditLogOp {
         return null;
       }
       op.setTransactionId(txid);
-      op.setInodeId(in.readLong());
+      if (op.getOpCode() == OP_ADD) {
+        Addop addop = (AddOp)op;
+        addop.setInodeId(in.readLong());
+      } else if (op.getOpCode() == OP_DELETE) {
+        DeleteOp deleteop = (DeleteOp)op;
+        deleteop.setInodeId(in.readLong());
+      }
       return op;
     }
 
