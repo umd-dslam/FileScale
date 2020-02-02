@@ -280,8 +280,6 @@ public abstract class FSEditLogOp {
     this.rpcCallId = callId;
   }
 
-  abstract void setInodeId(long inodeId);
-
   abstract void readFields(DataInputStream in, int logVersion)
       throws IOException;
 

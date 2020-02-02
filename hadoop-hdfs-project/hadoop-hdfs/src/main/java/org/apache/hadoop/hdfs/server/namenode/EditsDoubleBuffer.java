@@ -35,7 +35,10 @@ import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.hdfs.server.namenode.INodeKeyedObjects;
 import org.apache.hadoop.hdfs.db.DatabaseINode;
-import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.DeleteOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.AddOp;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_DELETE;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_ADD;
 import com.google.common.base.Preconditions;
 
 /**
