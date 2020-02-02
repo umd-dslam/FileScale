@@ -280,6 +280,8 @@ public abstract class FSEditLogOp {
     this.rpcCallId = callId;
   }
 
+  abstract void setInodeId(long inodeId);
+
   abstract void readFields(DataInputStream in, int logVersion)
       throws IOException;
 
@@ -5083,9 +5085,14 @@ public abstract class FSEditLogOp {
      */
     private static final int OP_ID_LENGTH = 1;
 
+    private static final int CHECKSUM_LENGTH = 4;
+
+    private final Checksum checksum;
+
     LengthPrefixedReader(DataInputStream in, StreamLimiter limiter,
                          int logVersion) {
       super(in, limiter, logVersion);
+      this.checksum = DataChecksum.newCrc32();
     }
 
     @Override

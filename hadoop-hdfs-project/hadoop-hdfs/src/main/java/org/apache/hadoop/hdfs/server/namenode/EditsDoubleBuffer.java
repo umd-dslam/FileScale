@@ -22,6 +22,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
@@ -32,7 +34,8 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.Writer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.hdfs.server.namenode.INodeKeyedObjects;
-
+import org.apache.hadoop.hdfs.db.DatabaseINode;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp;
 import com.google.common.base.Preconditions;
 
 /**
@@ -171,7 +174,7 @@ public class EditsDoubleBuffer {
       FSEditLogOp.Reader reader = FSEditLogOp.Reader.create(dis, tracker,
           NameNodeLayoutVersion.CURRENT_LAYOUT_VERSION);
       FSEditLogOp op;
-      LOG.INFO("The edits buffer is " + size() + " bytes long with " + numTxns +
+      LOG.info("The edits buffer is " + size() + " bytes long with " + numTxns +
           " unflushed transactions.");
       try {
         List<Long> longAttr = new ArrayList<>();
