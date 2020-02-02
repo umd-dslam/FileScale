@@ -209,7 +209,7 @@ public class EditsDoubleBuffer {
               }
             }
           } else if (op.getOpCode() == OP_DELETE) {
-            DeleteOp deleteop = (Delete)op;
+            DeleteOp deleteop = (DeleteOp)op;
             removeIds.add(deleteop.getInodeId());
           }
         }

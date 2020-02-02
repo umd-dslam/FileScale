@@ -5110,7 +5110,7 @@ public abstract class FSEditLogOp {
       }
       op.setTransactionId(txid);
       if (op.getOpCode() == OP_ADD) {
-        Addop addop = (AddOp)op;
+        AddOp addop = (AddOp)op;
         addop.setInodeId(in.readLong());
       } else if (op.getOpCode() == OP_DELETE) {
         DeleteOp deleteop = (DeleteOp)op;
