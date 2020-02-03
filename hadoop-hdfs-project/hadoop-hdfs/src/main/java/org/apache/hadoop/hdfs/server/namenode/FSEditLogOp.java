@@ -5095,10 +5095,23 @@ public abstract class FSEditLogOp {
 
     @Override
     public FSEditLogOp decodeOp() throws IOException {
-      limiter.setLimit(maxOpSize);
+      in.reset();
       in.mark(maxOpSize);
 
-      FSEditLogOpCodes opCode = FSEditLogOpCodes.fromByte(in.readByte());
+      byte opCodeByte;
+      try {
+        opCodeByte = in.readByte();
+      } catch (EOFException eof) {
+        // EOF at an opcode boundary is expected.
+        return null;
+      }
+
+      if (opCodeByte == FSEditLogOpCodes.OP_INVALID.getOpCode()) {
+        verifyTerminator();
+        return null;
+      }
+
+      FSEditLogOpCodes opCode = FSEditLogOpCodes.fromByte(opCodeByte);
       FSEditLogOp op = cache.get(opCode);
       if (op == null) {
         throw new IOException("Read invalid opcode " + opCode);
