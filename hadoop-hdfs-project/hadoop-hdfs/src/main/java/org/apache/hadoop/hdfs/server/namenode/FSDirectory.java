@@ -115,6 +115,7 @@ public class FSDirectory implements Closeable {
       new ImmutablePair<>(0L, r.getLocalName())),
       r);
 
+    getEditLog().logMkDir("/", r);
     // TODO: enable later
     // r.addDirectoryWithQuotaFeature(
     //     new DirectoryWithQuotaFeature.Builder().
