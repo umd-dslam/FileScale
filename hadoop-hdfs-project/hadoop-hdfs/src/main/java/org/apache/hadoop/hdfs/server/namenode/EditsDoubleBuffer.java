@@ -37,8 +37,10 @@ import org.apache.hadoop.hdfs.server.namenode.INodeKeyedObjects;
 import org.apache.hadoop.hdfs.db.DatabaseINode;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.DeleteOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.AddOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_DELETE;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_ADD;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_MKDIR;
 import com.google.common.base.Preconditions;
 
 /**
@@ -188,9 +190,15 @@ public class EditsDoubleBuffer {
 
         List<Long> removeIds = new ArrayList<>();
         while ((op = reader.readOp(false)) != null) {
-          if (op.getOpCode() == OP_ADD) {
-            AddOp addop = (AddOp)op;
-            INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, addop.getInodeId());
+          if (op.getOpCode() == OP_ADD || op.getOpCode() == OP_MKDIR) {
+            INode inode;
+            if (op.getOpCode() == OP_ADD) {
+              AddOp addop = (AddOp)op;
+              inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, addop.getInodeId());
+            } else {
+              MkdirOp mkdirop = (MkdirOp)op;
+              inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, mkdirop.getInodeId());              
+            }
             strAttr.add(inode.getLocalName());
             longAttr.add(inode.getParentId());
             longAttr.add(inode.getId());

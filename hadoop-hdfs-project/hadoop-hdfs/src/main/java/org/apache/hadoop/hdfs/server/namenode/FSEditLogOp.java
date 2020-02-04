@@ -1645,6 +1645,10 @@ public abstract class FSEditLogOp {
       xAttrs = null;
     }
 
+    long getInodeId() {
+      return inodeId;
+    }
+
     MkdirOp setInodeId(long inodeId) {
       this.inodeId = inodeId;
       return this;
@@ -1679,14 +1683,14 @@ public abstract class FSEditLogOp {
     public 
     void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
-      FSImageSerialization.writeString(path, out);
+      // FSImageSerialization.writeString(path, out);
       // FSImageSerialization.writeLong(timestamp, out); // mtime
       // FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
       // permissions.write(out);
-      AclEditLogUtil.write(aclEntries, out);
-      XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
-      b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
-      b.build().writeDelimitedTo(out);
+      // AclEditLogUtil.write(aclEntries, out);
+      // XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
+      // b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
+      // b.build().writeDelimitedTo(out);
     }
     
     @Override
@@ -5127,6 +5131,9 @@ public abstract class FSEditLogOp {
       } else if (op.getOpCode() == OP_DELETE) {
         DeleteOp deleteop = (DeleteOp)op;
         deleteop.setInodeId(in.readLong());
+      } else if (op.getOpCode() == OP_MKDIR) {
+        MkdirOp mkdirop = (MkdirOp)op;
+        mkdirop.setInodeId(in.readLong());
       }
       return op;
     }
