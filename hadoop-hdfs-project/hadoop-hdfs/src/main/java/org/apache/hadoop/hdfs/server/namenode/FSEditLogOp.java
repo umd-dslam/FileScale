@@ -5132,7 +5132,7 @@ public abstract class FSEditLogOp {
         DeleteOp deleteop = (DeleteOp)op;
         deleteop.setInodeId(in.readLong());
       } else if (op.getOpCode() == OP_MKDIR) {
-        MkdirOp mkdirop = (OP_MKDIR)op;
+        MkdirOp mkdirop = (MkdirOp)op;
         mkdirop.setInodeId(in.readLong());
       }
       return op;
