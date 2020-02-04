@@ -3236,6 +3236,12 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    String syncLog = System.getenv("SYNC_FILESCALE_LOG");
+    if (Boolean.parseBoolean(syncLog) == false) {
+      INodeKeyedObjects.asyncUpdateDB();
+    } else {
+      getEditLog().logSync();
+    }
     logAuditEvent(true, operationName, src, null, auditStat);
     return true;
   }

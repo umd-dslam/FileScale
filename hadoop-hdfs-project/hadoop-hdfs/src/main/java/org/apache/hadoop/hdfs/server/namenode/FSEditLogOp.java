@@ -1645,6 +1645,10 @@ public abstract class FSEditLogOp {
       xAttrs = null;
     }
 
+    long getInodeId() {
+      return inodeId;
+    }
+
     MkdirOp setInodeId(long inodeId) {
       this.inodeId = inodeId;
       return this;
@@ -5127,6 +5131,9 @@ public abstract class FSEditLogOp {
       } else if (op.getOpCode() == OP_DELETE) {
         DeleteOp deleteop = (DeleteOp)op;
         deleteop.setInodeId(in.readLong());
+      } else if (op.getOpCode() == OP_MKDIR) {
+        MkdirOp mkdirop = (OP_MKDIR)op;
+        mkdirop.setInodeId(in.readLong());
       }
       return op;
     }
