@@ -889,7 +889,7 @@ public class FSEditLog implements LogsPurgeable {
     if (x != null) {
       op.setXAttrs(x.getXAttrs());
     }
-    // logEdit(op);
+    logEdit(op);
   }
   
   /** 

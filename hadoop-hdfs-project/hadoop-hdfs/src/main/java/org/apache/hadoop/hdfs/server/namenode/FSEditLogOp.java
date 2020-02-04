@@ -5095,7 +5095,6 @@ public abstract class FSEditLogOp {
 
     @Override
     public FSEditLogOp decodeOp() throws IOException {
-      in.reset();
       in.mark(maxOpSize);
 
       byte opCodeByte;
@@ -5107,7 +5106,7 @@ public abstract class FSEditLogOp {
       }
 
       if (opCodeByte == FSEditLogOpCodes.OP_INVALID.getOpCode()) {
-        verifyTerminator();
+        // verifyTerminator();
         return null;
       }
 
