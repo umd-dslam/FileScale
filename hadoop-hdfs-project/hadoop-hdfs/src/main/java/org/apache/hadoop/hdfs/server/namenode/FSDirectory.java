@@ -115,7 +115,6 @@ public class FSDirectory implements Closeable {
       new ImmutablePair<>(0L, r.getLocalName())),
       r);
 
-    getEditLog().logMkDir("/", r);
     // TODO: enable later
     // r.addDirectoryWithQuotaFeature(
     //     new DirectoryWithQuotaFeature.Builder().
@@ -399,6 +398,7 @@ public class FSDirectory implements Closeable {
     nameCache = new NameCache<ByteArray>(threshold);
     namesystem = ns;
     this.editLog = ns.getEditLog();
+    this.editLog.logMkDir("/", rootDir);
     ezManager = new EncryptionZoneManager(this, conf);
 
     this.quotaInitThreads = conf.getInt(
