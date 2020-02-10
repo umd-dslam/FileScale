@@ -573,7 +573,7 @@ public abstract class FSEditLogOp {
         FSImageSerialization.writeBoolean(overwrite, out);
         FSImageSerialization.writeByte(storagePolicyId, out);
         FSImageSerialization.writeByte(erasureCodingPolicyId, out);
-        write clientId and callId
+        // write clientId and callId
         writeRpcIds(rpcClientId, rpcCallId, out);
       }
     }
