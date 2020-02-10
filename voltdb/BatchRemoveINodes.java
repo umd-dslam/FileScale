@@ -59,7 +59,7 @@ public class BatchRemoveINodes extends VoltProcedure {
         long cid = set.get(i);
         i++;
         voltQueueSQL(sql1, cid);
-        VoltTable[] results = voltExecuteSQL();
+        results = voltExecuteSQL();
         if (results[0].getRowCount() < 1) {
           continue;
         }

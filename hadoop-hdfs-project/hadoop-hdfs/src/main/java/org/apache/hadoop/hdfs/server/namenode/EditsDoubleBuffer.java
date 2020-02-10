@@ -101,8 +101,9 @@ public class EditsDoubleBuffer {
    * and resets it. Does not swap any buffers.
    */
   public void flushTo(OutputStream out) throws IOException {
-    // bufReady.writeTo(out); // write data to file
-    bufReady.syncDB();  // write data to database
+    bufReady.writeTo(out); // write data to file
+    // We want to separate logging and metadata flush 
+    // bufReady.syncDB();  // write data to database
     bufReady.reset();   // erase all data in the buffer
   }
   

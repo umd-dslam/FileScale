@@ -398,7 +398,7 @@ public class FSDirectory implements Closeable {
     nameCache = new NameCache<ByteArray>(threshold);
     namesystem = ns;
     this.editLog = ns.getEditLog();
-    this.editLog.logMkDir("/", rootDir);
+    // this.editLog.logMkDir("/", rootDir);
     ezManager = new EncryptionZoneManager(this, conf);
 
     this.quotaInitThreads = conf.getInt(
