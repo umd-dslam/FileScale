@@ -431,7 +431,6 @@ public abstract class FSEditLogOp {
     boolean overwrite;
     byte storagePolicyId;
     byte erasureCodingPolicyId;
-    FSEditLogOpCodes code;
     
     private AddCloseOp(FSEditLogOpCodes opCode) {
       super(opCode);
@@ -555,30 +554,28 @@ public abstract class FSEditLogOp {
 
     @Override
     public void writeFields(DataOutputStream out) throws IOException {
-      if (getOpCode() == OP_ADD) {
-        FSImageSerialization.writeLong(inodeId, out);
-      }
-      // FSImageSerialization.writeString(path, out);
-      // FSImageSerialization.writeShort(replication, out);
-      // FSImageSerialization.writeLong(mtime, out);
-      // FSImageSerialization.writeLong(atime, out);
-      // FSImageSerialization.writeLong(blockSize, out);
-      // new ArrayWritable(Block.class, blocks).write(out);
-      // permissions.write(out);
+      FSImageSerialization.writeLong(inodeId, out);
+      FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeShort(replication, out);
+      FSImageSerialization.writeLong(mtime, out);
+      FSImageSerialization.writeLong(atime, out);
+      FSImageSerialization.writeLong(blockSize, out);
+      new ArrayWritable(Block.class, blocks).write(out);
+      permissions.write(out);
 
-      // if (this.opCode == OP_ADD) {
-      //   AclEditLogUtil.write(aclEntries, out);
-      //   XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
-      //   b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
-      //   b.build().writeDelimitedTo(out);
-      //   FSImageSerialization.writeString(clientName,out);
-      //   FSImageSerialization.writeString(clientMachine,out);
-      //   FSImageSerialization.writeBoolean(overwrite, out);
-      //   FSImageSerialization.writeByte(storagePolicyId, out);
-      //   FSImageSerialization.writeByte(erasureCodingPolicyId, out);
-      //   write clientId and callId
-      //   writeRpcIds(rpcClientId, rpcCallId, out);
-      // }
+      if (this.opCode == OP_ADD) {
+        AclEditLogUtil.write(aclEntries, out);
+        XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
+        b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
+        b.build().writeDelimitedTo(out);
+        FSImageSerialization.writeString(clientName,out);
+        FSImageSerialization.writeString(clientMachine,out);
+        FSImageSerialization.writeBoolean(overwrite, out);
+        FSImageSerialization.writeByte(storagePolicyId, out);
+        FSImageSerialization.writeByte(erasureCodingPolicyId, out);
+        write clientId and callId
+        writeRpcIds(rpcClientId, rpcCallId, out);
+      }
     }
 
     @Override
@@ -1548,31 +1545,38 @@ public abstract class FSEditLogOp {
     @Override
     public 
     void writeFields(DataOutputStream out) throws IOException {
-      // FSImageSerialization.writeString(path, out);
-      // FSImageSerialization.writeLong(timestamp, out);
-      // writeRpcIds(rpcClientId, rpcCallId, out);
       FSImageSerialization.writeLong(inodeId, out);
+      FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeLong(timestamp, out);
+      writeRpcIds(rpcClientId, rpcCallId, out); 
     }
 
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      // if (!NameNodeLayoutVersion.supports(
-      //     LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
-      //   this.length = in.readInt();
-      //   if (this.length != 2) {
-      //     throw new IOException("Incorrect data format. " + "delete operation.");
-      //   }
-      // }
-      // this.path = FSImageSerialization.readString(in);
-      // if (NameNodeLayoutVersion.supports(
-      //     LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
-      //   this.timestamp = FSImageSerialization.readLong(in);
-      // } else {
-      //   this.timestamp = readLong(in);
-      // }
-      // // read RPC ids if necessary
-      // readRpcIds(in, logVersion);
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+        this.length = in.readInt();
+        if (this.length != 2) {
+          throw new IOException("Incorrect data format. " + "delete operation.");
+        }
+      }
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.ADD_INODE_ID, logVersion)) {
+        this.inodeId = FSImageSerialization.readLong(in);
+      } else {
+        // This id should be updated when this editLogOp is applied
+        this.inodeId = HdfsConstants.GRANDFATHER_INODE_ID;
+      }
+      this.path = FSImageSerialization.readString(in);
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+        this.timestamp = FSImageSerialization.readLong(in);
+      } else {
+        this.timestamp = readLong(in);
+      }
+      // read RPC ids if necessary
+      readRpcIds(in, logVersion);
     }
 
     @Override
@@ -1683,14 +1687,14 @@ public abstract class FSEditLogOp {
     public 
     void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
-      // FSImageSerialization.writeString(path, out);
-      // FSImageSerialization.writeLong(timestamp, out); // mtime
-      // FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
-      // permissions.write(out);
-      // AclEditLogUtil.write(aclEntries, out);
-      // XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
-      // b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
-      // b.build().writeDelimitedTo(out);
+      FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeLong(timestamp, out); // mtime
+      FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
+      permissions.write(out);
+      AclEditLogUtil.write(aclEntries, out);
+      XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
+      b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
+      b.build().writeDelimitedTo(out);
     }
     
     @Override
@@ -4892,23 +4896,23 @@ public abstract class FSEditLogOp {
      * @throws IOException if an error occurs during writing.
      */
     public void writeOp(FSEditLogOp op) throws IOException {
-      // int start = buf.getLength();
+      int start = buf.getLength();
       // write the op code first to make padding and terminator verification
       // work
       buf.writeByte(op.opCode.getOpCode());
-      // buf.writeInt(0); // write 0 for the length first
+      buf.writeInt(0); // write 0 for the length first
       buf.writeLong(op.txid);
       op.writeFields(buf);
-      // int end = buf.getLength();
+      int end = buf.getLength();
       
       // write the length back: content of the op + 4 bytes checksum - op_code
-      // int length = end - start - 1;
-      // buf.writeInt(length, start + 1);
+      int length = end - start - 1;
+      buf.writeInt(length, start + 1);
 
-      // checksum.reset();
-      // checksum.update(buf.getData(), start, end-start);
-      // int sum = (int)checksum.getValue();
-      // buf.writeInt(sum);
+      checksum.reset();
+      checksum.update(buf.getData(), start, end-start);
+      int sum = (int)checksum.getValue();
+      buf.writeInt(sum);
     }
   }
 
@@ -5075,8 +5079,10 @@ public abstract class FSEditLogOp {
      *
      * The minimum Op has:
      * 1-byte opcode
+     * 4-byte length
      * 8-byte txid
-     * 8-byte inodeid
+     * 0-byte body
+     * 4-byte checksum
      */
     private static final int MIN_OP_LENGTH = 17;
 
@@ -5087,6 +5093,11 @@ public abstract class FSEditLogOp {
      */
     private static final int OP_ID_LENGTH = 1;
 
+    /**	
+     * The checksum length.	
+     *	
+     * Not included in the stored length.	
+     */
     private static final int CHECKSUM_LENGTH = 4;
 
     private final Checksum checksum;
@@ -5099,42 +5110,22 @@ public abstract class FSEditLogOp {
 
     @Override
     public FSEditLogOp decodeOp() throws IOException {
+      long txid = decodeOpFrame();
+      if (txid == HdfsServerConstants.INVALID_TXID) {
+        return null;
+      }
+      in.reset();
       in.mark(maxOpSize);
-
-      byte opCodeByte;
-      try {
-        opCodeByte = in.readByte();
-      } catch (EOFException eof) {
-        // EOF at an opcode boundary is expected.
-        return null;
-      }
-
-      if (opCodeByte == FSEditLogOpCodes.OP_INVALID.getOpCode()) {
-        // verifyTerminator();
-        return null;
-      }
-
-      FSEditLogOpCodes opCode = FSEditLogOpCodes.fromByte(opCodeByte);
+      FSEditLogOpCodes opCode = FSEditLogOpCodes.fromByte(in.readByte());
       FSEditLogOp op = cache.get(opCode);
       if (op == null) {
         throw new IOException("Read invalid opcode " + opCode);
       }
-
-      long txid = in.readLong();
-      if (txid == HdfsServerConstants.INVALID_TXID) {
-        return null;
-      }
       op.setTransactionId(txid);
-      if (op.getOpCode() == OP_ADD) {
-        AddOp addop = (AddOp)op;
-        addop.setInodeId(in.readLong());
-      } else if (op.getOpCode() == OP_DELETE) {
-        DeleteOp deleteop = (DeleteOp)op;
-        deleteop.setInodeId(in.readLong());
-      } else if (op.getOpCode() == OP_MKDIR) {
-        MkdirOp mkdirop = (MkdirOp)op;
-        mkdirop.setInodeId(in.readLong());
-      }
+      IOUtils.skipFully(in, 4 + 8); // skip length and txid
+      op.readFields(in, logVersion);
+      // skip over the checksum, which we validated above.
+      IOUtils.skipFully(in, CHECKSUM_LENGTH);
       return op;
     }
 

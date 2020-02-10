@@ -171,11 +171,8 @@ public class INodeKeyedObjects {
       concurrentHashSet = ConcurrentHashMap.newKeySet();
       concurrentRemoveSet = ConcurrentHashMap.newKeySet();
 
-      String syncLog = System.getenv("SYNC_FILESCALE_LOG");
-
-      if (Boolean.parseBoolean(syncLog) == false) {
-        BackupSetToDB();
-      }
+      // async write updates to buffer
+      BackupSetToDB();
 
       // Assuming each INode has 600 bytes, then
       // 10000000 * 600 / 2^30 = 5.58 GB.

@@ -873,8 +873,22 @@ public class FSEditLog implements LogsPurgeable {
    * Add create directory record to edit log
    */
   public void logMkDir(String path, INode newNode) {
+    PermissionStatus permissions = newNode.getPermissionStatus();
     MkdirOp op = MkdirOp.getInstance(cache.get())
-      .setInodeId(newNode.getId());
+      .setInodeId(newNode.getId())
+      .setPath(path)	
+      .setTimestamp(newNode.getModificationTime())	
+      .setPermissionStatus(permissions);	
+
+    AclFeature f = newNode.getAclFeature();	
+    if (f != null) {	
+      op.setAclEntries(AclStorage.readINodeLogicalAcl(newNode));	
+    }	
+
+    XAttrFeature x = newNode.getXAttrFeature();	
+    if (x != null) {	
+      op.setXAttrs(x.getXAttrs());	
+    }
     logEdit(op);
   }
   
@@ -987,6 +1001,7 @@ public class FSEditLog implements LogsPurgeable {
       .setInodeId(inodeId)
       .setPath(src)
       .setTimestamp(timestamp);
+    logRpcIds(op, toLogRpcIds);
     logEdit(op);
   }
   

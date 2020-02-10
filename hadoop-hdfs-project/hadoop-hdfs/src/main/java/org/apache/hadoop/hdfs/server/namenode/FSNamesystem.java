@@ -2538,12 +2538,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       // There might be transactions logged while trying to recover the lease.
       // They need to be sync'ed even when an exception was thrown.
       if (!skipSync) {
-        String syncLog = System.getenv("SYNC_FILESCALE_LOG");
-        if (Boolean.parseBoolean(syncLog) == false) {
-          INodeKeyedObjects.asyncUpdateDB();
-        } else {
-          getEditLog().logSync();
-        }
+        getEditLog().logSync();
         if (toRemoveBlocks != null) {
           removeBlocks(toRemoveBlocks);
           toRemoveBlocks.clear();
@@ -3082,12 +3077,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       writeUnlock(operationName);
     }
 
-    String syncLog = System.getenv("SYNC_FILESCALE_LOG");
-    if (Boolean.parseBoolean(syncLog) == false) {
-      INodeKeyedObjects.asyncUpdateDB();
-    } else {
-      getEditLog().logSync();
-    }
+    getEditLog().logSync();
 
     if (toRemovedBlocks != null) {
       removeBlocks(toRemovedBlocks); // Incremental deletion of blocks
@@ -3236,12 +3226,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    String syncLog = System.getenv("SYNC_FILESCALE_LOG");
-    if (Boolean.parseBoolean(syncLog) == false) {
-      INodeKeyedObjects.asyncUpdateDB();
-    } else {
-      getEditLog().logSync();
-    }
+
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
     return true;
   }
