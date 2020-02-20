@@ -290,6 +290,12 @@ public abstract class INodeWithAdditionalFields extends INode {
     return this.id;
   }
 
+
+  @Override
+  public void setId(Long id) {
+    this.id = id;
+  }
+
   public final boolean isNameCached() {
     return name != null;
   }
