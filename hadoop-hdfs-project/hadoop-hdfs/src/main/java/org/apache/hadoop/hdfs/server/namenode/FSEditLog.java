@@ -115,6 +115,21 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+
+import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.LoaderContext;
+import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.SaverContext;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FileSummary;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FilesUnderConstructionSection.FileUnderConstructionEntry;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeDirectorySection;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.AclFeatureProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrCompactProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrFeatureProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeEntryProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeFeatureProto;
+
 /**
  * FSEditLog maintains a log of the namespace modifications.
  * 
@@ -795,6 +810,57 @@ public class FSEditLog implements LogsPurgeable {
     // logEdit(op);
   }
 
+  public void remoteLogOpenFile(INodeFile newNode, String nameNodeAddress) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    INodeSection.INodeFile.Builder b = INodeSection.INodeFile.newBuilder();
+      .setAccessTime(newNode.getAccessTime())
+      .setModificationTime(newNode.getModificationTime())
+      .setPermission(newNode.getPermissionLong())
+      .setPreferredBlockSize(newNode.getPreferredBlockSize())
+      .setStoragePolicyID(newNode.getLocalStoragePolicyID())
+      .setBlockType(PBHelperClient.convert(newNode.getBlockType()));
+
+    if (newNode.isStriped()) {
+      b.setErasureCodingPolicyID(newNode.getErasureCodingPolicyID());
+    } else {
+      b.setReplication(newNode.getFileReplication());
+    }
+
+    AclFeature f = newNode.getAclFeature();
+    if (f != null) {
+      b.setAcl(buildAclEntries(f));
+    }
+
+    XAttrFeature xAttrFeature = newNode.getXAttrFeature();
+    if (xAttrFeature != null) {
+      b.setXAttrs(buildXAttrs(xAttrFeature));
+    }
+
+    BlockInfo[] blocks = newNode.getBlocks();
+    if (blocks != null) {
+      for (Block block : blocks) {
+        b.addBlocks(PBHelperClient.convert(block));
+      }
+    }
+
+    FileUnderConstructionFeature uc = newNode.getFileUnderConstructionFeature();
+    if (uc != null) {
+      long id = newNode.getId();
+      INodeSection.FileUnderConstructionFeature f =
+        INodeSection.FileUnderConstructionFeature
+        .newBuilder().setClientName(uc.getClientName(id))
+        .setClientMachine(uc.getClientMachine(id)).build();
+      b.setFileUC(f);
+    }
+
+    INodeSection.INode r = buildINodeCommon(n)
+        .setType(INodeSection.INode.Type.FILE).setFile(b).build();
+    r.writeDelimitedTo(out);
+
+    byte[] data = out.toByteArray();
+  }
+
   /** 
    * Add open lease record to edit log. 
    * Records the block locations of the last block.
@@ -868,7 +934,32 @@ public class FSEditLog implements LogsPurgeable {
     logRpcIds(op, toLogRpcIds);
     // logEdit(op);
   }
-  
+
+  public void remoteLogMkDir(INodeDirectory newNode, String nameNodeAddress) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    INodeSection.INodeDirectory.Builder b = INodeSection.INodeDirectory
+      .newBuilder()
+      .setModificationTime(newNode.getModificationTime())
+      .setPermission(newNode.getPermissionLong());
+
+    AclFeature f = newNode.getAclFeature();
+    if (f != null) {
+      b.setAcl(buildAclEntries(f));
+    }
+
+    XAttrFeature xAttrFeature = newNode.getXAttrFeature();
+    if (xAttrFeature != null) {
+      b.setXAttrs(buildXAttrs(xAttrFeature));
+    }
+
+    INodeSection.INode r = buildINodeCommon(newNode)
+        .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b).build();
+    r.writeDelimitedTo(out);
+
+    byte[] data = out.toByteArray();
+  }
+
   /** 
    * Add create directory record to edit log
    */
