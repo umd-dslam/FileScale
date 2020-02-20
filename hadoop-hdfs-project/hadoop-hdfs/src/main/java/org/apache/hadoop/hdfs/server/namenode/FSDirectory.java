@@ -159,7 +159,7 @@ public class FSDirectory implements Closeable {
       new HdfsFileStatus.Builder().build();
 
   private static FSDirectory instance;
-        
+
   INodeDirectory rootDir;
   private final FSNamesystem namesystem;
   private volatile boolean skipQuotaCheck = false; //skip while consuming edits
