@@ -1634,15 +1634,7 @@ public class NameNode extends ReconfigurableBase implements
 
   public static long getId() {
     if (id == null) {
-      InetSocketAddress addr = getInstance().getNameNodeAddress();
-      InetAddress inet = null;
-      try {
-          inet = InetAddress.getByName(addr.getHostName());
-      } catch (UnknownHostException e) {
-          e.printStackTrace();
-      }
-      String ipp = inet.getHostAddress() + ":" + addr.getPort();
-      id = ipp.hashCode();
+      id = getInstance().getNameNodeAddressHostPortString().hashCode();
     }
     return id;
   }
