@@ -44,6 +44,7 @@ import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeat
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.ReadOnlyList;
 import org.apache.hadoop.security.AccessControlException;
+import org.apache.hadoop.hdfs.nnproxy.tools.LookupMount;
 
 /**
  * Directory INode class.
@@ -628,7 +629,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   // for rename inode
   public boolean addChild(
-      INode node, final String name, final boolean setModTime, final int latestSnapshotId) {
+      INode node, final String name, final boolean setModTime,
+      final int latestSnapshotId, final String existingPath) {
 
     if (isInLatestSnapshot(latestSnapshotId)) {
       // create snapshot feature if necessary
@@ -644,6 +646,23 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
       node.setParent(getId());
       node.setLocalName(DFSUtil.string2Bytes(name));
+
+      // get mount point from zookeeper
+      boolean local = true;
+      String[] address;
+      String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+      if (enableNNProxy != null) {
+        if (Boolean.parseBoolean(enableNNProxy)) {
+          String NNProxyQuorum = System.getenv("NNPROXY_ZK_QUORUM");
+          String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+          if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
+            local = false;
+            String mpoint = LookupMount.exec(existingPath);
+            address = mpoint.replace("hdfs://","").split(":");
+          }
+        }
+      }
+
       // update object cache
       if (node.isDirectory()) {
         inode = node.asDirectory().copyINodeDirectory();
@@ -680,7 +699,13 @@ public class INodeDirectory extends INodeWithAdditionalFields
             .put(
                 new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)),
                 inode.asDirectory());
-        // TODO: sync remote logging
+
+        // local or remote logging
+        if (local) {
+            FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
+        } else {
+            FSDirectory.getInstance().getEditLog().remoteLogMkDir(inode, address[0]);
+        }
         // INodeKeyedObjects.getBackupSet().add(inode.getId());
         inode.asDirectory().updateINodeDirectory();
       } else {
@@ -700,7 +725,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
             .put(
                 new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)),
                 inode.asFile());
-        // TODO: sync remote logging
+
+        // local or remote logging
+        if (local) {
+            FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, true);
+        } else {
+            FSDirectory.getInstance().getEditLog().remoteLogOpenFile(inode, address[0]);
+        }
+
         // INodeKeyedObjects.getBackupSet().add(inode.getId());
         inode.asFile().updateINodeFile();
         FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
