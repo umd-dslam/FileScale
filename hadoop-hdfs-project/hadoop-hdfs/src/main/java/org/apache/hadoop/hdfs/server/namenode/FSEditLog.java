@@ -43,6 +43,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.CacheDirectiveInfo;
 import org.apache.hadoop.hdfs.protocol.CachePoolInfo;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
+import org.apache.hadoop.hdfs.protocolPB.PBHelperClient;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
@@ -118,6 +119,9 @@ import org.slf4j.LoggerFactory;
 import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
+
+// import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildAclEntries;
+// import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildXAttrs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
@@ -818,7 +822,7 @@ public class FSEditLog implements LogsPurgeable {
   public void remoteLogOpenFile(INodeFile newNode, String nameNodeAddress) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    INodeSection.INodeFile.Builder b = INodeSection.INodeFile.newBuilder();
+    INodeSection.INodeFile.Builder b = INodeSection.INodeFile.newBuilder()
       .setAccessTime(newNode.getAccessTime())
       .setModificationTime(newNode.getModificationTime())
       .setPermission(newNode.getPermissionLong())
@@ -832,14 +836,14 @@ public class FSEditLog implements LogsPurgeable {
       b.setReplication(newNode.getFileReplication());
     }
 
-    AclFeature f = newNode.getAclFeature();
-    if (f != null) {
-      b.setAcl(buildAclEntries(f));
+    AclFeature acl = newNode.getAclFeature();
+    if (acl != null) {
+      // b.setAcl(buildAclEntries(acl));
     }
 
     XAttrFeature xAttrFeature = newNode.getXAttrFeature();
     if (xAttrFeature != null) {
-      b.setXAttrs(buildXAttrs(xAttrFeature));
+      // b.setXAttrs(buildXAttrs(xAttrFeature));
     }
 
     BlockInfo[] blocks = newNode.getBlocks();
@@ -956,17 +960,17 @@ public class FSEditLog implements LogsPurgeable {
 
     AclFeature f = newNode.getAclFeature();
     if (f != null) {
-      b.setAcl(buildAclEntries(f));
+      // b.setAcl(buildAclEntries(f));
     }
 
     XAttrFeature xAttrFeature = newNode.getXAttrFeature();
     if (xAttrFeature != null) {
-      b.setXAttrs(buildXAttrs(xAttrFeature));
+      // b.setXAttrs(buildXAttrs(xAttrFeature));
     }
 
     INodeSection.INode r = INodeSection.INode.newBuilder()
       .setId(newNode.getId())
-      .setName(ByteString.copyFrom(newNode.getLocalNameBytes()));
+      .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
       .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b).build();
     r.writeDelimitedTo(out);
 

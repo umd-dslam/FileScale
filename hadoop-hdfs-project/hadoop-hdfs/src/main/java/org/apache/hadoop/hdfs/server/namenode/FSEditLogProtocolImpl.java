@@ -17,6 +17,10 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.ipc.VersionedProtocol;
 
 import org.apache.hadoop.conf.Configuration;
@@ -42,6 +46,9 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.FSDirectory;
 import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.LoaderContext;
 import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.SaverContext;
+import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Loader.loadAclEntries;
+import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Loader.loadXAttrs;
+import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Loader.loadPermission;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FileSummary;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FilesUnderConstructionSection.FileUnderConstructionEntry;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeDirectorySection;
@@ -51,12 +58,14 @@ import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrCom
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrFeatureProto;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeEntryProto;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeFeatureProto;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 
 import com.google.common.base.Preconditions;
 
-public interface FSEditLogProtocolImpl extends FSEditLogProtocol {
+public class FSEditLogProtocolImpl implements FSEditLogProtocol {
 
-    private INodeFile loadINodeFile(INodeSection.INode n) {
+    @Override
+    public INodeFile loadINodeFile(INodeSection.INode n) {
         assert n.getType() == INodeSection.INode.Type.FILE;
         INodeSection.INodeFile f = n.getFile();
         List<BlockProto> bp = f.getBlocksList();
@@ -67,7 +76,8 @@ public interface FSEditLogProtocolImpl extends FSEditLogProtocol {
         Byte ecPolicyID = (isStriped ?
             (byte) f.getErasureCodingPolicyID() : null);
         ErasureCodingPolicy ecPolicy = isStriped ?
-            fsn.getErasureCodingPolicyManager().getByID(ecPolicyID) : null;
+            FSDirectory.getInstance().getFSNamesystem().
+            getErasureCodingPolicyManager().getByID(ecPolicyID) : null;
   
         BlockInfo[] blocks = new BlockInfo[bp.size()];
         for (int i = 0; i < bp.size(); ++i) {
@@ -97,7 +107,7 @@ public interface FSEditLogProtocolImpl extends FSEditLogProtocol {
         }
   
         if (f.hasXAttrs()) {
-            file.addXAttrFeature(new XAttrFeature(loadXAttrs(f.getXAttrs(), null)));
+            file.addXAttrFeature(new XAttrFeature(file.getId(), loadXAttrs(f.getXAttrs(), null)));
         }
   
         // under-construction information
@@ -123,7 +133,8 @@ public interface FSEditLogProtocolImpl extends FSEditLogProtocol {
         return file;
     }
 
-    private INodeDirectory loadINodeDirectory(INodeSection.INode n) {
+    @Override
+    public INodeDirectory loadINodeDirectory(INodeSection.INode n) {
       assert n.getType() == INodeSection.INode.Type.DIRECTORY;
       INodeSection.INodeDirectory d = n.getDirectory();
 
@@ -137,22 +148,20 @@ public interface FSEditLogProtocolImpl extends FSEditLogProtocol {
         dir.addAclFeature(new AclFeature(entries));
       }
       if (d.hasXAttrs()) {
-        dir.addXAttrFeature(new XAttrFeature(loadXAttrs(d.getXAttrs(), null)));
+        dir.addXAttrFeature(new XAttrFeature(dir.getId(), loadXAttrs(d.getXAttrs(), null)));
       }
       return dir;
     }
 
     @Override
     public void logEdit(byte[] in) throws IOException {
-        INodeSection.INode p = INodeSection.INode.parseDelimitedFrom(in);
+        INodeSection.INode p = INodeSection.INode.parseFrom(in);
         INode n;
         switch (p.getType()) {
             case FILE:
-                n = loadINodeFile(p);
-                FSDirectory.getInstance().getEditLog().logOpenFile(null, n, true, false);
+                FSDirectory.getInstance().getEditLog().logOpenFile(null, loadINodeFile(p), true, false);
             case DIRECTORY:
-                n = loadINodeDirectory(p, parent.getLoaderContext());
-                FSDirectory.getInstance().getEditLog().logMkDir(null, n);
+                FSDirectory.getInstance().getEditLog().logMkDir(null, loadINodeDirectory(p));
             default:
                 break;
         }

@@ -1621,20 +1621,9 @@ public class NameNode extends ReconfigurableBase implements
     return instance;
   }
 
-  public static NameNode getInstance(String argv[], Configuration conf) {
-    if (instance == null) {
-      try {
-        instance = new createNameNode(argv, conf);
-      } catch (IOException ex) {
-        System.out.println(ex.toString());
-      }
-    }
-    return instance;
-  }
-
   public static long getId() {
     if (id == null) {
-      id = getInstance().getNameNodeAddressHostPortString().hashCode();
+      id = Long.valueOf(getInstance().getNameNodeAddressHostPortString().hashCode());
     }
     return id;
   }
@@ -1703,6 +1692,17 @@ public class NameNode extends ReconfigurableBase implements
       DefaultMetricsSystem.initialize("NameNode");
       return new NameNode(conf);
     }
+  }
+
+  public static NameNode getInstance(String argv[], Configuration conf) {
+    if (instance == null) {
+      try {
+        instance = new createNameNode(argv, conf);
+      } catch (IOException ex) {
+        System.out.println(ex.toString());
+      }
+    }
+    return instance;
   }
 
   /**

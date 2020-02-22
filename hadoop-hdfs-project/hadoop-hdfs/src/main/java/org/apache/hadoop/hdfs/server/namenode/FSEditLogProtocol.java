@@ -17,9 +17,16 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.io.IOException;
 import org.apache.hadoop.ipc.VersionedProtocol;
+
+import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection;
 
 public interface FSEditLogProtocol extends VersionedProtocol {
     public static final long versionID = 1L;
+    public INodeDirectory loadINodeDirectory(INodeSection.INode n);
+    public INodeFile loadINodeFile(INodeSection.INode n);
     public void logEdit(byte[] inode) throws IOException;
 }

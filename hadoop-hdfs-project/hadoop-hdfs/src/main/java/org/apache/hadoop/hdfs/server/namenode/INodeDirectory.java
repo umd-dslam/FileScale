@@ -514,7 +514,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return sf.getChildrenList(this, snapshotId);
   }
 
-  public HashSet<Long> getCurrentChildrenList() {
+  public HashSet<Long> getCurrentChildrenList2() {
     if (children.isEmpty()) {
       children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
     }
@@ -668,7 +668,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         inode = node.asDirectory().copyINodeDirectory();
         inode.setId(node.getId() + NameNode.getId());
         // update immediate childs's parent id
-        HashSet<Long> childs = node.getCurrentChildrenList();
+        HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
         HashSet<Long> oldChildIds;
         for (long id : childs) {
           INode child = FSDirectory.getInstance().getInode(id);
@@ -682,7 +682,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
             }
             INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
             // local sync log
-            FSDirectory.getInstance().getEditLog().logOpenFile(null, child, true, true);
+            if (child.isDirectory()) {
+              FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)child);        
+            } else { 
+              FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)child, true, true);
+            }
           }
         }
 
@@ -702,9 +706,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
         // local or remote logging
         if (local) {
-            FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
+            FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)inode);
         } else {
-            FSDirectory.getInstance().getEditLog().remoteLogMkDir(inode, address[0]);
+            FSDirectory.getInstance().getEditLog().remoteLogMkDir((INodeDirectory)inode, address[0]);
         }
         // INodeKeyedObjects.getBackupSet().add(inode.getId());
         inode.asDirectory().updateINodeDirectory();
@@ -728,9 +732,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
         // local or remote logging
         if (local) {
-            FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, true);
+            FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)inode, true, true);
         } else {
-            FSDirectory.getInstance().getEditLog().remoteLogOpenFile(inode, address[0]);
+            FSDirectory.getInstance().getEditLog().remoteLogOpenFile((INodeFile)inode, address[0]);
         }
 
         // INodeKeyedObjects.getBackupSet().add(inode.getId());
