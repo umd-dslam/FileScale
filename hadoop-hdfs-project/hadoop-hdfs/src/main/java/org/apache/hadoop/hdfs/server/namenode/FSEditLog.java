@@ -862,7 +862,8 @@ public class FSEditLog implements LogsPurgeable {
         .setClientMachine(uc.getClientMachine(id)).build();
       b.setFileUC(f);
     }
-
+   
+    try {
     INodeSection.INode r = INodeSection.INode.newBuilder()
         .setId(newNode.getId())
         .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
@@ -874,6 +875,9 @@ public class FSEditLog implements LogsPurgeable {
       FSEditLogProtocol.class, FSEditLogProtocol.versionID,
       new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
     proxy.logEdit(data);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   /** 
@@ -968,6 +972,7 @@ public class FSEditLog implements LogsPurgeable {
       // b.setXAttrs(buildXAttrs(xAttrFeature));
     }
 
+    try {
     INodeSection.INode r = INodeSection.INode.newBuilder()
       .setId(newNode.getId())
       .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
@@ -980,6 +985,9 @@ public class FSEditLog implements LogsPurgeable {
       FSEditLogProtocol.class, FSEditLogProtocol.versionID,
       new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
     proxy.logEdit(data);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   /** 

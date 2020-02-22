@@ -1697,7 +1697,7 @@ public class NameNode extends ReconfigurableBase implements
   public static NameNode getInstance(String argv[], Configuration conf) {
     if (instance == null) {
       try {
-        instance = new createNameNode(argv, conf);
+        instance = createNameNode(argv, conf);
       } catch (IOException ex) {
         System.out.println(ex.toString());
       }

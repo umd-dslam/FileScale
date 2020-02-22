@@ -17,13 +17,13 @@ public class LookupMount implements Tool {
     Configuration conf;
 
     public static void main(String[] args) throws Exception {
-        LoadMount main = new LookupMount();
+        LookupMount main = new LookupMount();
         System.exit(ToolRunner.run(new HdfsConfiguration(), main, args));
     }
 
-    public static String exec(String path) throw Exception {
+    public static String exec(String path) throws Exception {
         MountsManager mountsManager = new MountsManager();
-        mountsManager.init2(new HdfsConfiguration());
+        mountsManager.init(new HdfsConfiguration());
         mountsManager.start();
         return mountsManager.resolve(path);
     }

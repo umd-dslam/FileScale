@@ -649,7 +649,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
       // get mount point from zookeeper
       boolean local = true;
-      String[] address;
+      String[] address = new String[2];
       String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
       if (enableNNProxy != null) {
         if (Boolean.parseBoolean(enableNNProxy)) {
@@ -657,8 +657,12 @@ public class INodeDirectory extends INodeWithAdditionalFields
           String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
           if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
             local = false;
-            String mpoint = LookupMount.exec(existingPath);
-            address = mpoint.replace("hdfs://","").split(":");
+            try {
+              String mpoint = LookupMount.exec(existingPath);
+              address = mpoint.replace("hdfs://","").split(":");
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
           }
         }
       }
@@ -669,7 +673,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         inode.setId(node.getId() + NameNode.getId());
         // update immediate childs's parent id
         HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
-        HashSet<Long> oldChildIds;
+        HashSet<Long> oldChildIds = new HashSet<>();
         for (long id : childs) {
           INode child = FSDirectory.getInstance().getInode(id);
           if (child != null) {

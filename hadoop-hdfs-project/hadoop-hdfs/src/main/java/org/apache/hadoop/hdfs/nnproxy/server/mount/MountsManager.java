@@ -70,40 +70,14 @@ public class MountsManager extends AbstractService {
     super.serviceInit(conf);
     String zkConnectString = conf.get(ProxyConfig.MOUNT_TABLE_ZK_QUORUM);
     zkMountTablePath = conf.get(ProxyConfig.MOUNT_TABLE_ZK_PATH);
-    int sessionTimeout =
-        conf.getInt(
-            ProxyConfig.MOUNT_TABLE_ZK_SESSION_TIMEOUT,
-            ProxyConfig.MOUNT_TABLE_ZK_SESSION_TIMEOUT_DEFAULT);
-    int connectionTimeout =
-        conf.getInt(
-            ProxyConfig.MOUNT_TABLE_ZK_CONNECTION_TIMEOUT,
-            ProxyConfig.MOUNT_TABLE_ZK_CONNECTION_TIMEOUT_DEFAULT);
-    int maxRetries =
-        conf.getInt(
-            ProxyConfig.MOUNT_TABLE_ZK_MAX_RETRIES, ProxyConfig.MOUNT_TABLE_ZK_MAX_RETRIES_DEFAULT);
-    int retryBaseSleep =
-        conf.getInt(
-            ProxyConfig.MOUNT_TABLE_ZK_RETRY_BASE_SLEEP,
-            ProxyConfig.MOUNT_TABLE_ZK_RETRY_BASE_SLEEP_DEFAULT);
-    framework =
-        CuratorFrameworkFactory.newClient(
-            zkConnectString,
-            sessionTimeout,
-            connectionTimeout,
-            new ExponentialBackoffRetry(retryBaseSleep, maxRetries));
-    rand = new Random();
-    installed = false;
-  }
-
-  @Override
-  protected void serviceInit2(Configuration conf) throws Exception {
-    super.serviceInit(conf);
-    String zkConnectString = System.getenv("NNPROXY_ZK_QUORUM");
-    zkMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
-
+    if (zkConnectString == null) {
+        zkConnectString = System.getenv("NNPROXY_ZK_QUORUM");
+    }
+    if (zkMountTablePath == null) {
+        zkMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+    }
     assert zkConnectString != null;
     assert zkMountTablePath != null;
-
     int sessionTimeout =
         conf.getInt(
             ProxyConfig.MOUNT_TABLE_ZK_SESSION_TIMEOUT,
