@@ -26,6 +26,7 @@ import org.apache.hadoop.ipc.VersionedProtocol;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
 
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlockProto;
 import org.apache.hadoop.hdfs.protocolPB.PBHelperClient;
 import org.apache.hadoop.hdfs.protocol.BlockType;
@@ -60,6 +61,7 @@ import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByS
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeFeatureProto;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import com.google.common.base.Preconditions;
 
 public class FSEditLogProtocolImpl implements FSEditLogProtocol {
@@ -159,9 +161,25 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         INode n;
         switch (p.getType()) {
             case FILE:
-                FSDirectory.getInstance().getEditLog().logOpenFile(null, loadINodeFile(p), true, false);
+                INodeFile inode = loadINodeFile(p);
+                inode.getParent().addChild(inode);
+                String name = DFSUtil.bytes2String(inode.getLocalNameBytes());
+                INodeKeyedObjects.getCache()
+                .put(
+                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(), name)),
+                    inode);
+                INodeKeyedObjects.getBackupSet().add(inode.getId());
+                FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, false);
             case DIRECTORY:
-                FSDirectory.getInstance().getEditLog().logMkDir(null, loadINodeDirectory(p));
+                INodeDirectory inode = loadINodeDirectory(p);
+                inode.getParent().addChild(inode);
+                String name = DFSUtil.bytes2String(inode.getLocalNameBytes());
+                INodeKeyedObjects.getCache()
+                .put(
+                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(), name)),
+                    inode);
+                INodeKeyedObjects.getBackupSet().add(inode.getId());
+                FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
             default:
                 break;
         }

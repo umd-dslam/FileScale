@@ -618,6 +618,96 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return true;
   }
 
+  public void localRename(INode node) {
+    String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    if (node.isDirectory()) {
+      INodeDirectory inode = node.asDirectory().copyINodeDirectory();
+
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getCache()
+          .put(
+              new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)), inode);
+
+      // inode.updateINodeDirectory();
+      INodeKeyedObjects.getBackupSet().add(inode.getId());
+
+      // rename directory - logging
+      FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
+    } else {
+      INodeFile inode = node.asFile().copyINodeFile();
+      FileUnderConstructionFeature uc = inode.getFileUnderConstructionFeature();
+      if (uc != null) {
+        uc.updateFileUnderConstruction(inode.getId());
+      }
+
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getCache()
+          .put(
+              new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)),
+              inode);
+
+      // inode.updateINodeFile();
+      INodeKeyedObjects.getBackupSet().add(inode.getId());
+
+      // rename file - logging
+      FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, true);
+    }
+  }
+
+  public void remoteRename(INode node, String address) {
+    String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    if (node.isDirectory()) {
+      INodeDirectory inode = node.asDirectory().copyINodeDirectory();
+      inode.setId(node.getId() + NameNode.getId());
+
+      // update immediate childs's parent id
+      HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
+      for (long id : childs) {
+        INode child = FSDirectory.getInstance().getInode(id);
+        if (child != null) {
+          child.setParent(inode.getId());
+          if (child.isDirectory()) {
+            child.asDirectory().updateINodeDirectory();
+            INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
+            FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)child);
+          } else {
+            child.asFile().updateINodeFile();
+            INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
+            FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)child, true, true);
+          }
+        }
+      }
+
+      // invalidate old inode
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getRemoveSet().add(node.getId());
+      // local sync log
+      FSDirectory.getInstance()
+          .getEditLog()
+          .logDelete(null, node.getId(), inode.getModificationTime(), true);
+
+      // remote logging
+      FSDirectory.getInstance().getEditLog().remoteLogMkDir(inode, address);
+    } else {
+      INodeFile inode = node.asFile().copyINodeFile();
+      inode.setId(node.getId() + NameNode.getId());
+      FileUnderConstructionFeature uc = node.getFileUnderConstructionFeature();
+      if (uc != null) {
+        uc.updateFileUnderConstruction(inode.getId());
+      }
+
+      // invalidate old inode
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getRemoveSet().add(node.getId());
+      // local sync log
+      FSDirectory.getInstance()
+          .getEditLog()
+          .logDelete(null, node.getId(), inode.getModificationTime(), true);
+
+      FSDirectory.getInstance().getEditLog().remoteLogOpenFile(inode, address);
+    }
+  }
+
   public boolean addChild(INode node) {
     node.setParent(getId());
     children.add(node.getId());
@@ -667,94 +757,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
         }
       }
 
-      // update object cache
-      if (node.isDirectory()) {
-        inode = node.asDirectory().copyINodeDirectory();
-        if (local) {
-          inode.setId(node.getId());
-        } else {
-          inode.setId(node.getId() + NameNode.getId());
-        }
-        // update immediate childs's parent id
-        HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
-        HashSet<Long> oldChildIds = new HashSet<>();
-        for (long id : childs) {
-          INode child = FSDirectory.getInstance().getInode(id);
-          if (child != null) {
-            oldChildIds.add(child.getId());
-            child.setParent(inode.getId());
-            if (child.isDirectory()) {
-              child.asDirectory().updateINodeDirectory();
-            } else {
-              child.asFile().updateINodeFile();
-            }
-            INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
-            // local sync log
-            if (child.isDirectory()) {
-              FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)child);        
-            } else { 
-              FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)child, true, true);
-            }
-          }
-        }
-
-        // invalidate old inode
-        INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
-        INodeKeyedObjects.getRemoveSet().add(node.getId());
-        // local sync log
-        FSDirectory.getInstance()
-            .getEditLog()
-            .logDelete(null, node.getId(), inode.getModificationTime(), true);
-
-        // validate new inode
-        INodeKeyedObjects.getCache()
-            .put(
-                new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)),
-                inode.asDirectory());
-
-        // local or remote logging
-        if (local) {
-            FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)inode);
-        } else {
-            FSDirectory.getInstance().getEditLog().remoteLogMkDir((INodeDirectory)inode, address[0]);
-        }
-        // INodeKeyedObjects.getBackupSet().add(inode.getId());
-        inode.asDirectory().updateINodeDirectory();
+      if (local) {
+        localRename(node);
       } else {
-        inode = node.asFile().copyINodeFile();
-        if (local) {
-          inode.setId(node.getId());
-        } else {
-          inode.setId(node.getId() + NameNode.getId());
-        }
-
-        // invalidate old inode
-        INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
-        INodeKeyedObjects.getRemoveSet().add(node.getId());
-        // local sync log
-        FSDirectory.getInstance()
-            .getEditLog()
-            .logDelete(null, node.getId(), inode.getModificationTime(), true);
-
-        // validate new inode
-        INodeKeyedObjects.getCache()
-            .put(
-                new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)),
-                inode.asFile());
-
-        // local or remote logging
-        if (local) {
-            FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)inode, true, true);
-        } else {
-            FSDirectory.getInstance().getEditLog().remoteLogOpenFile((INodeFile)inode, address[0]);
-        }
-
-        // INodeKeyedObjects.getBackupSet().add(inode.getId());
-        inode.asFile().updateINodeFile();
-        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
-        if (uc != null) {
-          uc.updateFileUnderConstruction(inode.getId());
-        }
+        remoteRename(node, address[0]);
       }
     }
 
