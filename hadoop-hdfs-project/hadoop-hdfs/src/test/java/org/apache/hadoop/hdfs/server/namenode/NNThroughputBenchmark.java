@@ -900,10 +900,12 @@ public class NNThroughputBenchmark implements Tool {
     @Override
     long executeOp(int daemonId, int inputIdx, String ignore) 
     throws IOException {
-      String fname = fileNames[daemonId][inputIdx];
-      fname = fname.replace("rename", "create");
+      String srcname = fileNames[daemonId][inputIdx];
+      srcname = srcname.replace("rename", "create");
+      String dstname = destNames[daemonId][inputIdx];
+      dstname = dstname.replace("rename", "create");
       long start = Time.now();
-      clientProto.rename(fname, destNames[daemonId][inputIdx]);
+      clientProto.rename(srcname, dstname);
       long end = Time.now();
       return end-start;
     }
