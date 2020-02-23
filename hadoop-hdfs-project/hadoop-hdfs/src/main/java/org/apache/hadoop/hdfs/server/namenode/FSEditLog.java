@@ -886,7 +886,7 @@ public class FSEditLog implements LogsPurgeable {
    */
   public void logOpenFile(String path, INodeFile newNode, boolean overwrite,
       boolean toLogRpcIds) {
-    Preconditions.checkArgument(newNode.isUnderConstruction());
+    // Preconditions.checkArgument(newNode.isUnderConstruction());
     PermissionStatus permissions = newNode.getPermissionStatus();
     AddOp op = AddOp.getInstance(cache.get())
       .setInodeId(newNode.getId())
