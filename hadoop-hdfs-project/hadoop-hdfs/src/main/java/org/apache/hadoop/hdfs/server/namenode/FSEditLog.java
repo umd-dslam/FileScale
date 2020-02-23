@@ -886,7 +886,6 @@ public class FSEditLog implements LogsPurgeable {
    */
   public void logOpenFile(String path, INodeFile newNode, boolean overwrite,
       boolean toLogRpcIds) {
-    // Preconditions.checkArgument(newNode.isUnderConstruction());
     PermissionStatus permissions = newNode.getPermissionStatus();
     AddOp op = AddOp.getInstance(cache.get())
       .setInodeId(newNode.getId())
@@ -903,6 +902,11 @@ public class FSEditLog implements LogsPurgeable {
       .setOverwrite(overwrite)
       .setStoragePolicyId(newNode.getLocalStoragePolicyID())
       .setErasureCodingPolicyId(newNode.getErasureCodingPolicyID());
+    if (newNode.isUnderConstruction()) {
+      op.setClientName(newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()))
+        .setClientMachine(
+          newNode.getFileUnderConstructionFeature().getClientMachine(newNode.getId()));
+    }
 
     AclFeature f = newNode.getAclFeature();
     if (f != null) {
