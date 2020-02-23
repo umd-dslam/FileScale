@@ -161,23 +161,21 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         INode n;
         switch (p.getType()) {
             case FILE:
-                INodeFile inode = loadINodeFile(p);
-                inode.getParent().addChild(inode);
-                String name = DFSUtil.bytes2String(inode.getLocalNameBytes());
+                INodeFile file = loadINodeFile(p);
+                file.getParent().addChild(file);
                 INodeKeyedObjects.getCache()
                 .put(
-                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(), name)),
-                    inode);
-                INodeKeyedObjects.getBackupSet().add(inode.getId());
-                FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, false);
+                    new CompositeKey(file.getId(), new ImmutablePair<>(file.getParentId(),
+                    DFSUtil.bytes2String(file.getLocalNameBytes()))), file);
+                INodeKeyedObjects.getBackupSet().add(file.getId());
+                FSDirectory.getInstance().getEditLog().logOpenFile(null, file, true, false);
             case DIRECTORY:
                 INodeDirectory inode = loadINodeDirectory(p);
                 inode.getParent().addChild(inode);
-                String name = DFSUtil.bytes2String(inode.getLocalNameBytes());
                 INodeKeyedObjects.getCache()
                 .put(
-                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(), name)),
-                    inode);
+                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(),
+                    DFSUtil.bytes2String(inode.getLocalNameBytes()))), inode);
                 INodeKeyedObjects.getBackupSet().add(inode.getId());
                 FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
             default:

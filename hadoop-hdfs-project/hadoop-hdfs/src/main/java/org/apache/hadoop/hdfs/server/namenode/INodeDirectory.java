@@ -635,7 +635,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
     } else {
       INodeFile inode = node.asFile().copyINodeFile();
-      FileUnderConstructionFeature uc = inode.getFileUnderConstructionFeature();
+      FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
       if (uc != null) {
         uc.updateFileUnderConstruction(inode.getId());
       }
@@ -691,7 +691,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     } else {
       INodeFile inode = node.asFile().copyINodeFile();
       inode.setId(node.getId() + NameNode.getId());
-      FileUnderConstructionFeature uc = node.getFileUnderConstructionFeature();
+      FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
       if (uc != null) {
         uc.updateFileUnderConstruction(inode.getId());
       }
