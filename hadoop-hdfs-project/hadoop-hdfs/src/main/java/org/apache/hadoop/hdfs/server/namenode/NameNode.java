@@ -23,6 +23,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -213,6 +216,8 @@ public class NameNode extends ReconfigurableBase implements
     HdfsConfiguration.init();
   }
 
+  private static NameNode instance;
+  private static Long id;
   private InMemoryLevelDBAliasMapServer levelDBAliasMapServer;
 
   /**
@@ -1611,6 +1616,18 @@ public class NameNode extends ReconfigurableBase implements
       StartupOption.METADATAVERSION, fs, null);
   }
 
+  public static NameNode getInstance() {
+    Preconditions.checkArgument(instance != null);
+    return instance;
+  }
+
+  public static long getId() {
+    if (id == null) {
+      id = Long.valueOf(getInstance().getNameNodeAddressHostPortString().hashCode() & 0x7FFFFFFF);
+    }
+    return id;
+  }
+
   public static NameNode createNameNode(String argv[], Configuration conf)
       throws IOException {
     LOG.info("createNameNode " + Arrays.asList(argv));
@@ -1677,6 +1694,17 @@ public class NameNode extends ReconfigurableBase implements
     }
   }
 
+  public static NameNode getInstance(String argv[], Configuration conf) {
+    if (instance == null) {
+      try {
+        instance = createNameNode(argv, conf);
+      } catch (IOException ex) {
+        System.out.println(ex.toString());
+      }
+    }
+    return instance;
+  }
+
   /**
    * In federation configuration is set for a set of
    * namenode and secondary namenode/backup/checkpointer, which are
@@ -1740,7 +1768,7 @@ public class NameNode extends ReconfigurableBase implements
 
     try {
       StringUtils.startupShutdownMessage(NameNode.class, argv, LOG);
-      NameNode namenode = createNameNode(argv, null);
+      NameNode namenode = getInstance(argv, null);
       if (namenode != null) {
         namenode.join();
       }

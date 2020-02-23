@@ -159,7 +159,7 @@ public class FSDirectory implements Closeable {
       new HdfsFileStatus.Builder().build();
 
   private static FSDirectory instance;
-        
+
   INodeDirectory rootDir;
   private final FSNamesystem namesystem;
   private volatile boolean skipQuotaCheck = false; //skip while consuming edits
@@ -1344,7 +1344,7 @@ public class FSDirectory implements Closeable {
     // boolean isRename = (inode.getParent() != null);
 
     final boolean added = parent.addChild(inode, name, true,
-        existing.getLatestSnapshotId());
+        existing.getLatestSnapshotId(), existing.getPath());
     if (!added) {
       // updateCountNoQuotaCheck(existing, pos, counts.negation());
       return null;

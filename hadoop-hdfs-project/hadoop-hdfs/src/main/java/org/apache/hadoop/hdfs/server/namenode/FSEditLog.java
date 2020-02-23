@@ -43,6 +43,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.CacheDirectiveInfo;
 import org.apache.hadoop.hdfs.protocol.CachePoolInfo;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
+import org.apache.hadoop.hdfs.protocolPB.PBHelperClient;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
@@ -114,6 +115,29 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
+
+// import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildAclEntries;
+// import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildXAttrs;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.ipc.RPC;
+import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.LoaderContext;
+import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.SaverContext;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FileSummary;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FilesUnderConstructionSection.FileUnderConstructionEntry;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeDirectorySection;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.AclFeatureProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrCompactProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrFeatureProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeEntryProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeFeatureProto;
+
+import com.google.protobuf.ByteString;
 
 /**
  * FSEditLog maintains a log of the namespace modifications.
@@ -795,13 +819,73 @@ public class FSEditLog implements LogsPurgeable {
     // logEdit(op);
   }
 
+  public void remoteLogOpenFile(INodeFile newNode, String nameNodeAddress) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    INodeSection.INodeFile.Builder b = INodeSection.INodeFile.newBuilder()
+      .setAccessTime(newNode.getAccessTime())
+      .setModificationTime(newNode.getModificationTime())
+      .setPermission(newNode.getPermissionLong())
+      .setPreferredBlockSize(newNode.getPreferredBlockSize())
+      .setStoragePolicyID(newNode.getLocalStoragePolicyID())
+      .setBlockType(PBHelperClient.convert(newNode.getBlockType()));
+
+    if (newNode.isStriped()) {
+      b.setErasureCodingPolicyID(newNode.getErasureCodingPolicyID());
+    } else {
+      b.setReplication(newNode.getFileReplication());
+    }
+
+    AclFeature acl = newNode.getAclFeature();
+    if (acl != null) {
+      // b.setAcl(buildAclEntries(acl));
+    }
+
+    XAttrFeature xAttrFeature = newNode.getXAttrFeature();
+    if (xAttrFeature != null) {
+      // b.setXAttrs(buildXAttrs(xAttrFeature));
+    }
+
+    BlockInfo[] blocks = newNode.getBlocks();
+    if (blocks != null) {
+      for (Block block : blocks) {
+        b.addBlocks(PBHelperClient.convert(block));
+      }
+    }
+
+    FileUnderConstructionFeature uc = newNode.getFileUnderConstructionFeature();
+    if (uc != null) {
+      long id = newNode.getId();
+      INodeSection.FileUnderConstructionFeature f =
+        INodeSection.FileUnderConstructionFeature
+        .newBuilder().setClientName(uc.getClientName(id))
+        .setClientMachine(uc.getClientMachine(id)).build();
+      b.setFileUC(f);
+    }
+   
+    try {
+      INodeSection.INode r = INodeSection.INode.newBuilder()
+          .setId(newNode.getId())
+          .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
+          .setType(INodeSection.INode.Type.FILE).setFile(b).build();
+      r.writeDelimitedTo(out);
+
+      byte[] data = out.toByteArray();
+      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+        new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
+      proxy.logEdit(data);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   /** 
    * Add open lease record to edit log. 
    * Records the block locations of the last block.
    */
   public void logOpenFile(String path, INodeFile newNode, boolean overwrite,
       boolean toLogRpcIds) {
-    Preconditions.checkArgument(newNode.isUnderConstruction());
     PermissionStatus permissions = newNode.getPermissionStatus();
     AddOp op = AddOp.getInstance(cache.get())
       .setInodeId(newNode.getId())
@@ -812,12 +896,14 @@ public class FSEditLog implements LogsPurgeable {
       .setBlockSize(newNode.getPreferredBlockSize())
       .setBlocks(newNode.getBlocks())
       .setPermissionStatus(permissions)
-      .setClientName(newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()))
-      .setClientMachine(
-          newNode.getFileUnderConstructionFeature().getClientMachine(newNode.getId()))
       .setOverwrite(overwrite)
       .setStoragePolicyId(newNode.getLocalStoragePolicyID())
       .setErasureCodingPolicyId(newNode.getErasureCodingPolicyID());
+    if (newNode.isUnderConstruction()) {
+      op.setClientName(newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()))
+        .setClientMachine(
+          newNode.getFileUnderConstructionFeature().getClientMachine(newNode.getId()));
+    }
 
     AclFeature f = newNode.getAclFeature();
     if (f != null) {
@@ -868,7 +954,43 @@ public class FSEditLog implements LogsPurgeable {
     logRpcIds(op, toLogRpcIds);
     // logEdit(op);
   }
-  
+
+  public void remoteLogMkDir(INodeDirectory newNode, String nameNodeAddress) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    INodeSection.INodeDirectory.Builder b = INodeSection.INodeDirectory
+      .newBuilder()
+      .setModificationTime(newNode.getModificationTime())
+      .setPermission(newNode.getPermissionLong());
+
+    AclFeature f = newNode.getAclFeature();
+    if (f != null) {
+      // b.setAcl(buildAclEntries(f));
+    }
+
+    XAttrFeature xAttrFeature = newNode.getXAttrFeature();
+    if (xAttrFeature != null) {
+      // b.setXAttrs(buildXAttrs(xAttrFeature));
+    }
+
+    try {
+      INodeSection.INode r = INodeSection.INode.newBuilder()
+        .setId(newNode.getId())
+        .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
+        .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b).build();
+      r.writeDelimitedTo(out);
+
+      byte[] data = out.toByteArray();
+
+      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+        new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
+      proxy.logEdit(data);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   /** 
    * Add create directory record to edit log
    */
