@@ -1623,7 +1623,7 @@ public class NameNode extends ReconfigurableBase implements
 
   public static long getId() {
     if (id == null) {
-      id = Long.valueOf(getInstance().getNameNodeAddressHostPortString().hashCode());
+      id = Long.valueOf(getInstance().getNameNodeAddressHostPortString().hashCode() & 0x7FFFFFFF);
     }
     return id;
   }

@@ -670,7 +670,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
       // update object cache
       if (node.isDirectory()) {
         inode = node.asDirectory().copyINodeDirectory();
-        inode.setId(node.getId() + NameNode.getId());
+        if (local) {
+          inode.setId(node.getId());
+        } else {
+          inode.setId(node.getId() + NameNode.getId());
+        }
         // update immediate childs's parent id
         HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
         HashSet<Long> oldChildIds = new HashSet<>();
@@ -718,7 +722,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
         inode.asDirectory().updateINodeDirectory();
       } else {
         inode = node.asFile().copyINodeFile();
-        inode.setId(node.getId() + NameNode.getId());
+        if (local) {
+          inode.setId(node.getId());
+        } else {
+          inode.setId(node.getId() + NameNode.getId());
+        }
 
         // invalidate old inode
         INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
