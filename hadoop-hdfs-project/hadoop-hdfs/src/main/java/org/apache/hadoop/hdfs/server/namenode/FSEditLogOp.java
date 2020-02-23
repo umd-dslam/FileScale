@@ -568,8 +568,12 @@ public abstract class FSEditLogOp {
         XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
         b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
         b.build().writeDelimitedTo(out);
-        FSImageSerialization.writeString(clientName,out);
-        FSImageSerialization.writeString(clientMachine,out);
+        if (clientName != null) {
+          FSImageSerialization.writeString(clientName,out);
+        }
+        if (clientMachine != null) {
+          FSImageSerialization.writeString(clientMachine,out);
+        }
         FSImageSerialization.writeBoolean(overwrite, out);
         FSImageSerialization.writeByte(storagePolicyId, out);
         FSImageSerialization.writeByte(erasureCodingPolicyId, out);
