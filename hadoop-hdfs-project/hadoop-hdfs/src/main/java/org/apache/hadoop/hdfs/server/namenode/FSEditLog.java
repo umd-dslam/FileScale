@@ -864,17 +864,17 @@ public class FSEditLog implements LogsPurgeable {
     }
    
     try {
-    INodeSection.INode r = INodeSection.INode.newBuilder()
-        .setId(newNode.getId())
-        .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
-        .setType(INodeSection.INode.Type.FILE).setFile(b).build();
-    r.writeDelimitedTo(out);
+      INodeSection.INode r = INodeSection.INode.newBuilder()
+          .setId(newNode.getId())
+          .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
+          .setType(INodeSection.INode.Type.FILE).setFile(b).build();
+      r.writeDelimitedTo(out);
 
-    byte[] data = out.toByteArray();
-    FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
-      FSEditLogProtocol.class, FSEditLogProtocol.versionID,
-      new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
-    proxy.logEdit(data);
+      byte[] data = out.toByteArray();
+      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+        new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
+      proxy.logEdit(data);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -973,18 +973,18 @@ public class FSEditLog implements LogsPurgeable {
     }
 
     try {
-    INodeSection.INode r = INodeSection.INode.newBuilder()
-      .setId(newNode.getId())
-      .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
-      .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b).build();
-    r.writeDelimitedTo(out);
+      INodeSection.INode r = INodeSection.INode.newBuilder()
+        .setId(newNode.getId())
+        .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
+        .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b).build();
+      r.writeDelimitedTo(out);
 
-    byte[] data = out.toByteArray();
+      byte[] data = out.toByteArray();
 
-    FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
-      FSEditLogProtocol.class, FSEditLogProtocol.versionID,
-      new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
-    proxy.logEdit(data);
+      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+        new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
+      proxy.logEdit(data);
     } catch (Exception e) {
       e.printStackTrace();
     }
