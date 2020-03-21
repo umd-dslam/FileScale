@@ -816,7 +816,7 @@ public class FSEditLog implements LogsPurgeable {
         .setClientMachine(uc.getClientMachine(file.getId()))
         .setNewBlock(newBlock);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   public void remoteLogOpenFile(INodeFile newNode, String nameNodeAddress) {
@@ -932,7 +932,7 @@ public class FSEditLog implements LogsPurgeable {
       .setBlocks(newNode.getBlocks())
       .setPermissionStatus(newNode.getPermissionStatus());
     
-    // logEdit(op);
+    logEdit(op);
   }
   
   public void logAddBlock(String path, INodeFile file) {
@@ -943,7 +943,7 @@ public class FSEditLog implements LogsPurgeable {
     BlockInfo lastBlock = blocks[blocks.length - 1];
     AddBlockOp op = AddBlockOp.getInstance(cache.get()).setPath(path)
         .setPenultimateBlock(pBlock).setLastBlock(lastBlock);
-    // logEdit(op);
+    logEdit(op);
   }
   
   public void logUpdateBlocks(String path, INodeFile file, boolean toLogRpcIds) {
@@ -952,7 +952,7 @@ public class FSEditLog implements LogsPurgeable {
       .setPath(path)
       .setBlocks(file.getBlocks());
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   public void remoteLogMkDir(INodeDirectory newNode, String nameNodeAddress) {
@@ -1026,7 +1026,7 @@ public class FSEditLog implements LogsPurgeable {
       .setDestination(dst)
       .setTimestamp(timestamp);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /** 
@@ -1042,7 +1042,7 @@ public class FSEditLog implements LogsPurgeable {
       .setTimestamp(timestamp)
       .setOptions(options);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   
   /** 
@@ -1052,7 +1052,7 @@ public class FSEditLog implements LogsPurgeable {
     SetReplicationOp op = SetReplicationOp.getInstance(cache.get())
       .setPath(src)
       .setReplication(replication);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /** 
@@ -1061,7 +1061,7 @@ public class FSEditLog implements LogsPurgeable {
   void logSetStoragePolicy(String src, byte policyId) {
     SetStoragePolicyOp op = SetStoragePolicyOp.getInstance(cache.get())
         .setPath(src).setPolicyId(policyId);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /** Add set namespace quota record to edit log
@@ -1075,7 +1075,7 @@ public class FSEditLog implements LogsPurgeable {
       .setSource(src)
       .setNSQuota(nsQuota)
       .setDSQuota(dsQuota);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /** Add set quota by storage type record to edit log */
@@ -1083,7 +1083,7 @@ public class FSEditLog implements LogsPurgeable {
     SetQuotaByStorageTypeOp op = SetQuotaByStorageTypeOp.getInstance(cache.get())
       .setSource(src)
       .setQuotaByStorageType(dsQuota, type);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /**  Add set permissions record to edit log */
@@ -1091,7 +1091,7 @@ public class FSEditLog implements LogsPurgeable {
     SetPermissionsOp op = SetPermissionsOp.getInstance(cache.get())
       .setSource(src)
       .setPermissions(permissions);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /**  Add set owner record to edit log */
@@ -1100,7 +1100,7 @@ public class FSEditLog implements LogsPurgeable {
       .setSource(src)
       .setUser(username)
       .setGroup(groupname);
-    // logEdit(op);
+    logEdit(op);
   }
   
   /**
@@ -1112,7 +1112,7 @@ public class FSEditLog implements LogsPurgeable {
       .setSources(srcs)
       .setTimestamp(timestamp);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   
   /** 
@@ -1139,7 +1139,7 @@ public class FSEditLog implements LogsPurgeable {
       .setNewLength(size)
       .setTimestamp(timestamp)
       .setTruncateBlock(truncateBlock);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /**
@@ -1148,7 +1148,7 @@ public class FSEditLog implements LogsPurgeable {
   void logLegacyGenerationStamp(long genstamp) {
     SetGenstampV1Op op = SetGenstampV1Op.getInstance(cache.get())
         .setGenerationStamp(genstamp);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /**
@@ -1157,7 +1157,7 @@ public class FSEditLog implements LogsPurgeable {
   void logGenerationStamp(long genstamp) {
     SetGenstampV2Op op = SetGenstampV2Op.getInstance(cache.get())
         .setGenerationStamp(genstamp);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /**
@@ -1166,7 +1166,7 @@ public class FSEditLog implements LogsPurgeable {
   void logAllocateBlockId(long blockId) {
     AllocateBlockIdOp op = AllocateBlockIdOp.getInstance(cache.get())
       .setBlockId(blockId);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /** 
@@ -1177,7 +1177,7 @@ public class FSEditLog implements LogsPurgeable {
       .setPath(src)
       .setModificationTime(mtime)
       .setAccessTime(atime);
-    // logEdit(op);
+    logEdit(op);
   }
 
   /** 
@@ -1193,7 +1193,7 @@ public class FSEditLog implements LogsPurgeable {
       .setAccessTime(atime)
       .setPermissionStatus(node.getPermissionStatus());
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   
   /**
@@ -1206,7 +1206,7 @@ public class FSEditLog implements LogsPurgeable {
     GetDelegationTokenOp op = GetDelegationTokenOp.getInstance(cache.get())
       .setDelegationTokenIdentifier(id)
       .setExpiryTime(expiryTime);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logRenewDelegationToken(DelegationTokenIdentifier id,
@@ -1214,19 +1214,19 @@ public class FSEditLog implements LogsPurgeable {
     RenewDelegationTokenOp op = RenewDelegationTokenOp.getInstance(cache.get())
       .setDelegationTokenIdentifier(id)
       .setExpiryTime(expiryTime);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logCancelDelegationToken(DelegationTokenIdentifier id) {
     CancelDelegationTokenOp op = CancelDelegationTokenOp.getInstance(cache.get())
       .setDelegationTokenIdentifier(id);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logUpdateMasterKey(DelegationKey key) {
     UpdateMasterKeyOp op = UpdateMasterKeyOp.getInstance(cache.get())
       .setDelegationKey(key);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logReassignLease(String leaseHolder, String src, String newHolder) {
@@ -1234,21 +1234,21 @@ public class FSEditLog implements LogsPurgeable {
       .setLeaseHolder(leaseHolder)
       .setPath(src)
       .setNewHolder(newHolder);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logCreateSnapshot(String snapRoot, String snapName, boolean toLogRpcIds) {
     CreateSnapshotOp op = CreateSnapshotOp.getInstance(cache.get())
         .setSnapshotRoot(snapRoot).setSnapshotName(snapName);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logDeleteSnapshot(String snapRoot, String snapName, boolean toLogRpcIds) {
     DeleteSnapshotOp op = DeleteSnapshotOp.getInstance(cache.get())
         .setSnapshotRoot(snapRoot).setSnapshotName(snapName);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logRenameSnapshot(String path, String snapOldName, String snapNewName,
@@ -1257,13 +1257,13 @@ public class FSEditLog implements LogsPurgeable {
         .setSnapshotRoot(path).setSnapshotOldName(snapOldName)
         .setSnapshotNewName(snapNewName);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logAllowSnapshot(String path) {
     AllowSnapshotOp op = AllowSnapshotOp.getInstance(cache.get())
         .setSnapshotRoot(path);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logDisallowSnapshot(String path) {
@@ -1282,7 +1282,7 @@ public class FSEditLog implements LogsPurgeable {
         AddCacheDirectiveInfoOp.getInstance(cache.get())
             .setDirective(directive);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logModifyCacheDirectiveInfo(
@@ -1291,54 +1291,54 @@ public class FSEditLog implements LogsPurgeable {
         ModifyCacheDirectiveInfoOp.getInstance(
             cache.get()).setDirective(directive);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logRemoveCacheDirectiveInfo(Long id, boolean toLogRpcIds) {
     RemoveCacheDirectiveInfoOp op =
         RemoveCacheDirectiveInfoOp.getInstance(cache.get()).setId(id);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logAddCachePool(CachePoolInfo pool, boolean toLogRpcIds) {
     AddCachePoolOp op =
         AddCachePoolOp.getInstance(cache.get()).setPool(pool);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logModifyCachePool(CachePoolInfo info, boolean toLogRpcIds) {
     ModifyCachePoolOp op =
         ModifyCachePoolOp.getInstance(cache.get()).setInfo(info);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logRemoveCachePool(String poolName, boolean toLogRpcIds) {
     RemoveCachePoolOp op =
         RemoveCachePoolOp.getInstance(cache.get()).setPoolName(poolName);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logStartRollingUpgrade(long startTime) {
     RollingUpgradeStartOp op = RollingUpgradeStartOp.getInstance(cache.get());
     op.setTime(startTime);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logFinalizeRollingUpgrade(long finalizeTime) {
     RollingUpgradeOp op = RollingUpgradeFinalizeOp.getInstance(cache.get());
     op.setTime(finalizeTime);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logSetAcl(String src, List<AclEntry> entries) {
     final SetAclOp op = SetAclOp.getInstance(cache.get());
     op.src = src;
     op.aclEntries = entries;
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logSetXAttrs(String src, List<XAttr> xAttrs, boolean toLogRpcIds) {
@@ -1346,7 +1346,7 @@ public class FSEditLog implements LogsPurgeable {
     op.src = src;
     op.xAttrs = xAttrs;
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   
   void logRemoveXAttrs(String src, List<XAttr> xAttrs, boolean toLogRpcIds) {
@@ -1354,7 +1354,7 @@ public class FSEditLog implements LogsPurgeable {
     op.src = src;
     op.xAttrs = xAttrs;
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logAddErasureCodingPolicy(ErasureCodingPolicy ecPolicy,
@@ -1363,7 +1363,7 @@ public class FSEditLog implements LogsPurgeable {
         AddErasureCodingPolicyOp.getInstance(cache.get());
     op.setErasureCodingPolicy(ecPolicy);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logEnableErasureCodingPolicy(String ecPolicyName, boolean toLogRpcIds) {
@@ -1371,7 +1371,7 @@ public class FSEditLog implements LogsPurgeable {
         EnableErasureCodingPolicyOp.getInstance(cache.get());
     op.setErasureCodingPolicy(ecPolicyName);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logDisableErasureCodingPolicy(String ecPolicyName, boolean toLogRpcIds) {
@@ -1379,7 +1379,7 @@ public class FSEditLog implements LogsPurgeable {
         DisableErasureCodingPolicyOp.getInstance(cache.get());
     op.setErasureCodingPolicy(ecPolicyName);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
 
   void logRemoveErasureCodingPolicy(String ecPolicyName, boolean toLogRpcIds) {
@@ -1387,7 +1387,7 @@ public class FSEditLog implements LogsPurgeable {
         RemoveErasureCodingPolicyOp.getInstance(cache.get());
     op.setErasureCodingPolicy(ecPolicyName);
     logRpcIds(op, toLogRpcIds);
-    // logEdit(op);
+    logEdit(op);
   }
   /**
    * Get all the journals this edit log is currently operating on.

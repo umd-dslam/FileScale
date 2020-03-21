@@ -234,13 +234,13 @@ public class FSDirAttrOp {
       INodeDirectory changed =
           unprotectedSetQuota(fsd, iip, nsQuota, ssQuota, type);
       if (changed != null) {
-        // final QuotaCounts q = changed.getQuotaCounts();
-        // if (type == null) {
-        //   fsd.getEditLog().logSetQuota(src, q.getNameSpace(), q.getStorageSpace());
-        // } else {
-        //   fsd.getEditLog().logSetQuotaByStorageType(
-        //       src, q.getTypeSpaces().get(type), type);
-        // }
+        final QuotaCounts q = changed.getQuotaCounts();
+        if (type == null) {
+          fsd.getEditLog().logSetQuota(src, q.getNameSpace(), q.getStorageSpace());
+        } else {
+          fsd.getEditLog().logSetQuotaByStorageType(
+              src, q.getTypeSpaces().get(type), type);
+        }
       }
     } finally {
       fsd.writeUnlock();
