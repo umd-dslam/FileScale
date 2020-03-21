@@ -1912,6 +1912,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -1939,6 +1940,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -2079,6 +2081,9 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       throw ace;
     } finally {
       writeUnlock(operationName);
+      if (success) {
+        getEditLog().logSync();
+      }
     }
     logAuditEvent(success, operationName, Arrays.toString(srcs), target, stat);
   }
@@ -2104,6 +2109,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -2142,6 +2149,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       } finally {
         writeUnlock(operationName);
       }
+      getEditLog().logSync();
       if (!toRemoveBlocks.getToDeleteList().isEmpty()) {
         removeBlocks(toRemoveBlocks);
         toRemoveBlocks.clear();
@@ -2178,7 +2186,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(true, operationName, link, target, auditStat);
   }
 
@@ -2215,6 +2223,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       writeUnlock(operationName);
     }
     if (success) {
+      getEditLog().logSync();
       logAuditEvent(true, operationName, src);
     }
     return success;
@@ -2244,6 +2253,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -2271,6 +2281,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -2319,6 +2330,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
   /**
@@ -2790,6 +2802,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+    getEditLog().logSync();
     return lb;
   }
 
@@ -2869,6 +2882,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock("abandonBlock");
     }
+    getEditLog().logSync();
   }
 
   private String leaseExceptionString(String src, long fileId, String holder) {
@@ -2932,6 +2946,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock("completeFile");
     }
+    getEditLog().logSync();
     if (success) {
       NameNode.stateChangeLog.info("DIR* completeFile: " + src
           + " is closed by " + holder);
@@ -3014,6 +3029,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
     boolean success = ret.success;
     if (success) {
+      getEditLog().logSync();
       logAuditEvent(success, operationName, src, dst, ret.auditStat);
     }
     return success;
@@ -3039,6 +3055,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
+
+    getEditLog().logSync();
 
     BlocksMapUpdateInfo collectedBlocks = res.collectedBlocks;
     if (!collectedBlocks.getToDeleteList().isEmpty()) {
@@ -3330,7 +3348,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
       if (success) {
-        // getEditLog().logSync();
+        getEditLog().logSync();
       }
     }
     logAuditEvent(success, operationName, src);
@@ -4026,6 +4044,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   private void closeFile(String path, INodeFile file) {
     assert hasWriteLock();
     // file is closed
+    getEditLog().logCloseFile(path, file);
     LOG.info("closeFile: {} with {} blocks is persisted to the file system",
       path, file.getBlocks().length);
   }
@@ -6475,7 +6494,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(success, operationName, path, null, null);
   }
   
@@ -6494,7 +6513,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(success, operationName, path, null, null);
   }
   
@@ -6561,7 +6580,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(success, operationName, oldSnapshotRoot,
         newSnapshotRoot, null);
   }
@@ -6746,7 +6765,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
 
     // Breaking the pattern as removing blocks have to happen outside of the
     // global lock
@@ -7239,7 +7258,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7260,7 +7279,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7280,7 +7299,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7300,7 +7319,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 
@@ -7320,7 +7339,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       writeUnlock(operationName);
     }
-    // getEditLog().logSync();
+    getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
   }
 

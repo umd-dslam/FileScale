@@ -63,7 +63,7 @@ class FSDirSnapshotOp {
     } finally {
       fsd.writeUnlock();
     }
-    // fsd.getEditLog().logAllowSnapshot(path);
+    fsd.getEditLog().logAllowSnapshot(path);
   }
 
   static void disallowSnapshot(
@@ -75,7 +75,7 @@ class FSDirSnapshotOp {
     } finally {
       fsd.writeUnlock();
     }
-    // fsd.getEditLog().logDisallowSnapshot(path);
+    fsd.getEditLog().logDisallowSnapshot(path);
   }
 
   /**
@@ -112,8 +112,8 @@ class FSDirSnapshotOp {
     } finally {
       fsd.writeUnlock();
     }
-    // fsd.getEditLog().logCreateSnapshot(snapshotRoot, snapshotName,
-    //     logRetryCache);
+    fsd.getEditLog().logCreateSnapshot(snapshotRoot, snapshotName,
+        logRetryCache);
 
     return snapshotPath;
   }
@@ -133,8 +133,8 @@ class FSDirSnapshotOp {
     } finally {
       fsd.writeUnlock();
     }
-    // fsd.getEditLog().logRenameSnapshot(path, snapshotOldName,
-    //     snapshotNewName, logRetryCache);
+    fsd.getEditLog().logRenameSnapshot(path, snapshotOldName,
+        snapshotNewName, logRetryCache);
   }
 
   static SnapshottableDirectoryStatus[] getSnapshottableDirListing(
@@ -259,8 +259,8 @@ class FSDirSnapshotOp {
       fsd.writeUnlock();
     }
     removedINodes.clear();
-    // fsd.getEditLog().logDeleteSnapshot(snapshotRoot, snapshotName,
-    //     logRetryCache);
+    fsd.getEditLog().logDeleteSnapshot(snapshotRoot, snapshotName,
+        logRetryCache);
 
     return collectedBlocks;
   }
