@@ -115,6 +115,7 @@ final class FSDirErasureCodingOp {
     String src = srcArg;
     FSDirectory fsd = fsn.getFSDirectory();
     final INodesInPath iip;
+    List<XAttr> xAttrs;
     fsd.writeLock();
     try {
       ErasureCodingPolicy ecPolicy = getErasureCodingPolicyByName(fsn,
@@ -125,10 +126,11 @@ final class FSDirErasureCodingOp {
         fsd.checkPathAccess(pc, iip, FsAction.WRITE);
       }
       src = iip.getPath();
-      setErasureCodingPolicyXAttr(fsn, iip, ecPolicy);
+      xAttrs = setErasureCodingPolicyXAttr(fsn, iip, ecPolicy);
     } finally {
       fsd.writeUnlock();
     }
+    fsn.getEditLog().logSetXAttrs(src, xAttrs, logRetryCache);
     return fsd.getAuditFileInfo(iip);
   }
 

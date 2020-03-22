@@ -78,6 +78,7 @@ class FSDirConcatOp {
     } finally {
       fsd.writeUnlock();
     }
+    fsd.getEditLog().logConcat(target, srcs, timestamp, logRetryCache);
     return fsd.getAuditFileInfo(targetIIP);
   }
 

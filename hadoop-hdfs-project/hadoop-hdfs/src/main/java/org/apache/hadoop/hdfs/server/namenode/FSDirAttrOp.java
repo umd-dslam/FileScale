@@ -65,6 +65,7 @@ public class FSDirAttrOp {
     } finally {
       fsd.writeUnlock();
     }
+    fsd.getEditLog().logSetPermissions(iip.getPath(), permission);
     return fsd.getAuditFileInfo(iip);
   }
 
@@ -93,6 +94,7 @@ public class FSDirAttrOp {
     } finally {
       fsd.writeUnlock();
     }
+    fsd.getEditLog().logSetOwner(iip.getPath(), username, group);
     return fsd.getAuditFileInfo(iip);
   }
 

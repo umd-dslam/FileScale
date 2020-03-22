@@ -107,6 +107,7 @@ class FSDirWriteFileOp {
       FSDirectory fsd, String path, INodeFile file, boolean logRetryCache) {
     assert fsd.getFSNamesystem().hasWriteLock();
     Preconditions.checkArgument(file.isUnderConstruction());
+    fsd.getEditLog().logUpdateBlocks(path, file, logRetryCache);
     if(NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("persistBlocks: " + path
               + " with " + file.getBlocks().length + " blocks is persisted to" +
