@@ -299,6 +299,8 @@ class FSDirRenameOp {
     } finally {
       fsd.writeUnlock();
     }
+    fsd.getEditLog().logRename(
+        srcIIP.getPath(), dstIIP.getPath(), mtime, logRetryCache, options);
     return result;
   }
 
@@ -484,6 +486,10 @@ class FSDirRenameOp {
       renameIIP = unprotectedRenameTo(fsd, srcIIP, dstIIP, mtime);
     } finally {
       fsd.writeUnlock();
+    }
+    if (renameIIP != null) {
+      fsd.getEditLog().logRename(
+          srcIIP.getPath(), dstIIP.getPath(), mtime, logRetryCache);
     }
     // this rename never overwrites the dest so files deleted and collected
     // are irrelevant.

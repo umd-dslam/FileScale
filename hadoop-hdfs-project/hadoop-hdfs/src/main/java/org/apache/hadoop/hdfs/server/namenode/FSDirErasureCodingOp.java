@@ -129,6 +129,7 @@ final class FSDirErasureCodingOp {
     } finally {
       fsd.writeUnlock();
     }
+    fsn.getEditLog().logSetXAttrs(src, xAttrs, logRetryCache);
     return fsd.getAuditFileInfo(iip);
   }
 
