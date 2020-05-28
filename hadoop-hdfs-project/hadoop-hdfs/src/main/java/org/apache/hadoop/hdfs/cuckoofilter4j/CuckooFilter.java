@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-package org.apache.hadoop.cuckoofilter4j;
+package org.apache.hadoop.hdfs.cuckoofilter4j;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -28,8 +28,8 @@ import java.util.concurrent.locks.StampedLock;
 
 import javax.annotation.Nullable;
 
-import org.apache.hadoop.cuckoofilter4j.Utils.Algorithm;
-import org.apache.hadoop.cuckoofilter4j.Utils.Victim;
+import org.apache.hadoop.hdfs.cuckoofilter4j.Utils.Algorithm;
+import org.apache.hadoop.hdfs.cuckoofilter4j.Utils.Victim;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.Funnel;
 

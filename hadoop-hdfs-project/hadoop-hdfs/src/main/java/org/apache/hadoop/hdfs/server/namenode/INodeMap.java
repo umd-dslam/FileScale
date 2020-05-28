@@ -18,7 +18,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.db.*;
-import org.apache.hadoop.cuckoofilter4j;
+import org.apache.hadoop.hdfs.cuckoofilter4j;
 
 /** Storing all the {@link INode}s and maintaining the mapping between INode ID and INode. */
 public class INodeMap {

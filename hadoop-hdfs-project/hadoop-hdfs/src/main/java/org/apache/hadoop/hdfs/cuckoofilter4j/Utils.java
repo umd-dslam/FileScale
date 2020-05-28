@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-package org.apache.hadoop.cuckoofilter4j;
+package org.apache.hadoop.hdfs.cuckoofilter4j;
 
 import java.io.Serializable;
 import java.math.RoundingMode;

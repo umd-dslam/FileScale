@@ -17,7 +17,7 @@
  * 
  * Copied from Apache Harmony and Lucene (6.2.0) projects with modifications
  */
-package org.apache.hadoop.cuckoofilter4j;
+package org.apache.hadoop.hdfs.cuckoofilter4j;
 
 import java.util.Arrays;
 
