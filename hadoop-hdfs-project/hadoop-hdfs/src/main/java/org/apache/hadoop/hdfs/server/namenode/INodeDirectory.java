@@ -45,7 +45,7 @@ import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.ReadOnlyList;
 import org.apache.hadoop.hdfs.db.*;
 
-import org.apache.hadoop.hdfs.cuckoofilter4j;
+import org.apache.hadoop.hdfs.cuckoofilter4j.*;
 import org.apache.hadoop.hdfs.cuckoofilter4j.Utils.Algorithm;
 
 import com.google.common.hash.Funnels;
