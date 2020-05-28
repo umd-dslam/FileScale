@@ -16,23 +16,22 @@
 
 package org.apache.hadoop.cuckoofilter4j;
 
-
-
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 
+import javax.annotation.Nullable;
 
-
-
+import com.github.mgunlogson.cuckoofilter4j.Utils.Algorithm;
 import com.github.mgunlogson.cuckoofilter4j.Utils.Victim;
-
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.hash.Funnel;
 
 /**
  * A Cuckoo filter for instances of {@code T}. Cuckoo filters are probabilistic
@@ -105,7 +104,7 @@ import com.github.mgunlogson.cuckoofilter4j.Utils.Victim;
  *            the type of items that the {@code CuckooFilter} accepts
  * @author Mark Gunlogson
  */
-public final class CuckooFilter implements Serializable {
+public final class CuckooFilter<T> implements Serializable {
 
 	/*
 	 * IMPORTANT THREAD SAFETY NOTES. To prevent deadlocks, all methods needing
@@ -124,8 +123,10 @@ public final class CuckooFilter implements Serializable {
 	private static final double DEFAULT_FP = 0.01;
 	private static final int DEFAULT_CONCURRENCY = 16;
 
-
+	@VisibleForTesting
 	final FilterTable table;
+	@VisibleForTesting
+	final IndexTagCalc<T> hasher;
 	private final AtomicLong count;
 	/**
 	 * Only stored for serialization since the bucket locker is transient.
@@ -135,26 +136,22 @@ public final class CuckooFilter implements Serializable {
 	private final int expectedConcurrency;
 	private final StampedLock victimLock;
 	private transient SegmentedBucketLocker bucketLocker;
-	private int tagBits;
-	private long numBuckets;
-	private long seed;
 
-	
+	@VisibleForTesting
 	Victim victim;
+	@VisibleForTesting
 	boolean hasVictim;
 
 	/**
 	 * Creates a Cuckoo filter.
 	 */
-	private CuckooFilter(int tagBits, long numBuckets, FilterTable table, AtomicLong count, boolean hasVictim, Victim victim,
+	private CuckooFilter(IndexTagCalc<T> hasher, FilterTable table, AtomicLong count, boolean hasVictim, Victim victim,
 			int expectedConcurrency) {
-		this.tagBits = tagBits;
-		this.numBuckets = numBuckets;
+		this.hasher = hasher;
 		this.table = table;
 		this.count = count;
 		this.hasVictim = hasVictim;
 		this.expectedConcurrency = expectedConcurrency;
-		seed = new SecureRandom().nextLong();
 		// no nulls even if victim hasn't been used!
 		if (victim == null)
 			this.victim = new Victim();
@@ -174,10 +171,12 @@ public final class CuckooFilter implements Serializable {
 	 * @param <T>
 	 *            the type of item {@code Funnel will use}
 	 */
-	public static class Builder {
+	public static class Builder<T> {
 		// required arguments
+		private final Funnel<? super T> funnel;
 		private final long maxKeys;
 		// optional arguments
+		private Algorithm hashAlgorithm;
 		private double fpp = DEFAULT_FP;
 		private int expectedConcurrency = DEFAULT_CONCURRENCY;
 
@@ -212,8 +211,10 @@ public final class CuckooFilter implements Serializable {
 		 *            {@code CuckooFilter<T>}; must be positive
 		 * 
 		 */
-		public Builder(long maxKeys) {
-			if(maxKeys < 2) throw new IllegalArgumentException("maxKeys must be > 1, increase maxKeys");
+		public Builder(Funnel<? super T> funnel, long maxKeys) {
+			checkArgument(maxKeys > 1, "maxKeys (%s) must be > 1, increase maxKeys", maxKeys);
+			checkNotNull(funnel);
+			this.funnel = funnel;
 			this.maxKeys = maxKeys;
 		}
 
@@ -248,8 +249,8 @@ public final class CuckooFilter implements Serializable {
 		 *            {@code CuckooFilter<T>}; must be positive
 		 * 
 		 */
-		public Builder(int maxKeys) {
-			this((long) maxKeys);
+		public Builder(Funnel<? super T> funnel, int maxKeys) {
+			this(funnel, (long) maxKeys);
 		}
 
 		/**
@@ -264,10 +265,31 @@ public final class CuckooFilter implements Serializable {
 		 *            exclusive.
 		 * @return The builder interface
 		 */
-		public Builder withFalsePositiveRate(double fpp) {
-			if(fpp <=0) throw new IllegalArgumentException("False Positive Rate must be > 0, increase fpp");
-			if(fpp > .24)  throw new IllegalArgumentException("False Positive Rate must be < 0.25, decrease fpp");
+		public Builder<T> withFalsePositiveRate(double fpp) {
+			checkArgument(fpp > 0, "fpp (%s) must be > 0, increase fpp", fpp);
+			checkArgument(fpp < .25, "fpp (%s) must be < 0.25, decrease fpp", fpp);
 			this.fpp = fpp;
+			return this;
+		}
+
+		/**
+		 * Sets the hashing algorithm used internally. The default is Murmur3,
+		 * 32 or 128 bit sized automatically. Calling this with a Murmur3
+		 * variant instead of using the default will disable automatic hash
+		 * sizing of Murmur3. The size of the table will be significantly
+		 * limited with a 32 bit hash to around 270 MB. Table size is still
+		 * limited in certain circumstances when using 64 bit hashes like
+		 * SipHash. 128+ bit hashes will allow practically unlimited table size.
+		 * In any case, filter creation will fail on {@code #build()} with an
+		 * invalid configuration.
+		 * 
+		 * @param hashAlgorithm the hashing algorithm used by the filter.
+		 * @return The builder interface
+		 */
+		public Builder<T> withHashAlgorithm(Algorithm hashAlgorithm) {
+			checkNotNull(hashAlgorithm,
+					"hashAlgorithm cannot be null. To use default, build without calling this method.");
+			this.hashAlgorithm = hashAlgorithm;
 			return this;
 		}
 
@@ -287,9 +309,10 @@ public final class CuckooFilter implements Serializable {
 		 * @return The builder interface   
 		 *            
 		 */
-		public Builder withExpectedConcurrency(int expectedConcurrency) {
-			if(expectedConcurrency < 1) throw new IllegalArgumentException("expectedConcurrency must be > 0.");
-			if(!((expectedConcurrency & (expectedConcurrency - 1)) == 0)) throw new IllegalArgumentException("expectedConcurrency must be a power of two.");
+		public Builder<T> withExpectedConcurrency(int expectedConcurrency) {
+			checkArgument(expectedConcurrency > 0, "expectedConcurrency (%s) must be > 0.", expectedConcurrency);
+			checkArgument((expectedConcurrency & (expectedConcurrency - 1)) == 0,
+					"expectedConcurrency (%s) must be a power of two.", expectedConcurrency);
 			this.expectedConcurrency = expectedConcurrency;
 			return this;
 		}
@@ -300,12 +323,16 @@ public final class CuckooFilter implements Serializable {
 		 * 
 		 * @return a Cuckoo filter of type T
 		 */
-		public CuckooFilter build() {
+		public CuckooFilter<T> build() {
 			int tagBits = Utils.getBitsPerItemForFpRate(fpp, LOAD_FACTOR);
 			long numBuckets = Utils.getBucketsNeeded(maxKeys, LOAD_FACTOR, BUCKET_SIZE);
-			if((64 - Long.numberOfLeadingZeros(numBuckets)) + tagBits > 64) throw new IllegalArgumentException("PrimativeCuckooFilter only supports upto 64 bits but specified number of entries and false positive rate requires more then 64 bits. Reduce max entries or increase max false positive rate or use non primative CuckooFilter that supports upto 128 bits (but is slower).");
+			IndexTagCalc<T> hasher;
+			if (hashAlgorithm == null) {
+				hasher = IndexTagCalc.create(funnel, numBuckets, tagBits);
+			} else
+				hasher = IndexTagCalc.create(hashAlgorithm, funnel, numBuckets, tagBits);
 			FilterTable filtertbl = FilterTable.create(tagBits, numBuckets);
-			return new CuckooFilter(tagBits,numBuckets,filtertbl, new AtomicLong(0), false, null, expectedConcurrency);
+			return new CuckooFilter<>(hasher, filtertbl, new AtomicLong(0), false, null, expectedConcurrency);
 		}
 	}
 
@@ -336,7 +363,7 @@ public final class CuckooFilter implements Serializable {
 	 * @return load fraction of total space used, 0-1 inclusive
 	 */
 	public double getLoadFactor() {
-		return count.get() / (numBuckets * (double) BUCKET_SIZE);
+		return count.get() / (hasher.getNumBuckets() * (double) BUCKET_SIZE);
 	}
 
 	/**
@@ -352,7 +379,7 @@ public final class CuckooFilter implements Serializable {
 	 * @return number of keys filter can theoretically hold at 100% fill
 	 */
 	public long getActualCapacity() {
-		return numBuckets * BUCKET_SIZE;
+		return hasher.getNumBuckets() * BUCKET_SIZE;
 	}
 
 	/**
@@ -383,19 +410,11 @@ public final class CuckooFilter implements Serializable {
 	 * @return {@code true} if the cuckoo filter inserts this item successfully.
 	 *         Returns {@code false} if insertion failed.
 	 */
-	public boolean put(long item) {
-		long curTag = 0;
-		long curIndex = 0;
-		long hashVal = Utils.hashLong(item,seed);
-		curIndex = getBucketIndex64(hashVal);
-		// loop until tag isn't equal to empty bucket (0)
-		curTag = getTagValue64(hashVal);
-		for (int salt = 1; curTag == 0; salt++) {
-			hashVal = Utils.hashLong(item, salt);
-			curTag = getTagValue64(hashVal);
-			assert salt < 100;// shouldn't happen in our timeline
-		}
-		long altIndex = altIndex(curIndex, curTag);
+	public boolean put(T item) {
+		BucketAndTag pos = hasher.generate(item);
+		long curTag = pos.tag;
+		long curIndex = pos.index;
+		long altIndex = hasher.altIndex(curIndex, curTag);
 		bucketLocker.lockBucketsWrite(curIndex, altIndex);
 		try {
 			if (table.insertToBucket(curIndex, curTag) || table.insertToBucket(altIndex, curTag)) {
@@ -462,7 +481,7 @@ public final class CuckooFilter implements Serializable {
 		long curTag = table.swapRandomTagInBucket(curIndex, victim.getTag());
 		bucketLocker.unlockSingleBucketWrite(curIndex);
 		// new victim's I2 is different as long as tag isn't the same
-		long altIndex = altIndex(curIndex, curTag);
+		long altIndex = hasher.altIndex(curIndex, curTag);
 		// try to insert the new victim tag in it's alternate bucket
 		bucketLocker.lockSingleBucketWrite(altIndex);
 		try {
@@ -583,7 +602,7 @@ public final class CuckooFilter implements Serializable {
 		}
 	}
 
-	
+	@VisibleForTesting
 	/**
 	 * Checks if a given tag is the victim.
 	 * 
@@ -591,12 +610,13 @@ public final class CuckooFilter implements Serializable {
 	 *            the tag to check
 	 * @return true if tag is stored in victim
 	 */
-	boolean checkIsVictim(long tag, long index) {
+	boolean checkIsVictim(BucketAndTag tagToCheck) {
+		checkNotNull(tagToCheck);
 		victimLock.readLock();
 		try {
 			if (hasVictim) {
-				if (victim.getTag() == tag
-						&& (index == victim.getI1() || index == victim.getI2())) {
+				if (victim.getTag() == tagToCheck.tag
+						&& (tagToCheck.index == victim.getI1() || tagToCheck.index == victim.getI2())) {
 					return true;
 				}
 			}
@@ -615,66 +635,20 @@ public final class CuckooFilter implements Serializable {
 	 * 
 	 * @return true if the item might be in the filter
 	 */
-	public boolean mightContain(long item) {
-		long tag = 0;
-		long bucketIndex = 0;
-		long hashVal = Utils.hashLong(item,seed);
-		bucketIndex = getBucketIndex64(hashVal);
-		// loop until tag isn't equal to empty bucket (0)
-		tag = getTagValue64(hashVal);
-		for (int salt = 1; tag == 0; salt++) {
-			hashVal = Utils.hashLong(item, salt);
-			tag = getTagValue64(hashVal);
-			assert salt < 100;// shouldn't happen in our timeline
-		}
-		
-		long index2 = altIndex(bucketIndex, tag);
-		bucketLocker.lockBucketsRead(bucketIndex, index2);
+	public boolean mightContain(T item) {
+		BucketAndTag pos = hasher.generate(item);
+		long i1 = pos.index;
+		long i2 = hasher.altIndex(pos.index, pos.tag);
+		bucketLocker.lockBucketsRead(i1, i2);
 		try {
-			if (table.findTag(bucketIndex, index2, tag)) {
+			if (table.findTag(i1, i2, pos.tag)) {
 				return true;
 			}
 		} finally {
-			bucketLocker.unlockBucketsRead(bucketIndex, index2);
+			bucketLocker.unlockBucketsRead(i1, i2);
 		}
-		return checkIsVictim(tag,bucketIndex);
+		return checkIsVictim(pos);
 	}
-	
-	long altIndex(long bucketIndex, long tag) {
-		/*
-		 * 0xc4ceb9fe1a85ec53L hash mixing constant from
-		 * MurmurHash3...interesting. Similar value used in reference
-		 * implementation https://github.com/efficient/cuckoofilter/
-		 */
-		long altIndex = bucketIndex ^ (tag * 0xc4ceb9fe1a85ec53L);
-		// flip bits if negative
-		if (altIndex < 0)
-			altIndex = ~altIndex;
-		// now pull into valid range
-		return altIndex % numBuckets;
-	}
-	
-	long getTagValue64(long hashVal) {
-		/*
-		 * for the tag we take the bits from the right of the hash. Since tag
-		 * isn't a number we just zero the bits we aren't using. We technically
-		 * DONT need to do this(we can just ignore the bits we don't want), but
-		 * it makes testing easier
-		 */
-		// shift out bits we don't need, then shift back to right side
-		// NOTE: must be long because java will only shift up to 31 bits if
-		// right operand is an int!!
-		long unusedBits = Long.SIZE - tagBits;
-		return (hashVal << unusedBits) >>> unusedBits;
-	}
-	
-	long getBucketIndex64(long hashVal) {
-		// take index bits from left end of hash
-		// just use everything we're not using for tag, why not
-		return (hashVal >>> tagBits) % numBuckets;
-	}
-	
-	
 
 	/**
 	 * This method returns the approximate number of times an item was added to
@@ -702,28 +676,18 @@ public final class CuckooFilter implements Serializable {
 	 *         is not in the filter, behaving exactly like
 	 *         {@code #mightContain(Object)} in this case.
 	 */
-	public int approximateCount(long item) {
-		long tag = 0;
-		long bucketIndex = 0;
-		long hashVal = Utils.hashLong(item,seed);
-		bucketIndex = getBucketIndex64(hashVal);
-		// loop until tag isn't equal to empty bucket (0)
-		tag = getTagValue64(hashVal);
-		for (int salt = 1; tag == 0; salt++) {
-			hashVal = Utils.hashLong(item, salt);
-			tag = getTagValue64(hashVal);
-			assert salt < 100;// shouldn't happen in our timeline
-		}
-		
-		long i2 = altIndex(bucketIndex, tag);
+	public int approximateCount(T item) {
+		BucketAndTag pos = hasher.generate(item);
+		long i1 = pos.index;
+		long i2 = hasher.altIndex(pos.index, pos.tag);
 		int tagCount = 0;
-		bucketLocker.lockBucketsRead(bucketIndex, i2);
+		bucketLocker.lockBucketsRead(i1, i2);
 		try {
-			tagCount = table.countTag(bucketIndex, i2, tag);
+			tagCount = table.countTag(i1, i2, pos.tag);
 		} finally {
-			bucketLocker.unlockBucketsRead(bucketIndex, i2);
+			bucketLocker.unlockBucketsRead(i1, i2);
 		}
-		if (checkIsVictim(tag,bucketIndex))
+		if (checkIsVictim(pos))
 			tagCount++;
 		return tagCount;
 	}
@@ -749,26 +713,17 @@ public final class CuckooFilter implements Serializable {
 	 *            the item to delete
 	 */
 
-	public boolean delete(long item) {
-		long tag = 0;
-		long bucketIndex = 0;
-		long hashVal = Utils.hashLong(item,seed);
-		bucketIndex = getBucketIndex64(hashVal);
-		// loop until tag isn't equal to empty bucket (0)
-		tag = getTagValue64(hashVal);
-		for (int salt = 1; tag == 0; salt++) {
-			hashVal = Utils.hashLong(item, salt);
-			tag = getTagValue64(hashVal);
-			assert salt < 100;// shouldn't happen in our timeline
-		}
-		long index2 = altIndex(bucketIndex, tag);
-		bucketLocker.lockBucketsWrite(bucketIndex, index2);
+	public boolean delete(T item) {
+		BucketAndTag pos = hasher.generate(item);
+		long i1 = pos.index;
+		long i2 = hasher.altIndex(pos.index, pos.tag);
+		bucketLocker.lockBucketsWrite(i1, i2);
 		boolean deleteSuccess = false;
 		try {
-			if (table.deleteFromBucket(bucketIndex, tag) || table.deleteFromBucket(index2, tag))
+			if (table.deleteFromBucket(i1, pos.tag) || table.deleteFromBucket(i2, pos.tag))
 				deleteSuccess = true;
 		} finally {
-			bucketLocker.unlockBucketsWrite(bucketIndex, index2);
+			bucketLocker.unlockBucketsWrite(i1, i2);
 		}
 		// try to insert the victim again if we were able to delete an item
 		if (deleteSuccess) {
@@ -784,7 +739,7 @@ public final class CuckooFilter implements Serializable {
 		else {
 			try {
 				// check victim match
-				if (victim.getTag() == tag && (victim.getI1() == bucketIndex || victim.getI2() == bucketIndex)) {
+				if (victim.getTag() == pos.tag && (victim.getI1() == pos.index || victim.getI2() == pos.index)) {
 					hasVictim = false;
 					count.decrementAndGet();
 					return true;
@@ -804,23 +759,23 @@ public final class CuckooFilter implements Serializable {
 	}
 
 	@Override
-	public boolean equals(Object object) {
+	public boolean equals(@Nullable Object object) {
 		if (object == this) {
 			return true;
 		}
 		if (object instanceof CuckooFilter) {
-			CuckooFilter that = (CuckooFilter) object;
+			CuckooFilter<?> that = (CuckooFilter<?>) object;
 			victimLock.readLock();
 			bucketLocker.lockAllBucketsRead();
 			try {
 				if (hasVictim) {
 					// only compare victim if set, victim is sometimes stale
 					// since we use bool flag to determine if set or not
-					return this.table.equals(that.table)
+					return this.hasher.equals(that.hasher) && this.table.equals(that.table)
 							&& this.count.get() == that.count.get() && this.hasVictim == that.hasVictim
 							&& victim.equals(that.victim);
 				}
-				return this.table.equals(that.table)
+				return this.hasher.equals(that.hasher) && this.table.equals(that.table)
 						&& this.count.get() == that.count.get() && this.hasVictim == that.hasVictim;
 			} finally {
 				bucketLocker.unlockAllBucketsRead();
@@ -836,9 +791,9 @@ public final class CuckooFilter implements Serializable {
 		bucketLocker.lockAllBucketsRead();
 		try {
 			if (hasVictim) {
-				return Objects.hash(table, count.get(), victim);
+				return Objects.hash(hasher, table, count.get(), victim);
 			}
-			return Objects.hash(table, count.get());
+			return Objects.hash(hasher, table, count.get());
 		} finally {
 			bucketLocker.unlockAllBucketsRead();
 			victimLock.tryUnlockRead();
@@ -854,11 +809,11 @@ public final class CuckooFilter implements Serializable {
 	 * 
 	 * @return a copy of the filter
 	 */
-	public CuckooFilter copy() {
+	public CuckooFilter<T> copy() {
 		victimLock.readLock();
 		bucketLocker.lockAllBucketsRead();
 		try {
-			return new CuckooFilter(tagBits,numBuckets,table.copy(), count, hasVictim, victim.copy(),
+			return new CuckooFilter<>(hasher.copy(), table.copy(), count, hasVictim, victim.copy(),
 					expectedConcurrency);
 		} finally {
 			bucketLocker.unlockAllBucketsRead();
