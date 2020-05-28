@@ -28,8 +28,8 @@ import java.util.concurrent.locks.StampedLock;
 
 import javax.annotation.Nullable;
 
-import com.github.mgunlogson.cuckoofilter4j.Utils.Algorithm;
-import com.github.mgunlogson.cuckoofilter4j.Utils.Victim;
+import org.apache.hadoop.cuckoofilter4j.Utils.Algorithm;
+import org.apache.hadoop.cuckoofilter4j.Utils.Victim;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.Funnel;
 

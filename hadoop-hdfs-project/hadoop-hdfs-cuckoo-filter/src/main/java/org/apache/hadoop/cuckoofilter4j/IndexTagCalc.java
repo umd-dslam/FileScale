@@ -24,7 +24,7 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-import com.github.mgunlogson.cuckoofilter4j.Utils.Algorithm;
+import org.apache.hadoop.cuckoofilter4j.Utils.Algorithm;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.Longs;
