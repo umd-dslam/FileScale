@@ -87,8 +87,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime) {
-    initCuckooFilter();
     super(id, name, permissions, mtime, 0L, 0L);
+    initCuckooFilter();
   }
 
   public void updateINodeDirectory() {
@@ -119,8 +119,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
       long mtime) {
-    initCuckooFilter();
     super(parent, id, name, permissions, mtime, 0L);
+    initCuckooFilter();
   }
 
   // Note: only used by the loader of image file
@@ -138,8 +138,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
    */
   public INodeDirectory(INodeDirectory other, boolean adopt,
       Feature... featuresToCopy) {
-    filter = other.filter.copy();
     super(other);
+    filter = other.filter.copy();
     final ReadOnlyList<INode> children = other.getCurrentChildrenList();
     if (adopt && children != null) {
       for (INode child : children) {
@@ -162,7 +162,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (nums != null) {
       childNums = Integer.parseInt(nums);
     }
-    filter = new CuckooFilter.Builder<>(Funnels.stringFunnel(), childNums)
+    filter = new CuckooFilter.Builder<String>(Funnels.stringFunnel(), childNums)
       .withFalsePositiveRate(0.01).withHashAlgorithm(Algorithm.Murmur3_32).build();
   }
 
