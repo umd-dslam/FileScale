@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,6 +44,15 @@ import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeat
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeature.DirectoryDiffList;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.ReadOnlyList;
+import org.apache.hadoop.hdfs.db.*;
+
+import org.apache.hadoop.hdfs.cuckoofilter4j.*;
+import org.apache.hadoop.hdfs.cuckoofilter4j.Utils.Algorithm;
+
+import com.google.common.hash.Funnels;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.hdfs.nnproxy.tools.LookupMount;
 
@@ -73,10 +83,13 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   private HashSet<Long> children = new HashSet<>();
 
+  public CuckooFilter<CharSequence> filter;
+
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime) {
     super(id, name, permissions, mtime, 0L, 0L);
+    initCuckooFilter();
   }
 
   public void updateINodeDirectory() {
@@ -105,9 +118,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
     super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header);
   }
 
-  public INodeDirectory(
-      INode parent, long id, byte[] name, PermissionStatus permissions, long mtime) {
+  public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
+      long mtime) {
     super(parent, id, name, permissions, mtime, 0L);
+    initCuckooFilter();
   }
 
   // Note: only used by the loader of image file
@@ -123,8 +137,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
    * @param featuresToCopy any number of features to copy to the new node.
    *              The method will do a reference copy, not a deep copy.
    */
-  public INodeDirectory(INodeDirectory other, boolean adopt, Feature... featuresToCopy) {
+  public INodeDirectory(INodeDirectory other, boolean adopt,
+      Feature... featuresToCopy) {
     super(other);
+    filter = other.filter.copy();
     final ReadOnlyList<INode> children = other.getCurrentChildrenList();
     if (adopt && children != null) {
       for (INode child : children) {
@@ -139,6 +155,16 @@ public class INodeDirectory extends INodeWithAdditionalFields
     //   removeFeature(aclFeature);
     //   addFeature(AclStorage.addAclFeature(aclFeature));
     // }
+  }
+  
+  private void initCuckooFilter() {
+    int childNums = 1024;
+    String nums = System.getenv("FILESCALE_FILES_PER_DIRECTORY");
+    if (nums != null) {
+      childNums = Integer.parseInt(nums);
+    }
+    filter = new CuckooFilter.Builder<CharSequence>(Funnels.stringFunnel(Charset.defaultCharset()), childNums)
+      .withFalsePositiveRate(0.01).withHashAlgorithm(Algorithm.Murmur3_32).build();
   }
 
   /** @return true unconditionally. */
@@ -733,7 +759,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
     INode inode = node;
     children.add(node.getId());
+    filter.put(String.valueOf(getId()) + name);
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
+      node.getParent().filter.delete(String.valueOf(node.getParentId()) + node.getLocalName());
+
       node.setParent(getId());
       node.setLocalName(DFSUtil.string2Bytes(name));
 
