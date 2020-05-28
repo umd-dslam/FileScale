@@ -17,25 +17,27 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import static org.apache.hadoop.hdfs.protocol.HdfsConstants.BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.HashSet;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.fs.PathIsNotDirectoryException;
-import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.fs.XAttr;
+import org.apache.hadoop.fs.permission.FsAction;
+import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.protocol.SnapshotException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockStoragePolicySuite;
-import org.apache.hadoop.hdfs.server.namenode.INodeReference.WithCount;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectorySnapshottableFeature;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeature;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeature.DirectoryDiffList;
@@ -51,9 +53,7 @@ import com.google.common.hash.Funnels;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.security.AccessControlException;
-import java.util.concurrent.CompletableFuture;
-
-import static org.apache.hadoop.hdfs.protocol.HdfsConstants.BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
+import org.apache.hadoop.hdfs.nnproxy.tools.LookupMount;
 
 /**
  * Directory INode class.
@@ -97,18 +97,23 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public INodeDirectory copyINodeDirectory() {
     INodeDirectory inode = new INodeDirectory(getId());
-    inode.InitINodeDirectory(getParent(), getId(), getLocalNameBytes(),
-      getPermissionStatus(), getModificationTime(), getAccessTime());
+    inode.InitINodeDirectory(
+        getParent(),
+        getId(),
+        getLocalNameBytes(),
+        getPermissionStatus(),
+        getModificationTime(),
+        getAccessTime());
     return inode;
   }
 
-  public void InitINodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
-      long mtime, long atime) {
+  public void InitINodeDirectory(
+      INode parent, long id, byte[] name, PermissionStatus permissions, long mtime, long atime) {
     super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime);
   }
 
-  public void InitINodeDirectory(long parent, long id, byte[] name, long permissions,
-      long mtime, long atime, long header) {
+  public void InitINodeDirectory(
+      long parent, long id, byte[] name, long permissions, long mtime, long atime, long header) {
     super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header);
   }
 
@@ -176,8 +181,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   @Override
   public byte getLocalStoragePolicyID() {
     XAttrFeature f = getXAttrFeature();
-    XAttr xattr = f == null ? null : f.getXAttr(
-        BlockStoragePolicySuite.getStoragePolicyXAttrPrefixedName());
+    XAttr xattr =
+        f == null ? null : f.getXAttr(BlockStoragePolicySuite.getStoragePolicyXAttrPrefixedName());
     if (xattr != null) {
       return (xattr.getValue())[0];
     }
@@ -192,8 +197,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
     //   return id;
     // }
     // if it is unspecified, check its parent
-    // return getParent() != null ? getParent().getStoragePolicyID() : BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
-    return getLocalStoragePolicyID(); 
+    // return getParent() != null ? getParent().getStoragePolicyID() :
+    // BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
+    return getLocalStoragePolicyID();
   }
 
   void setQuota(BlockStoragePolicySuite bsps, long nsQuota, long ssQuota, StorageType type) {
@@ -224,7 +230,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   @Override
   public QuotaCounts getQuotaCounts() {
     final DirectoryWithQuotaFeature q = getDirectoryWithQuotaFeature();
-    return q != null? q.getQuota(): super.getQuotaCounts();
+    return q != null ? q.getQuota() : super.getQuotaCounts();
   }
 
   @Override
@@ -269,7 +275,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     addFeature(sf);
     return sf;
   }
-  
+
   /**
    * If feature list contains a {@link DirectoryWithSnapshotFeature}, return it;
    * otherwise, return null.
@@ -287,17 +293,17 @@ public class INodeDirectory extends INodeWithAdditionalFields
     DirectoryWithSnapshotFeature sf = getDirectoryWithSnapshotFeature();
     return sf != null ? sf.getDiffs() : null;
   }
-  
+
   @Override
   public INodeDirectoryAttributes getSnapshotINode(int snapshotId) {
     DirectoryWithSnapshotFeature sf = getDirectoryWithSnapshotFeature();
     return sf == null ? this : sf.getDiffs().getSnapshotINode(snapshotId, this);
   }
-  
+
   @Override
   public String toDetailString() {
     DirectoryWithSnapshotFeature sf = this.getDirectoryWithSnapshotFeature();
-    return super.toDetailString() + (sf == null ? "" : ", " + sf.getDiffs()); 
+    return super.toDetailString() + (sf == null ? "" : ", " + sf.getDiffs());
   }
 
   public DirectorySnapshottableFeature getDirectorySnapshottableFeature() {
@@ -397,23 +403,23 @@ public class INodeDirectory extends INodeWithAdditionalFields
         || oldChild == children.get(i).asReference().getReferredINode()
             .asReference().getReferredINode());
     oldChild = children.get(i);
-    
+
     if (oldChild.isReference() && newChild.isReference()) {
       // both are reference nodes, e.g., DstReference -> WithName
-      final INodeReference.WithCount withCount = 
+      final INodeReference.WithCount withCount =
           (WithCount) oldChild.asReference().getReferredINode();
       withCount.removeReference(oldChild.asReference());
     }
     children.set(i, newChild);
     */
     newChild.setParent(getId());
-    
+
     // replace the instance in the created list of the diff list
     DirectoryWithSnapshotFeature sf = this.getDirectoryWithSnapshotFeature();
     if (sf != null) {
       sf.getDiffs().replaceCreatedChild(oldChild, newChild);
     }
-    
+
     // update the inodeMap
     if (inodeMap != null) {
       inodeMap.put(newChild);
@@ -484,11 +490,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
    */
   public INode getChild(byte[] name, int snapshotId) {
     DirectoryWithSnapshotFeature sf;
-    if (snapshotId == Snapshot.CURRENT_STATE_ID || 
-        (sf = getDirectoryWithSnapshotFeature()) == null) {
+    if (snapshotId == Snapshot.CURRENT_STATE_ID
+        || (sf = getDirectoryWithSnapshotFeature()) == null) {
       return FSDirectory.getInstance().getInode(this.getId(), DFSUtil.bytes2String(name));
     }
-    
+
     return sf.getChild(this, name, snapshotId);
   }
 
@@ -514,7 +520,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       return Snapshot.CURRENT_STATE_ID;
     }
   }
-  
+
   /**
    * @param snapshotId
    *          if it is not {@link Snapshot#CURRENT_STATE_ID}, get the result
@@ -532,19 +538,27 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
     return sf.getChildrenList(this, snapshotId);
   }
-  
+
+  public HashSet<Long> getCurrentChildrenList2() {
+    if (children.isEmpty()) {
+      children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
+    }
+    return children;
+  }
+
   private ReadOnlyList<INode> getCurrentChildrenList() {
     if (children.isEmpty()) {
       children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
     }
     List<INode> childs = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
-    for(long id : children){
+    for (long id : children) {
       INode child = FSDirectory.getInstance().getInode(id);
-      if(child != null) {
+      if (child != null) {
         childs.add(child);
       }
     }
-    return childs == null ? ReadOnlyList.Util.<INode> emptyList()
+    return childs == null
+        ? ReadOnlyList.Util.<INode>emptyList()
         : ReadOnlyList.Util.asReadOnlyList(childs);
   }
 
@@ -564,7 +578,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
     return -nextPos;
   }
-  
+
   /**
    * Remove the specified child from this directory.
    */
@@ -577,10 +591,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
       return sf.removeChild(this, child, latestSnapshotId);
     }
-    
+
     return removeChild(child);
   }
-  
+
   /** 
    * Remove the specified child from this directory.
    * The basic remove method which actually calls children.remove(..).
@@ -629,6 +643,96 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return true;
   }
 
+  public void localRename(INode node) {
+    String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    if (node.isDirectory()) {
+      INodeDirectory inode = node.asDirectory().copyINodeDirectory();
+
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getCache()
+          .put(
+              new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)), inode);
+
+      // inode.updateINodeDirectory();
+      INodeKeyedObjects.getBackupSet().add(inode.getId());
+
+      // rename directory - logging
+      FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
+    } else {
+      INodeFile inode = node.asFile().copyINodeFile();
+      FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
+      if (uc != null) {
+        uc.updateFileUnderConstruction(inode.getId());
+      }
+
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getCache()
+          .put(
+              new CompositeKey(inode.getId(), new ImmutablePair<>(getId(), name)),
+              inode);
+
+      // inode.updateINodeFile();
+      INodeKeyedObjects.getBackupSet().add(inode.getId());
+
+      // rename file - logging
+      FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, true);
+    }
+  }
+
+  public void remoteRename(INode node, String address) {
+    String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    if (node.isDirectory()) {
+      INodeDirectory inode = node.asDirectory().copyINodeDirectory();
+      inode.setId(node.getId() + NameNode.getId());
+
+      // update immediate childs's parent id
+      HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
+      for (long id : childs) {
+        INode child = FSDirectory.getInstance().getInode(id);
+        if (child != null) {
+          child.setParent(inode.getId());
+          if (child.isDirectory()) {
+            child.asDirectory().updateINodeDirectory();
+            INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
+            FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)child);
+          } else {
+            child.asFile().updateINodeFile();
+            INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
+            FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)child, true, true);
+          }
+        }
+      }
+
+      // invalidate old inode
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getRemoveSet().add(node.getId());
+      // local sync log
+      FSDirectory.getInstance()
+          .getEditLog()
+          .logDelete(null, node.getId(), inode.getModificationTime(), true);
+
+      // remote logging
+      FSDirectory.getInstance().getEditLog().remoteLogMkDir(inode, address);
+    } else {
+      INodeFile inode = node.asFile().copyINodeFile();
+      inode.setId(node.getId() + NameNode.getId());
+      FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
+      if (uc != null) {
+        uc.updateFileUnderConstruction(inode.getId());
+      }
+
+      // invalidate old inode
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
+      INodeKeyedObjects.getRemoveSet().add(node.getId());
+      // local sync log
+      FSDirectory.getInstance()
+          .getEditLog()
+          .logDelete(null, node.getId(), inode.getModificationTime(), true);
+
+      FSDirectory.getInstance().getEditLog().remoteLogOpenFile(inode, address);
+    }
+  }
+
   public boolean addChild(INode node) {
     node.setParent(getId());
     children.add(node.getId());
@@ -638,10 +742,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return true;
   }
 
-
   // for rename inode
-  public boolean addChild(INode node, final String name,
-      final boolean setModTime, final int latestSnapshotId) {
+  public boolean addChild(
+      INode node, final String name, final boolean setModTime,
+      final int latestSnapshotId, final String existingPath) {
 
     if (isInLatestSnapshot(latestSnapshotId)) {
       // create snapshot feature if necessary
@@ -660,23 +764,31 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
       node.setParent(getId());
       node.setLocalName(DFSUtil.string2Bytes(name));
-      // update object cache
-      if (node.isDirectory()) {
-        inode = node.asDirectory().copyINodeDirectory();
-        INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long)node.getId());
-        inode.asDirectory().updateINodeDirectory();
-        INodeKeyedObjects.getCache().put(new CompositeKey(inode.getId(),
-          new ImmutablePair<>(getId(), name)), inode.asDirectory());
-      } else {
-        inode = node.asFile().copyINodeFile();
-        INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long)node.getId());
-        inode.asFile().updateINodeFile();
-        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
-        if (uc != null) {
-          uc.updateFileUnderConstruction(inode.getId());
+
+      // get mount point from zookeeper
+      boolean local = true;
+      String[] address = new String[2];
+      String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+      if (enableNNProxy != null) {
+        if (Boolean.parseBoolean(enableNNProxy)) {
+          String NNProxyQuorum = System.getenv("NNPROXY_ZK_QUORUM");
+          String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+          if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
+            local = false;
+            try {
+              String mpoint = LookupMount.exec(existingPath);
+              address = mpoint.replace("hdfs://","").split(":");
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+          }
         }
-        INodeKeyedObjects.getCache().put(new CompositeKey(inode.getId(),
-          new ImmutablePair<>(getId(), name)), inode.asFile());
+      }
+
+      if (local) {
+        localRename(node);
+      } else {
+        remoteRename(node, address[0]);
       }
     }
 

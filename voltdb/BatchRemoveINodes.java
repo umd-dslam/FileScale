@@ -50,7 +50,6 @@ public class BatchRemoveINodes extends VoltProcedure {
     } else {
       List<Long> set = new ArrayList<>();
       for (int i = 0; i < ids.length; ++i) {
-        voltQueueSQL(sql2, ids[i]);
         set.add(ids[i]);
       }
 
@@ -59,12 +58,13 @@ public class BatchRemoveINodes extends VoltProcedure {
         long cid = set.get(i);
         i++;
         voltQueueSQL(sql1, cid);
-        VoltTable[] results = voltExecuteSQL();
-        if (results[0].getRowCount() < 1) {
+        VoltTable[] res = voltExecuteSQL();
+        int count = res[0].getRowCount();
+        if (count < 1) {
           continue;
         }
-        for (int j = 0; j < results[0].getRowCount(); ++j) {
-          set.add(results[0].fetchRow(j).getLong(0));
+        for (int j = 0; j < count; ++j) {
+          set.add(res[0].fetchRow(j).getLong(0));
         }
       }
 

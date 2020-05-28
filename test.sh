@@ -23,5 +23,5 @@ rm -rf ~/hadoop/data/*
 rm -rf ~/hadoop/name/*
 rm -rf ~/hadoop/tmp/*
 rm -rf logs/*
-./bin/hdfs namenode -format
+./bin/hdfs namenode -format -force
 ./sbin/start-dfs.sh

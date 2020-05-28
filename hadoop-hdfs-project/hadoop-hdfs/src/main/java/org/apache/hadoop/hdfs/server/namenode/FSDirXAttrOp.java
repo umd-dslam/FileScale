@@ -87,6 +87,7 @@ class FSDirXAttrOp {
     } finally {
       fsd.writeUnlock();
     }
+    fsd.getEditLog().logSetXAttrs(src, xAttrs, logRetryCache);
     return fsd.getAuditFileInfo(iip);
   }
 

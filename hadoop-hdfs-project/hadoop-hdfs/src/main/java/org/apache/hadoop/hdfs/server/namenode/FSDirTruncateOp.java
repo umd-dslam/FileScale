@@ -146,6 +146,8 @@ final class FSDirTruncateOp {
       fsd.writeUnlock();
     }
 
+    fsn.getEditLog().logTruncate(src, clientName, clientMachine, newLength,
+        mtime, truncateBlock);
     return new TruncateResult(onBlockBoundary, fsd.getAuditFileInfo(iip));
   }
 

@@ -239,6 +239,10 @@ public abstract class FSEditLogOp {
     return txid;
   }
 
+  public FSEditLogOpCodes getOpCode() {
+    return opCode;
+  }
+
   public String getTransactionIdStr() {
     return (txid == HdfsServerConstants.INVALID_TXID) ? "(none)" : "" + txid;
   }
@@ -455,6 +459,10 @@ public abstract class FSEditLogOp {
       erasureCodingPolicyId = ErasureCodeConstants.REPLICATION_POLICY_ID;
     }
 
+    long getInodeId() {
+      return inodeId;
+    }
+
     <T extends AddCloseOp> T setInodeId(long inodeId) {
       this.inodeId = inodeId;
       return (T)this;
@@ -547,24 +555,28 @@ public abstract class FSEditLogOp {
     @Override
     public void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
-      FSImageSerialization.writeString(path, out);
-      // FSImageSerialization.writeShort(replication, out);
-      // FSImageSerialization.writeLong(mtime, out);
-      // FSImageSerialization.writeLong(atime, out);
-      // FSImageSerialization.writeLong(blockSize, out);
+      // FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeShort(replication, out);
+      FSImageSerialization.writeLong(mtime, out);
+      FSImageSerialization.writeLong(atime, out);
+      FSImageSerialization.writeLong(blockSize, out);
       new ArrayWritable(Block.class, blocks).write(out);
-      // permissions.write(out);
+      permissions.write(out);
 
       if (this.opCode == OP_ADD) {
         AclEditLogUtil.write(aclEntries, out);
         XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
         b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
         b.build().writeDelimitedTo(out);
-        FSImageSerialization.writeString(clientName,out);
-        FSImageSerialization.writeString(clientMachine,out);
+        if (clientName != null) {
+          FSImageSerialization.writeString(clientName,out);
+        }
+        if (clientMachine != null) {
+          FSImageSerialization.writeString(clientMachine,out);
+        }
         FSImageSerialization.writeBoolean(overwrite, out);
-        // FSImageSerialization.writeByte(storagePolicyId, out);
-        // FSImageSerialization.writeByte(erasureCodingPolicyId, out);
+        FSImageSerialization.writeByte(storagePolicyId, out);
+        FSImageSerialization.writeByte(erasureCodingPolicyId, out);
         // write clientId and callId
         writeRpcIds(rpcClientId, rpcCallId, out);
       }
@@ -1497,6 +1509,7 @@ public abstract class FSEditLogOp {
     int length;
     String path;
     long timestamp;
+    long inodeId;
 
     DeleteOp() {
       super(OP_DELETE);
@@ -1511,6 +1524,7 @@ public abstract class FSEditLogOp {
       length = 0;
       path = null;
       timestamp = 0L;
+      inodeId = 0L;
     }
 
     DeleteOp setPath(String path) {
@@ -1523,12 +1537,22 @@ public abstract class FSEditLogOp {
       return this;
     }
 
+    DeleteOp setInodeId(long inodeId) {
+      this.inodeId = inodeId;
+      return this;
+    }
+
+    long getInodeId() {
+      return inodeId;
+    }
+
     @Override
     public 
     void writeFields(DataOutputStream out) throws IOException {
-      FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeLong(inodeId, out);
+      // FSImageSerialization.writeString(path, out);
       FSImageSerialization.writeLong(timestamp, out);
-      writeRpcIds(rpcClientId, rpcCallId, out);
+      writeRpcIds(rpcClientId, rpcCallId, out); 
     }
 
     @Override
@@ -1540,6 +1564,13 @@ public abstract class FSEditLogOp {
         if (this.length != 2) {
           throw new IOException("Incorrect data format. " + "delete operation.");
         }
+      }
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.ADD_INODE_ID, logVersion)) {
+        this.inodeId = FSImageSerialization.readLong(in);
+      } else {
+        // This id should be updated when this editLogOp is applied
+        this.inodeId = HdfsConstants.GRANDFATHER_INODE_ID;
       }
       this.path = FSImageSerialization.readString(in);
       if (NameNodeLayoutVersion.supports(
@@ -1566,6 +1597,8 @@ public abstract class FSEditLogOp {
       builder.append(opCode);
       builder.append(", txid=");
       builder.append(txid);
+      builder.append(", inodeId=");
+      builder.append(inodeId);
       builder.append("]");
       return builder.toString();
     }
@@ -1577,6 +1610,8 @@ public abstract class FSEditLogOp {
       XMLUtils.addSaxString(contentHandler, "PATH", path);
       XMLUtils.addSaxString(contentHandler, "TIMESTAMP",
           Long.toString(timestamp));
+      XMLUtils.addSaxString(contentHandler, "INODEID",
+          Long.toString(inodeId));
       appendRpcIdsToXml(contentHandler, rpcClientId, rpcCallId);
     }
     
@@ -1584,7 +1619,7 @@ public abstract class FSEditLogOp {
       this.length = Integer.parseInt(st.getValue("LENGTH"));
       this.path = st.getValue("PATH");
       this.timestamp = Long.parseLong(st.getValue("TIMESTAMP"));
-      
+      this.inodeId = Long.parseLong(st.getValue("INODEID"));
       readRpcIdsFromXml(st);
     }
   }
@@ -1616,6 +1651,10 @@ public abstract class FSEditLogOp {
       permissions = null;
       aclEntries = null;
       xAttrs = null;
+    }
+
+    long getInodeId() {
+      return inodeId;
     }
 
     MkdirOp setInodeId(long inodeId) {
@@ -1652,10 +1691,10 @@ public abstract class FSEditLogOp {
     public 
     void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeLong(inodeId, out);
-      FSImageSerialization.writeString(path, out);
-      // FSImageSerialization.writeLong(timestamp, out); // mtime
-      // FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
-      // permissions.write(out);
+      // FSImageSerialization.writeString(path, out);
+      FSImageSerialization.writeLong(timestamp, out); // mtime
+      FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
+      permissions.write(out);
       AclEditLogUtil.write(aclEntries, out);
       XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
       b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
@@ -5058,10 +5097,10 @@ public abstract class FSEditLogOp {
      */
     private static final int OP_ID_LENGTH = 1;
 
-    /**
-     * The checksum length.
-     *
-     * Not included in the stored length.
+    /**	
+     * The checksum length.	
+     *	
+     * Not included in the stored length.	
      */
     private static final int CHECKSUM_LENGTH = 4;
 
@@ -5132,7 +5171,7 @@ public abstract class FSEditLogOp {
       if (opLength > maxOpSize) {
         throw new IOException("Op " + (int)opCodeByte + " has size " +
             opLength + ", but maxOpSize = " + maxOpSize);
-      } else  if (opLength < MIN_OP_LENGTH) {
+      } else if (opLength < MIN_OP_LENGTH) {
         throw new IOException("Op " + (int)opCodeByte + " has size " +
             opLength + ", but the minimum op size is " + MIN_OP_LENGTH);
       }

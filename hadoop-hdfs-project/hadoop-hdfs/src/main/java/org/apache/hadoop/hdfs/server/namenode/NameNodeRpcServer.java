@@ -259,7 +259,10 @@ public class NameNodeRpcServer implements NamenodeProtocols {
   /** The RPC server that listens to requests from clients */
   protected final RPC.Server clientRpcServer;
   protected final InetSocketAddress clientRpcAddress;
-  
+
+  /** The RPC server that listens to logging requests from other namenodes */
+  protected final RPC.Server editLogRpcServer;
+
   private final String minimumDataNodeVersion;
 
   private final String defaultECPolicyName;
@@ -545,6 +548,16 @@ public class NameNodeRpcServer implements NamenodeProtocols {
         this.clientRpcServer.addAuxiliaryListener(auxiliaryPort);
       }
     }
+
+    // FSEditLog RPC Server
+    editLogRpcServer = new RPC.Builder(conf).setProtocol(FSEditLogProtocol.class)
+      .setInstance(new FSEditLogProtocolImpl())
+      .setBindAddress("0.0.0.0")
+      .setPort(10086)
+      .setNumHandlers(handlerCount)
+      .setVerbose(false)
+      .setSecretManager(namesystem.getDelegationTokenSecretManager())
+      .build();
   }
 
   /** Allow access to the lifeline RPC server for testing */
@@ -570,6 +583,7 @@ public class NameNodeRpcServer implements NamenodeProtocols {
    */
   void start() {
     clientRpcServer.start();
+    editLogRpcServer.start();
     if (serviceRpcServer != null) {
       serviceRpcServer.start();      
     }

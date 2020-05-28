@@ -22,6 +22,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
@@ -31,7 +33,14 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.Writer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IOUtils;
-
+import org.apache.hadoop.hdfs.server.namenode.INodeKeyedObjects;
+import org.apache.hadoop.hdfs.db.DatabaseINode;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.DeleteOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.AddOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_DELETE;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_ADD;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_MKDIR;
 import com.google.common.base.Preconditions;
 
 /**
@@ -93,7 +102,9 @@ public class EditsDoubleBuffer {
    */
   public void flushTo(OutputStream out) throws IOException {
     bufReady.writeTo(out); // write data to file
-    bufReady.reset(); // erase all data in the buffer
+    // We want to separate logging and metadata flush 
+    // bufReady.syncDB();  // write data to database
+    bufReady.reset();   // erase all data in the buffer
   }
   
   public boolean shouldForceSync() {
@@ -157,6 +168,83 @@ public class EditsDoubleBuffer {
       }
       writer.writeOp(op);
       numTxns++;
+    }
+
+    public void syncDB() {
+      byte[] buf = this.getData();
+      byte[] remainingRawEdits = Arrays.copyOfRange(buf, 0, this.size());
+      ByteArrayInputStream bis = new ByteArrayInputStream(remainingRawEdits);
+      DataInputStream dis = new DataInputStream(bis);
+      FSEditLogLoader.PositionTrackingInputStream tracker =
+          new FSEditLogLoader.PositionTrackingInputStream(bis);
+      FSEditLogOp.Reader reader = FSEditLogOp.Reader.create(dis, tracker,
+          NameNodeLayoutVersion.CURRENT_LAYOUT_VERSION);
+      FSEditLogOp op;
+      LOG.info("The edits buffer is " + size() + " bytes long with " + numTxns +
+          " unflushed transactions.");
+      try {
+        List<Long> longAttr = new ArrayList<>();
+        List<String> strAttr = new ArrayList<>();
+  
+        List<Long> fileIds = new ArrayList<>();
+        List<String> fileAttr = new ArrayList<>();
+
+        List<Long> removeIds = new ArrayList<>();
+        while ((op = reader.readOp(false)) != null) {
+          if (op.getOpCode() == OP_ADD || op.getOpCode() == OP_MKDIR) {
+            INode inode;
+            if (op.getOpCode() == OP_ADD) {
+              AddOp addop = (AddOp)op;
+              inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, addop.getInodeId());
+            } else {
+              MkdirOp mkdirop = (MkdirOp)op;
+              inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, mkdirop.getInodeId());              
+            }
+            strAttr.add(inode.getLocalName());
+            longAttr.add(inode.getParentId());
+            longAttr.add(inode.getId());
+            longAttr.add(inode.getModificationTime());
+            longAttr.add(inode.getAccessTime());
+            longAttr.add(inode.getPermissionLong());
+            if (inode.isDirectory()) {
+              longAttr.add(0L);
+            } else {
+              longAttr.add(inode.asFile().getHeaderLong());
+              FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+              if (uc != null) {
+                fileIds.add(inode.getId());
+                fileAttr.add(uc.getClientName(inode.getId()));
+                fileAttr.add(uc.getClientMachine(inode.getId()));
+              }
+            }
+          } else if (op.getOpCode() == OP_DELETE) {
+            DeleteOp deleteop = (DeleteOp)op;
+            removeIds.add(deleteop.getInodeId());
+          }
+        }
+
+        // Sync create files in DB
+        try {
+          if (strAttr.size() > 0) {
+            DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        // Sync delete files in DB
+        try {
+          if (removeIds.size() > 0) {
+            DatabaseINode.batchRemoveINodes(removeIds);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } catch (IOException ioe) {
+        // If any exceptions, print raw bytes and stop.
+        LOG.warn("Unable to sync remaining ops. Remaining raw bytes: " +
+            Hex.encodeHexString(remainingRawEdits), ioe);
+      }
     }
     
     @Override

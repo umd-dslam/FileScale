@@ -180,6 +180,11 @@ public abstract class INodeReference extends INode {
   public final long getId() {
     return referred.getId();
   }
+
+  @Override
+  public final void setId(Long id) {
+    referred.setId(id);
+  }
   
   @Override
   public final PermissionStatus getPermissionStatus(int snapshotId) {

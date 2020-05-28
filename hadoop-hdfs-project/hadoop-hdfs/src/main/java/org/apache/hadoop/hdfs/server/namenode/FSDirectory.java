@@ -111,6 +111,7 @@ public class FSDirectory implements Closeable {
   private static INodeDirectory createRoot(FSNamesystem namesystem) {
     INodeDirectory r = new INodeDirectory(INodeId.ROOT_INODE_ID, INodeDirectory.ROOT_NAME,
       namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L);
+    r.setParent(0L);
     INodeKeyedObjects.getCache().put(new CompositeKey((Long)INodeId.ROOT_INODE_ID,
       new ImmutablePair<>(0L, r.getLocalName())),
       r);
@@ -158,7 +159,7 @@ public class FSDirectory implements Closeable {
       new HdfsFileStatus.Builder().build();
 
   private static FSDirectory instance;
-        
+
   INodeDirectory rootDir;
   private final FSNamesystem namesystem;
   private volatile boolean skipQuotaCheck = false; //skip while consuming edits
@@ -398,6 +399,7 @@ public class FSDirectory implements Closeable {
     nameCache = new NameCache<ByteArray>(threshold);
     namesystem = ns;
     this.editLog = ns.getEditLog();
+    // this.editLog.logMkDir("/", rootDir);
     ezManager = new EncryptionZoneManager(this, conf);
 
     this.quotaInitThreads = conf.getInt(
@@ -1342,7 +1344,7 @@ public class FSDirectory implements Closeable {
     // boolean isRename = (inode.getParent() != null);
 
     final boolean added = parent.addChild(inode, name, true,
-        existing.getLatestSnapshotId());
+        existing.getLatestSnapshotId(), existing.getPath());
     if (!added) {
       // updateCountNoQuotaCheck(existing, pos, counts.negation());
       return null;

@@ -77,6 +77,8 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   /** Get inode id */
   public abstract long getId();
 
+  public abstract void setId(Long id);
+
   /**
    * Check whether this is the root inode.
    */

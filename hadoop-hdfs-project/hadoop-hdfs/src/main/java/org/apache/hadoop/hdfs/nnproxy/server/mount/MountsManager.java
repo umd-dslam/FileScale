@@ -70,6 +70,14 @@ public class MountsManager extends AbstractService {
     super.serviceInit(conf);
     String zkConnectString = conf.get(ProxyConfig.MOUNT_TABLE_ZK_QUORUM);
     zkMountTablePath = conf.get(ProxyConfig.MOUNT_TABLE_ZK_PATH);
+    if (zkConnectString == null) {
+        zkConnectString = System.getenv("NNPROXY_ZK_QUORUM");
+    }
+    if (zkMountTablePath == null) {
+        zkMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+    }
+    assert zkConnectString != null;
+    assert zkMountTablePath != null;
     int sessionTimeout =
         conf.getInt(
             ProxyConfig.MOUNT_TABLE_ZK_SESSION_TIMEOUT,

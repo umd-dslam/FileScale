@@ -43,7 +43,7 @@ public class INodeKeyedObjects {
     return concurrentRemoveSet;
   }
 
-  public static void syncUpdateDB() {
+  public static void asyncUpdateDB() {
     // In HDFS, the default log buffer size is 512 * 1024 bytes, or 512 KB.
     // We assume that each object size is 512 bytes, then the size of
     // concurrentHashSet should be 1024 which only records INode Id.
@@ -137,7 +137,7 @@ public class INodeKeyedObjects {
     final Runnable updateToDB =
         new Runnable() {
           public void run() {
-            syncUpdateDB();
+            asyncUpdateDB();
           }
         };
 
@@ -171,10 +171,8 @@ public class INodeKeyedObjects {
       concurrentHashSet = ConcurrentHashMap.newKeySet();
       concurrentRemoveSet = ConcurrentHashMap.newKeySet();
 
-      String syncStr = System.getenv("SYNC_COMMAND_LOGGING");
-      if (syncStr == null || Boolean.parseBoolean(syncStr) == false) {
-        BackupSetToDB();
-      }
+      // async write updates to buffer
+      BackupSetToDB();
 
       // Assuming each INode has 600 bytes, then
       // 10000000 * 600 / 2^30 = 5.58 GB.
