@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -162,7 +163,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (nums != null) {
       childNums = Integer.parseInt(nums);
     }
-    filter = new CuckooFilter.Builder<CharSequence>(Funnels.stringFunnel(), childNums)
+    filter = new CuckooFilter.Builder<CharSequence>(Funnels.stringFunnel(Charset.defaultCharset()), childNums)
       .withFalsePositiveRate(0.01).withHashAlgorithm(Algorithm.Murmur3_32).build();
   }
 
