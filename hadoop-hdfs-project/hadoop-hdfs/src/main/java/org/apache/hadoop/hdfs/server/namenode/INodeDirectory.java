@@ -82,7 +82,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   private HashSet<Long> children = new HashSet<>();
 
-  public CuckooFilter<String> filter;
+  public CuckooFilter<CharSequence> filter;
 
   /** constructor */
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
@@ -162,7 +162,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (nums != null) {
       childNums = Integer.parseInt(nums);
     }
-    filter = new CuckooFilter.Builder<String>(Funnels.stringFunnel(), childNums)
+    filter = new CuckooFilter.Builder<CharSequence>(Funnels.stringFunnel(), childNums)
       .withFalsePositiveRate(0.01).withHashAlgorithm(Algorithm.Murmur3_32).build();
   }
 
