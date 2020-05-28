@@ -1,4 +1,4 @@
-package org.apache.hadoop.cuckoofilter4j;
+package com.google.common.hash;
 
 import java.io.Serializable;
 
