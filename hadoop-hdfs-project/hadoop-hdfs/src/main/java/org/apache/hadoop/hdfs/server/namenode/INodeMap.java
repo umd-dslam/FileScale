@@ -18,6 +18,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.db.*;
+import org.apache.hadoop.cuckoofilter4j;
 
 /** Storing all the {@link INode}s and maintaining the mapping between INode ID and INode. */
 public class INodeMap {
@@ -98,6 +99,10 @@ public class INodeMap {
         INodeKeyedObjects.getCache()
             .getIfPresent(Pair.class, new ImmutablePair<>((Long) parentId, childName));
     if (inode == null) {
+      INodeDirectory parent = get(parentId).asDirectory();
+      if (!parent.filter.mightContain(String.valueOf(parentId) + childName)) {
+        return null;
+      }
       DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parentId, childName);
       if (node == null) return null;
       byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
