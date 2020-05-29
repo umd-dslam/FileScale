@@ -111,6 +111,7 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <scope>provided</scope>
+      <version>19.0</version>
      </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
