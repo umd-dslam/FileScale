@@ -127,6 +127,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   // Note: only used by the loader of image file
   public INodeDirectory(long id) {
     super(id);
+    // FIXME: filter should be recovered from zookeeper or db.
+    initCuckooFilter();
   }
 
   /**
