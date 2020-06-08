@@ -912,6 +912,69 @@ public class NNThroughputBenchmark implements Tool {
   }
 
   /**
+   * Rename entire directory: /nnThroughputBenchmark/create.
+   */
+  class RenameDirStats extends OperationStatsBase {
+    // Operation types
+    static final String OP_RENAME_NAME = "renameDir";
+    static final String OP_RENAME_USAGE = "-op renameDir";
+
+    RenameDirStats(List<String> args) {
+      super();
+      parseArguments(args);
+      numOpsRequired = 1;
+      numThreads = 1;
+      keepResults = true;
+    }
+
+    @Override
+    String getOpName() {
+      return OP_RENAME_NAME;
+    }
+
+    @Override
+    void parseArguments(List<String> args) {
+      boolean ignoreUnrelatedOptions = verifyOpArgument(args);
+      if(args.size() > 2 && !ignoreUnrelatedOptions)
+        printUsage();
+    }
+
+    @Override
+    void generateInputs(int[] opsPerThread) throws IOException {
+      // do nothing
+    }
+
+    /**
+     * Does not require the argument
+     */
+    @Override
+    String getExecutionArgument(int daemonId) {
+      return null;
+    }
+
+    /**
+     * Rename entire benchmark directory.
+     */
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
+          false);
+      long start = Time.now();
+      clientProto.rename(BASE_DIR_NAME + "/create", BASE_DIR_NAME + "/rename");
+      long end = Time.now();
+      return end-start;
+    }
+
+    @Override
+    void printResults() {
+      LOG.info("--- " + getOpName() + " inputs ---");
+      LOG.info("Rename directory " + BASE_DIR_NAME + "/create");
+      printStats();
+    }
+  }
+
+  /**
    * Minimal data-node simulator.
    */
   private static class TinyDatanode implements Comparable<String> {
@@ -1440,6 +1503,7 @@ public class NNThroughputBenchmark implements Tool {
         + " | \n\t" + BlockReportStats.OP_BLOCK_REPORT_USAGE
         + " | \n\t" + ReplicationStats.OP_REPLICATION_USAGE
         + " | \n\t" + CleanAllStats.OP_CLEAN_USAGE
+        + " | \n\t" + RenameDirStats.OP_RENAME_USAGE
         + " | \n\t" + GENERAL_OPTIONS_USAGE
     );
     System.err.println();
@@ -1517,6 +1581,10 @@ public class NNThroughputBenchmark implements Tool {
           opStat = new ReplicationStats(args);
           ops.add(opStat);
         }
+      }
+      if(runAll || RenameDirStats.OP_RENAME_NAME.equals(type)) {
+        opStat = new RenameDirStats(args);
+        ops.add(opStat);
       }
       if(runAll || CleanAllStats.OP_CLEAN_NAME.equals(type)) {
         opStat = new CleanAllStats(args);

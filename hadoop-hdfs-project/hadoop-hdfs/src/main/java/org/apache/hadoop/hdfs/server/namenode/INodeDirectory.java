@@ -688,6 +688,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       INodeDirectory inode = node.asDirectory().copyINodeDirectory();
       inode.setId(node.getId() + NameNode.getId());
 
+      // TODO: using stored procedure to optimize and update the immediated childs
       // update immediate childs's parent id
       HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
       for (long id : childs) {
