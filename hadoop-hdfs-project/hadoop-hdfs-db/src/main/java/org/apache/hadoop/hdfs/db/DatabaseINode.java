@@ -555,7 +555,7 @@ public class DatabaseINode {
     }
   }
 
-  public static void setParents(final long[] ids, final long parent) {
+  public static void setParents(final Long[] ids, final long parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
@@ -566,16 +566,17 @@ public class DatabaseINode {
           e.printStackTrace();
         }
       } else {
-        Connection conn = obj.getConnection();
-        String sql = "UPDATE inodes SET parent = ? WHERE id = ?;";
-        PreparedStatement pst = conn.prepareStatement(sql);
-        if (int i = 0; i < ids.length; i++) {
-          pst.setLong(1, parent);
-          pst.setLong(2, ids[i]);
-          pst.addBatch();
-        }
-        pst.executeBatch();
-        pst.close();
+        // Connection conn = obj.getConnection();
+        // String sql = "UPDATE inodes SET parent = ? WHERE id = ?;";
+        // PreparedStatement pst = conn.prepareStatement(sql);
+        // if (int i = 0; i < ids.length; i++) {
+        //   pst.setLong(1, parent);
+        //   pst.setLong(2, ids[i]);
+        //   pst.addBatch();
+        // }
+        // pst.executeBatch();
+        // pst.close();
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
       }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {

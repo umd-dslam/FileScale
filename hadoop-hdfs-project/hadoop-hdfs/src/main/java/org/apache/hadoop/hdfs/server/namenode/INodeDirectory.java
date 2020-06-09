@@ -706,7 +706,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         }
       }
       // using a stored procedure to update childs' parent
-      long[] kids = childs.toArray(new Long[childs.size()]);
+      Long[] kids = childs.toArray(new Long[childs.size()]);
       DatabaseINode.setParents(kids, getId());
 
       // invalidate old inode
