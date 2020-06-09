@@ -555,6 +555,37 @@ public class DatabaseINode {
     }
   }
 
+  public static void setParents(final long[] ids, final long parent) {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetParents", ids, parent);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "UPDATE inodes SET parent = ? WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        if (int i = 0; i < ids.length; i++) {
+          pst.setLong(1, parent);
+          pst.setLong(2, ids[i]);
+          pst.addBatch();
+        }
+        pst.executeBatch();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("parent [UPDATE]: (childs," + parent + ")");
+    }
+  }
+
   public static void setName(final long id, final String name) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
