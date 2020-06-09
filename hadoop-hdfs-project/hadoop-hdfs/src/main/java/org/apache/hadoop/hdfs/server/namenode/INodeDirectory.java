@@ -688,23 +688,26 @@ public class INodeDirectory extends INodeWithAdditionalFields
       INodeDirectory inode = node.asDirectory().copyINodeDirectory();
       inode.setId(node.getId() + NameNode.getId());
 
+      // TODO: using stored procedure to optimize and update the immediated childs
       // update immediate childs's parent id
       HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
       for (long id : childs) {
         INode child = FSDirectory.getInstance().getInode(id);
         if (child != null) {
           child.setParent(inode.getId());
+          // write ahead log
           if (child.isDirectory()) {
-            child.asDirectory().updateINodeDirectory();
             INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
             FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)child);
           } else {
-            child.asFile().updateINodeFile();
             INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
             FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)child, true, true);
           }
         }
       }
+      // using a stored procedure to update childs' parent
+      Long[] kids = childs.toArray(new Long[childs.size()]);
+      DatabaseINode.setParents(kids, getId());
 
       // invalidate old inode
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
