@@ -120,8 +120,8 @@ import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 
-// import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildAclEntries;
-// import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildXAttrs;
+import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildAclEntries;
+import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildXAttrs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
@@ -820,8 +820,6 @@ public class FSEditLog implements LogsPurgeable {
   }
 
   public void remoteLogOpenFile(INodeFile newNode, String nameNodeAddress) {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-
     INodeSection.INodeFile.Builder b = INodeSection.INodeFile.newBuilder()
       .setAccessTime(newNode.getAccessTime())
       .setModificationTime(newNode.getModificationTime())
@@ -838,12 +836,12 @@ public class FSEditLog implements LogsPurgeable {
 
     AclFeature acl = newNode.getAclFeature();
     if (acl != null) {
-      // b.setAcl(buildAclEntries(acl));
+      b.setAcl(buildAclEntries(acl));
     }
 
     XAttrFeature xAttrFeature = newNode.getXAttrFeature();
     if (xAttrFeature != null) {
-      // b.setXAttrs(buildXAttrs(xAttrFeature));
+      b.setXAttrs(buildXAttrs(xAttrFeature));
     }
 
     BlockInfo[] blocks = newNode.getBlocks();
@@ -868,9 +866,8 @@ public class FSEditLog implements LogsPurgeable {
           .setId(newNode.getId())
           .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
           .setType(INodeSection.INode.Type.FILE).setFile(b).build();
-      r.writeDelimitedTo(out);
 
-      byte[] data = out.toByteArray();
+      byte[] data = r.toByteArray();
       FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
         FSEditLogProtocol.class, FSEditLogProtocol.versionID,
         new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
@@ -956,8 +953,6 @@ public class FSEditLog implements LogsPurgeable {
   }
 
   public void remoteLogMkDir(INodeDirectory newNode, String nameNodeAddress) {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-
     INodeSection.INodeDirectory.Builder b = INodeSection.INodeDirectory
       .newBuilder()
       .setModificationTime(newNode.getModificationTime())
@@ -965,12 +960,12 @@ public class FSEditLog implements LogsPurgeable {
 
     AclFeature f = newNode.getAclFeature();
     if (f != null) {
-      // b.setAcl(buildAclEntries(f));
+      b.setAcl(buildAclEntries(f));
     }
 
     XAttrFeature xAttrFeature = newNode.getXAttrFeature();
     if (xAttrFeature != null) {
-      // b.setXAttrs(buildXAttrs(xAttrFeature));
+      b.setXAttrs(buildXAttrs(xAttrFeature));
     }
 
     try {
@@ -978,9 +973,8 @@ public class FSEditLog implements LogsPurgeable {
         .setId(newNode.getId())
         .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
         .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b).build();
-      r.writeDelimitedTo(out);
 
-      byte[] data = out.toByteArray();
+      byte[] data = r.toByteArray();
 
       FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
         FSEditLogProtocol.class, FSEditLogProtocol.versionID,

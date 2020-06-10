@@ -63,6 +63,7 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import com.google.common.base.Preconditions;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 public class FSEditLogProtocolImpl implements FSEditLogProtocol {
 
@@ -157,7 +158,12 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
 
     @Override
     public void logEdit(byte[] in) throws IOException {
-        INodeSection.INode p = INodeSection.INode.parseFrom(in);
+        INodeSection.INode p = NULL;
+        try {
+            p = INodeSection.INode.parseFrom(in);
+        } catch (InvalidProtocolBufferException e) {
+            e.printStackTrace();
+        }
         INode n;
         switch (p.getType()) {
             case FILE:
