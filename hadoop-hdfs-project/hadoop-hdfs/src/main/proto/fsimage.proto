@@ -185,6 +185,8 @@ message INodeSection {
     optional INodeFile file = 4;
     optional INodeDirectory directory = 5;
     optional INodeSymlink symlink = 6;
+
+    optional uint64 parent = 7;
   }
 
   optional uint64 lastInodeId = 1;
