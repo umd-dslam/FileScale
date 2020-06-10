@@ -174,22 +174,30 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         switch (p.getType()) {
             case FILE:
                 INodeFile file = loadINodeFile(p);
-                file.getParent().addChild(file);
+                String filename = DFSUtil.bytes2String(file.getLocalNameBytes());
                 INodeKeyedObjects.getCache()
                 .put(
-                    new CompositeKey(file.getId(), new ImmutablePair<>(file.getParentId(),
-                    DFSUtil.bytes2String(file.getLocalNameBytes()))), file);
+                    new CompositeKey(file.getId(), new ImmutablePair<>(file.getParentId(), filename)), file);
                 INodeKeyedObjects.getBackupSet().add(file.getId());
                 FSDirectory.getInstance().getEditLog().logOpenFile(null, file, true, false);
+                INodeDirectory dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, file.getParentId()); 
+                if (dir != null) {
+                    dir.addChild(file);
+                    dir.filter.put(String.valueOf(file.getId()) + filename);
+                }
             case DIRECTORY:
                 INodeDirectory inode = loadINodeDirectory(p);
-                inode.getParent().addChild(inode);
+                String dirname = DFSUtil.bytes2String(inode.getLocalNameBytes());
                 INodeKeyedObjects.getCache()
                 .put(
-                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(),
-                    DFSUtil.bytes2String(inode.getLocalNameBytes()))), inode);
+                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(), dirname)), inode);
                 INodeKeyedObjects.getBackupSet().add(inode.getId());
                 FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
+                INodeDirectory dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, inode.getParentId()); 
+                if (dir != null) {
+                    dir.addChild(inode);
+                    dir.filter.put(String.valueOf(inode.getId()) + filename);
+                }
             default:
                 break;
         }

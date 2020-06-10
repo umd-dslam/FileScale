@@ -555,7 +555,7 @@ public class DatabaseINode {
     }
   }
 
-  public static void setParents(final Long[] ids, final long parent) {
+  public static void setParents(final long[] ids, final long parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
