@@ -133,6 +133,9 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
                 file.setBlock(file.numBlocks() - 1, ucBlk);
             }
         }
+
+        // set parent
+        file.setParent(n.getParent());
         return file;
     }
 
@@ -153,37 +156,48 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
       if (d.hasXAttrs()) {
         dir.addXAttrFeature(new XAttrFeature(dir.getId(), loadXAttrs(d.getXAttrs(), null)));
       }
+
+      // set parent
+      dir.setParent(n.getParent());
       return dir;
     }
 
     @Override
     public void logEdit(byte[] in) throws IOException {
-        INodeSection.INode p = NULL;
+        INodeSection.INode p = null;
         try {
             p = INodeSection.INode.parseFrom(in);
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
         }
-        INode n;
+        INode dir;
         switch (p.getType()) {
             case FILE:
                 INodeFile file = loadINodeFile(p);
-                file.getParent().addChild(file);
+                String filename = DFSUtil.bytes2String(file.getLocalNameBytes());
                 INodeKeyedObjects.getCache()
                 .put(
-                    new CompositeKey(file.getId(), new ImmutablePair<>(file.getParentId(),
-                    DFSUtil.bytes2String(file.getLocalNameBytes()))), file);
+                    new CompositeKey(file.getId(), new ImmutablePair<>(file.getParentId(), filename)), file);
                 INodeKeyedObjects.getBackupSet().add(file.getId());
                 FSDirectory.getInstance().getEditLog().logOpenFile(null, file, true, false);
+                dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)file.getParentId()); 
+                if (dir != null) {
+                    dir.asDirectory().addChild(file);
+                    dir.asDirectory().filter.put(String.valueOf(file.getParentId()) + filename);
+                }
             case DIRECTORY:
                 INodeDirectory inode = loadINodeDirectory(p);
-                inode.getParent().addChild(inode);
+                String dirname = DFSUtil.bytes2String(inode.getLocalNameBytes());
                 INodeKeyedObjects.getCache()
                 .put(
-                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(),
-                    DFSUtil.bytes2String(inode.getLocalNameBytes()))), inode);
+                    new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(), dirname)), inode);
                 INodeKeyedObjects.getBackupSet().add(inode.getId());
                 FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
+                dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)inode.getParentId()); 
+                if (dir != null) {
+                    dir.asDirectory().addChild(inode);
+                    dir.asDirectory().filter.put(String.valueOf(inode.getParentId()) + dirname);
+                }
             default:
                 break;
         }

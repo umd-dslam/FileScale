@@ -99,10 +99,10 @@ public class INodeKeyedObjects {
           LOG.info("Propagate updated files/directories from cache to database.");
         }
         try {
-            List<Long> longAttr = new ArrayList<>();
-            List<String> strAttr = new ArrayList<>();
-            List<Long> fileIds = new ArrayList<>();
-            List<String> fileAttr = new ArrayList<>();
+          List<Long> longAttr = new ArrayList<>();
+          List<String> strAttr = new ArrayList<>();
+          List<Long> fileIds = new ArrayList<>();
+          List<String> fileAttr = new ArrayList<>();
           for (Long id : concurrentUpdateSet) {
             INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, id);
 
