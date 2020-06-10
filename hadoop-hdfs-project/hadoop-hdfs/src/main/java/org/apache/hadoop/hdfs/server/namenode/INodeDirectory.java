@@ -683,7 +683,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public void remoteRename(INode node, String address) {
-    String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    // String name = DFSUtil.bytes2String(node.getLocalNameBytes());
     if (node.isDirectory()) {
       INodeDirectory inode = node.asDirectory().copyINodeDirectory();
       inode.setId(node.getId() + NameNode.getId());

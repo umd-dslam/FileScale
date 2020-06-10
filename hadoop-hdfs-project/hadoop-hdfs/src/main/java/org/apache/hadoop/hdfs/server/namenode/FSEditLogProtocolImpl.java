@@ -133,6 +133,9 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
                 file.setBlock(file.numBlocks() - 1, ucBlk);
             }
         }
+
+        // set parent
+        file.setParent(f.getParent());
         return file;
     }
 
@@ -153,6 +156,9 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
       if (d.hasXAttrs()) {
         dir.addXAttrFeature(new XAttrFeature(dir.getId(), loadXAttrs(d.getXAttrs(), null)));
       }
+
+      // set parent
+      dir.setParent(d.getParent());
       return dir;
     }
 
