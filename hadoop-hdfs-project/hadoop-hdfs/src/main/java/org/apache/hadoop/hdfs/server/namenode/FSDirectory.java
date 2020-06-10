@@ -59,6 +59,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockStoragePolicySuite;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo.UpdatedReplicationInfo;
 import org.apache.hadoop.hdfs.server.namenode.sps.StoragePolicySatisfyManager;
+import org.apache.hadoop.hdfs.nnproxy.server.mount.MountsManager;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.util.ByteArray;
 import org.apache.hadoop.hdfs.util.EnumCounters;
 import org.apache.hadoop.hdfs.util.ReadOnlyList;
@@ -210,6 +212,7 @@ public class FSDirectory implements Closeable {
   private final String supergroup;
   private final INodeId inodeId;
 
+  private final MountsManager mountsManager;
   private final FSEditLog editLog;
 
   private HdfsFileStatus[] reservedStatuses;
@@ -407,6 +410,11 @@ public class FSDirectory implements Closeable {
         DFSConfigKeys.DFS_NAMENODE_QUOTA_INIT_THREADS_DEFAULT);
 
     initUsersToBypassExtProvider(conf);
+
+    // initialize a mount manager
+    mountsManager = new MountsManager();
+    mountsManager.init(new HdfsConfiguration());
+    mountsManager.start();
   }
 
   private void initUsersToBypassExtProvider(Configuration conf) {
@@ -494,6 +502,10 @@ public class FSDirectory implements Closeable {
         .path(RAW)
         .build();
     reservedStatuses = new HdfsFileStatus[] {inodes, raw};
+  }
+
+  public MountsManager getMountsManager() {
+    return mountsManager;
   }
 
   FSNamesystem getFSNamesystem() {

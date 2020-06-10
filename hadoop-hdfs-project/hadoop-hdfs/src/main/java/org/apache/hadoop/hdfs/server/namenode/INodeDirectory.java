@@ -782,7 +782,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
           if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
             local = false;
             try {
-              String mpoint = LookupMount.exec(existingPath);
+              // LOG.info(existingPath + " : " + mpoint);
+              String mpoint = FSDirectory.getInstance().getMountsManager().resolve(existingPath);
               address = mpoint.replace("hdfs://","").split(":");
             } catch (Exception e) {
               e.printStackTrace();
