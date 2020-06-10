@@ -170,7 +170,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
         }
-        INode n;
+        INode dir;
         switch (p.getType()) {
             case FILE:
                 INodeFile file = loadINodeFile(p);
@@ -180,10 +180,10 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
                     new CompositeKey(file.getId(), new ImmutablePair<>(file.getParentId(), filename)), file);
                 INodeKeyedObjects.getBackupSet().add(file.getId());
                 FSDirectory.getInstance().getEditLog().logOpenFile(null, file, true, false);
-                INodeDirectory dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, file.getParentId()); 
+                dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)file.getParentId()); 
                 if (dir != null) {
-                    dir.addChild(file);
-                    dir.filter.put(String.valueOf(file.getId()) + filename);
+                    dir.asDirectory().addChild(file);
+                    dir.asDirectory().filter.put(String.valueOf(file.getId()) + filename);
                 }
             case DIRECTORY:
                 INodeDirectory inode = loadINodeDirectory(p);
@@ -193,10 +193,10 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
                     new CompositeKey(inode.getId(), new ImmutablePair<>(inode.getParentId(), dirname)), inode);
                 INodeKeyedObjects.getBackupSet().add(inode.getId());
                 FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
-                INodeDirectory dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, inode.getParentId()); 
+                dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)inode.getParentId()); 
                 if (dir != null) {
-                    dir.addChild(inode);
-                    dir.filter.put(String.valueOf(inode.getId()) + filename);
+                    dir.asDirectory().addChild(inode);
+                    dir.asDirectory().filter.put(String.valueOf(inode.getId()) + filename);
                 }
             default:
                 break;

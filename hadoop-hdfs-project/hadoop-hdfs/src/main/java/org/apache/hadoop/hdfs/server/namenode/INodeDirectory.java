@@ -714,7 +714,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       // invalidate old inode
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldParent);
       CompletableFuture.runAsync(() -> {
-        DatabaseINode.removeINodeNoRecursive(oldParent));
+        DatabaseINode.removeINodeNoRecursive(oldParent);
       }, Database.getInstance().getExecutorService());
 
       // local sync log
