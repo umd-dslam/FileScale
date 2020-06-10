@@ -135,7 +135,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         }
 
         // set parent
-        file.setParent(f.getParent());
+        file.setParent(n.getParent());
         return file;
     }
 
@@ -158,7 +158,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
       }
 
       // set parent
-      dir.setParent(d.getParent());
+      dir.setParent(n.getParent());
       return dir;
     }
 
