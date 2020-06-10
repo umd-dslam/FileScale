@@ -404,7 +404,7 @@ public final class FSImageFormatPBINode {
       return n.getPermissionLong();
     }
 
-    private static AclFeatureProto.Builder buildAclEntries(AclFeature f) {
+    public static AclFeatureProto.Builder buildAclEntries(AclFeature f) {
       AclFeatureProto.Builder b = AclFeatureProto.newBuilder();
       for (int pos = 0, e; pos < f.getEntriesSize(); pos++) {
         e = f.getEntryAt(pos);
@@ -413,7 +413,7 @@ public final class FSImageFormatPBINode {
       return b;
     }
 
-    private static XAttrFeatureProto.Builder buildXAttrs(XAttrFeature f) {
+    public static XAttrFeatureProto.Builder buildXAttrs(XAttrFeature f) {
       XAttrFeatureProto.Builder b = XAttrFeatureProto.newBuilder();
       for (XAttr a : f.getXAttrs()) {
         XAttrCompactProto.Builder xAttrCompactBuilder = XAttrCompactProto.
