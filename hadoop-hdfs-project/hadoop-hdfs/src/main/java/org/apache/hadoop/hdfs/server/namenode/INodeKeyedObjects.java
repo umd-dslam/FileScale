@@ -17,9 +17,10 @@ import org.slf4j.LoggerFactory;
 public class INodeKeyedObjects {
   private static IndexedCache<CompositeKey, INode> cache;
 
-  private static Set<Long> concurrentHashSet;
+  private static Set<Long> concurrentUpdateSet;
   private static Set<Long> concurrentRemoveSet;
   private static long preRemoveSize = 0;
+  private static long preUpdateSize = 0;
 
   private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -28,11 +29,11 @@ public class INodeKeyedObjects {
   INodeKeyedObjects() {}
 
   public static Set<Long> getBackupSet() {
-    if (concurrentHashSet == null) {
+    if (concurrentUpdateSet == null) {
       ConcurrentHashMap<Long, Integer> map = new ConcurrentHashMap<>();
-      concurrentHashSet = map.newKeySet();
+      concurrentUpdateSet = map.newKeySet();
     }
-    return concurrentHashSet;
+    return concurrentUpdateSet;
   }
 
   public static Set<Long> getRemoveSet() {
@@ -46,12 +47,13 @@ public class INodeKeyedObjects {
   public static void asyncUpdateDB() {
     // In HDFS, the default log buffer size is 512 * 1024 bytes, or 512 KB.
     // We assume that each object size is 512 bytes, then the size of
-    // concurrentHashSet should be 1024 which only records INode Id.
+    // concurrentUpdateSet should be 1024 which only records INode Id.
     // Note: Using INode Id, it's easy to find INode object in cache.
     int i = 0;
     final int num = 1024;
-    if (concurrentHashSet.size() >= num) {
-      Iterator<Long> iterator = concurrentHashSet.iterator();
+    long updateSize = concurrentUpdateSet.size();
+    if (updateSize >= num) {
+      Iterator<Long> iterator = concurrentUpdateSet.iterator();
       if (LOG.isInfoEnabled()) {
         LOG.info("Sync files/directories from cache to database.");
       }
@@ -91,7 +93,47 @@ public class INodeKeyedObjects {
       } catch (Exception e) {
         e.printStackTrace();
       }
+    } else {
+      if (updateSize > 0 && preUpdateSize == updateSize) {
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Propagate updated files/directories from cache to database.");
+        }
+        try {
+            List<Long> longAttr = new ArrayList<>();
+            List<String> strAttr = new ArrayList<>();
+            List<Long> fileIds = new ArrayList<>();
+            List<String> fileAttr = new ArrayList<>();
+          for (Long id : concurrentUpdateSet) {
+            INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, id);
+
+            strAttr.add(inode.getLocalName());
+            longAttr.add(inode.getParentId());
+            longAttr.add(inode.getId());
+            longAttr.add(inode.getModificationTime());
+            longAttr.add(inode.getAccessTime());
+            longAttr.add(inode.getPermissionLong());
+            if (inode.isDirectory()) {
+              longAttr.add(0L);
+            } else {
+              longAttr.add(inode.asFile().getHeaderLong());
+              FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+              if (uc != null) {
+                fileIds.add(inode.getId());
+                fileAttr.add(uc.getClientName(inode.getId()));
+                fileAttr.add(uc.getClientMachine(inode.getId()));
+              }
+            }              
+          }
+          if (strAttr.size() > 0) {
+            DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+          }
+          concurrentUpdateSet.clear();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
     }
+    preUpdateSize = concurrentUpdateSet.size();
 
     if (concurrentRemoveSet != null) {
       List<Long> removeIds = new ArrayList<>();
@@ -168,7 +210,7 @@ public class INodeKeyedObjects {
 
   public static IndexedCache<CompositeKey, INode> getCache() {
     if (cache == null) {
-      concurrentHashSet = ConcurrentHashMap.newKeySet();
+      concurrentUpdateSet = ConcurrentHashMap.newKeySet();
       concurrentRemoveSet = ConcurrentHashMap.newKeySet();
 
       // async write updates to buffer
