@@ -869,8 +869,8 @@ public class FSEditLog implements LogsPurgeable {
           .setParent(newNode.getParentId()).build();
 
       byte[] data = r.toByteArray();
-      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
-        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+      FSEditLogProtocolImpl proxy = (FSEditLogProtocolImpl) RPC.getProxy(
+        FSEditLogProtocolImpl.class, FSEditLogProtocol.versionID,
         new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
       proxy.logEdit(data);
     } catch (Exception e) {
@@ -978,8 +978,8 @@ public class FSEditLog implements LogsPurgeable {
 
       byte[] data = r.toByteArray();
 
-      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
-        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+      FSEditLogProtocolImpl proxy = (FSEditLogProtocolImpl) RPC.getProxy(
+        FSEditLogProtocolImpl.class, FSEditLogProtocol.versionID,
         new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
       proxy.logEdit(data);
     } catch (Exception e) {
