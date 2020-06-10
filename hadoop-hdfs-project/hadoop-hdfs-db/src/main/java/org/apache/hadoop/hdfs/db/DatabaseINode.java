@@ -1388,6 +1388,35 @@ public class DatabaseINode {
     }
   }
 
+  public static void removeINodeNoRecursive(final long id) {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        // call a stored procedure
+        try {
+          obj.getVoltClient().callProcedure(new NullCallback(), "RemoveINodeNoRecursive", id);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        // delete file/directory
+        String sql = "DELETE FROM inodes WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        pst.executeUpdate();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("removeINodeNoRecursive: " + id);
+    }
+  }
+
   public static void removeUc(final long id) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();

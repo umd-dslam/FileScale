@@ -711,7 +711,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
       // invalidate old inode
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
-      INodeKeyedObjects.getRemoveSet().add(node.getId());
+      CompletableFuture.runAsync(() -> {
+        DatabaseINode.removeINodeNoRecursive(node.getId());
+      }, Database.getInstance().getExecutorService());
+
       // local sync log
       FSDirectory.getInstance()
           .getEditLog()
