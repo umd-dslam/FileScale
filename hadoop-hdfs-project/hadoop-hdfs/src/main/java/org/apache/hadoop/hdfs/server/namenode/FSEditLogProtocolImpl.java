@@ -164,7 +164,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
 
     @Override
     public void logEdit(byte[] in) throws IOException {
-        INodeSection.INode p = NULL;
+        INodeSection.INode p = null;
         try {
             p = INodeSection.INode.parseFrom(in);
         } catch (InvalidProtocolBufferException e) {
