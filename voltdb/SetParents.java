@@ -13,14 +13,14 @@ public class SetParents extends VoltProcedure {
 
   // VOLTDB ERROR: CONSTRAINT VIOLATION An update to a partitioning column triggered a partitioning error.
   // Updating a partitioning column is not supported. Try delete followed by insert.
-  public long run(final long parent) throws VoltAbortException {
-    VoltTable[] results = voltQueueSQL(sql1, parent);
+  public long run(final long oldparent, final long newparent) throws VoltAbortException {
+    VoltTable[] results = voltQueueSQL(sql1, oldparent);
     voltExecuteSQL();
     if (results[0].getRowCount() < 1) {
       return -1;
     }
 
-    voltQueueSQL(sql2, parent);
+    voltQueueSQL(sql2, oldparent);
     voltExecuteSQL();
 
     for (int j = 0; j < results.length; ++j) {
@@ -32,7 +32,7 @@ public class SetParents extends VoltProcedure {
           results[j].fetchRow(i).getLong(3),
           results[j].fetchRow(i).getLong(4),
           results[j].fetchRow(i).getLong(5),
-          parent);
+          newparent);
       }
     }
     voltExecuteSQL();
