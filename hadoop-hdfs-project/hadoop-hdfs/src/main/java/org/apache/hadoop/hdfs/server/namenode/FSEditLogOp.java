@@ -1694,7 +1694,7 @@ public abstract class FSEditLogOp {
       // FSImageSerialization.writeString(path, out);
       FSImageSerialization.writeLong(timestamp, out); // mtime
       FSImageSerialization.writeLong(timestamp, out); // atime, unused at this
-      permissions.write(out);
+      // permissions.write(out);
       AclEditLogUtil.write(aclEntries, out);
       XAttrEditLogProto.Builder b = XAttrEditLogProto.newBuilder();
       b.addAllXAttrs(PBHelperClient.convertXAttrProto(xAttrs));
