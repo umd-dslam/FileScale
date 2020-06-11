@@ -709,7 +709,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         }
       }
       // using a stored procedure to update childs' parent
-      DatabaseINode.setParents(childs.toArray(new Long[childs.size()]), newParent);
+      DatabaseINode.setParents(childs, newParent);
 
       // invalidate old inode
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldParent);

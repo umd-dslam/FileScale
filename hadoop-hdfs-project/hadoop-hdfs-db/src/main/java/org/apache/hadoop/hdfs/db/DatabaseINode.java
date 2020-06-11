@@ -555,13 +555,13 @@ public class DatabaseINode {
     }
   }
 
-  public static void setParents(final long[] ids, final long parent) {
+  public static void setParents(final HashSet<Long> ids, final long parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "SetParents", ids, parent);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetParents", ids.toArray(new Long[ids.size()]), parent);
         } catch (Exception e) {
           e.printStackTrace();
         }
