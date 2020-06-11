@@ -4,7 +4,7 @@ import org.voltdb.*;
 public class SetParents extends VoltProcedure {
 
   public final SQLStmt sql1 = new SQLStmt(
-    + "SELECT id, name, accessTime, modificationTime, permission,"
+    "SELECT id, name, accessTime, modificationTime, permission,"
     + "header from inodes SET parent = ?;");
   public final SQLStmt sql2 = new SQLStmt("DELETE inodes where parent = ?;");
   public final SQLStmt sql3 = new SQLStmt("INSERT INTO inodes("

@@ -710,12 +710,13 @@ public class INodeDirectory extends INodeWithAdditionalFields
         }
       }
 
-      // using a stored procedure to update childs' parent
-      DatabaseINode.setParents(newParent);
 
       // invalidate old inode
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldParent);
       CompletableFuture.runAsync(() -> {
+        // update childs' parent
+        DatabaseINode.setParents(newParent);
+        // remove parent
         DatabaseINode.removeINodeNoRecursive(oldParent);
       }, Database.getInstance().getExecutorService());
 
