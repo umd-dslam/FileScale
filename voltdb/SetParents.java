@@ -5,8 +5,8 @@ public class SetParents extends VoltProcedure {
 
   public final SQLStmt sql1 = new SQLStmt(
     "SELECT id, name, accessTime, modificationTime, permission,"
-    + "header from inodes SET parent = ?;");
-  public final SQLStmt sql2 = new SQLStmt("DELETE inodes where parent = ?;");
+    + "header from inodes WHERE parent = ?;");
+  public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes where parent = ?;");
   public final SQLStmt sql3 = new SQLStmt("INSERT INTO inodes("
     + "id, name, accessTime, modificationTime, permission, header, parent"
     + ") VALUES (?, ?, ?, ?, ?, ?, ?);");
@@ -14,8 +14,8 @@ public class SetParents extends VoltProcedure {
   // VOLTDB ERROR: CONSTRAINT VIOLATION An update to a partitioning column triggered a partitioning error.
   // Updating a partitioning column is not supported. Try delete followed by insert.
   public long run(final long oldparent, final long newparent) throws VoltAbortException {
-    VoltTable[] results = voltQueueSQL(sql1, oldparent);
-    voltExecuteSQL();
+    voltQueueSQL(sql1, oldparent);
+    VoltTable[] results = voltExecuteSQL();
     if (results[0].getRowCount() < 1) {
       return -1;
     }
