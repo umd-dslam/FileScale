@@ -35,7 +35,6 @@ public class SetParents extends VoltProcedure {
           parent);
       }
     }
-    voltQueueSQL(sql3, id, name, accessTime, modificationTime, permission, header, parent);
     voltExecuteSQL();
     return 1;
   }
