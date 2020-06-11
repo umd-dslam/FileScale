@@ -24,6 +24,8 @@ import com.google.common.base.Preconditions;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -683,10 +685,12 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public void remoteRename(INode node, String address) {
-    String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    // String name = DFSUtil.bytes2String(node.getLocalNameBytes());
     if (node.isDirectory()) {
       INodeDirectory inode = node.asDirectory().copyINodeDirectory();
-      inode.setId(node.getId() + NameNode.getId());
+      long oldParent = node.getId();
+      long newParent = node.getId() + NameNode.getId();
+      inode.setId(newParent);
 
       // TODO: using stored procedure to optimize and update the immediated childs
       // update immediate childs's parent id
@@ -694,7 +698,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
       for (long id : childs) {
         INode child = FSDirectory.getInstance().getInode(id);
         if (child != null) {
-          child.setParent(inode.getId());
           // write ahead log
           if (child.isDirectory()) {
             INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
@@ -706,16 +709,18 @@ public class INodeDirectory extends INodeWithAdditionalFields
         }
       }
       // using a stored procedure to update childs' parent
-      Long[] kids = childs.toArray(new Long[childs.size()]);
-      DatabaseINode.setParents(kids, getId());
+      DatabaseINode.setParents(childs.toArray(new Long[childs.size()]), newParent);
 
       // invalidate old inode
-      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
-      INodeKeyedObjects.getRemoveSet().add(node.getId());
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldParent);
+      CompletableFuture.runAsync(() -> {
+        DatabaseINode.removeINodeNoRecursive(oldParent);
+      }, Database.getInstance().getExecutorService());
+
       // local sync log
       FSDirectory.getInstance()
           .getEditLog()
-          .logDelete(null, node.getId(), inode.getModificationTime(), true);
+          .logDelete(null, oldParent, inode.getModificationTime(), true);
 
       // remote logging
       FSDirectory.getInstance().getEditLog().remoteLogMkDir(inode, address);
@@ -728,12 +733,13 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
 
       // invalidate old inode
-      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) node.getId());
-      INodeKeyedObjects.getRemoveSet().add(node.getId());
+      long oldId = node.getId();
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldId);
+      INodeKeyedObjects.getRemoveSet().add(oldId);
       // local sync log
       FSDirectory.getInstance()
           .getEditLog()
-          .logDelete(null, node.getId(), inode.getModificationTime(), true);
+          .logDelete(null, oldId, inode.getModificationTime(), true);
 
       FSDirectory.getInstance().getEditLog().remoteLogOpenFile(inode, address);
     }

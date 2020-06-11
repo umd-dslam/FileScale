@@ -704,6 +704,19 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
       INode dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, id); 
       if (dir == null) {
         dir = new INodeDirectory(id);
+        DatabaseINode.LoadINode node = new DatabaseINode().loadINode(id);
+        byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
+        dir
+          .asDirectory()
+          .InitINodeDirectory(
+              node.parent,
+              node.id,
+              name,
+              node.permission,
+              node.modificationTime,
+              node.accessTime,
+              node.header);
+
         INodeKeyedObjects.getCache().put(
           new CompositeKey((Long)id,
           new ImmutablePair<>(dir.getParentId(), dir.getLocalName())), dir.asDirectory());
