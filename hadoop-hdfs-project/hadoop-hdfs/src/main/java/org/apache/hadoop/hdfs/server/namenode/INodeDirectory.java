@@ -698,6 +698,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       for (long id : childs) {
         INode child = FSDirectory.getInstance().getInode(id);
         if (child != null) {
+          child.setParent(newParent);
           // write ahead log
           if (child.isDirectory()) {
             INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
@@ -708,8 +709,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
           }
         }
       }
+
       // using a stored procedure to update childs' parent
-      DatabaseINode.setParents(childs, newParent);
+      DatabaseINode.setParents(newParent);
 
       // invalidate old inode
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldParent);
