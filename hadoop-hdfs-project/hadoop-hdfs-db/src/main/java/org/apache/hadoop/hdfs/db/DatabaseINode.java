@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -555,13 +556,13 @@ public class DatabaseINode {
     }
   }
 
-  public static void setParents(final HashSet<Long> ids, final long parent) {
+  public static void setParents(final long parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "SetParents", ids.toArray(new Long[ids.size()]), parent);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetParents", parent);
         } catch (Exception e) {
           e.printStackTrace();
         }
