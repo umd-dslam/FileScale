@@ -556,13 +556,14 @@ public class DatabaseINode {
     }
   }
 
+
   public static void setParents(final long parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "SetParents", parent);
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetParents", oldparent, newparent);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -584,7 +585,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("parent [UPDATE]: (childs," + parent + ")");
+      LOG.info("parent [UPDATE]: (childs," + oldparent + ") to " + "(childs," + newparent + ")");
     }
   }
 
