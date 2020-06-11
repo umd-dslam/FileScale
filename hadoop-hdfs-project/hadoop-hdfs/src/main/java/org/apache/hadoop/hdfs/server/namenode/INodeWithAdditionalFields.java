@@ -103,7 +103,7 @@ public abstract class INodeWithAdditionalFields extends INode {
    * #clonePermissionStatus(INodeWithAdditionalFields)} and {@link
    * #updatePermissionStatus(PermissionStatusFormat, long)} should not modify it.
    */
-  private long permission = 0L;
+  private long permission = -1L;
 
   private long modificationTime = -1L;
   private long accessTime = -1L;
@@ -390,7 +390,7 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   @Override
   public long getPermissionLong() {
-    if (permission == 0L) {
+    if (permission == -1L) {
       permission = DatabaseINode.getPermission(getId());
     }
     return permission;
