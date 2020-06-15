@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -88,6 +89,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 
 import org.apache.hadoop.hdfs.db.*;
+import org.apache.hadoop.hdfs.nnproxy.server.mount.MountsManager;
 
 /**
  * Main class for a series of name-node benchmarks.
@@ -111,10 +113,14 @@ public class NNThroughputBenchmark implements Tool {
   private static final String GENERAL_OPTIONS_USAGE =
       "[-keepResults] | [-logLevel L] | [-UGCacheRefreshCount G]";
 
+  private static MountsManager mountsManager;
+  boolean local = true;
+
   static Configuration config;
   static NameNode nameNode;
   static NamenodeProtocol nameNodeProto;
   static ClientProtocol clientProto;
+  static HashMap<String, ClientProtocol> nnProtos;
   static DatanodeProtocol dataNodeProto;
   static RefreshUserMappingsProtocol refreshUserMappingsProto;
   static String bpid = null;
@@ -140,6 +146,22 @@ public class NNThroughputBenchmark implements Tool {
     config.set(DFSConfigKeys.DFS_HOSTS, "${hadoop.tmp.dir}/dfs/hosts/include");
     File includeFile = new File(config.get(DFSConfigKeys.DFS_HOSTS, "include"));
     new FileOutputStream(includeFile).close();
+
+    String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+    if (enableNNProxy != null) {
+      if (Boolean.parseBoolean(enableNNProxy)) {
+        String NNProxyQuorum = System.getenv("NNPROXY_ZK_QUORUM");
+        String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+        if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
+          // initialize a mount manager
+          mountsManager = new MountsManager();
+          mountsManager.init(new HdfsConfiguration());
+          mountsManager.start();
+          local = false;
+          nnProtos = new HashMap<String, ClientProtocol>();
+        }
+      }
+    }
   }
 
   void close() {
@@ -607,16 +629,23 @@ public class NNThroughputBenchmark implements Tool {
     @Override
     long executeOp(int daemonId, int inputIdx, String clientName) 
     throws IOException {
+      ClientProtocol cp = null;
+      if (local) {
+        cp = clientProto;
+      } else {
+        cp = nnProtos.get(mountsManager.resolve(fileNames[daemonId][inputIdx]));
+      }
+
       long start = Time.now();
       // dummyActionNoSynch(fileIdx);
-      clientProto.create(fileNames[daemonId][inputIdx],
+      cp.create(fileNames[daemonId][inputIdx],
           FsPermission.getDefault(), clientName,
           new EnumSetWritable<CreateFlag>(EnumSet
               .of(CreateFlag.CREATE, CreateFlag.OVERWRITE)), true,
           replication, BLOCK_SIZE, CryptoProtocolVersion.supported(), null);
       long end = Time.now();
       for (boolean written = !closeUponCreate; !written;
-        written = clientProto.complete(fileNames[daemonId][inputIdx],
+        written = cp.complete(fileNames[daemonId][inputIdx],
             clientName, null, HdfsConstants.GRANDFATHER_INODE_ID)) {
       };
       return end-start;
@@ -794,8 +823,16 @@ public class NNThroughputBenchmark implements Tool {
     throws IOException {
       String fname = fileNames[daemonId][inputIdx];
       fname = fname.replace("open", "create");
+
+      ClientProtocol cp = null;
+      if (local) {
+        cp = clientProto;
+      } else {
+        cp = nnProtos.get(mountsManager.resolve(fname));
+      }
+
       long start = Time.now();
-      clientProto.getBlockLocations(fname, 0L, BLOCK_SIZE);
+      cp.getBlockLocations(fname, 0L, BLOCK_SIZE);
       long end = Time.now();
       return end-start;
     }
@@ -1617,6 +1654,18 @@ public class NNThroughputBenchmark implements Tool {
         refreshUserMappingsProto =
             DFSTestUtil.getRefreshUserMappingsProtocolProxy(config, nnRealUri);
         getBlockPoolId(dfs);
+
+        // init multiple client protos according to the mount table
+        String[] nnUrls = null;
+        if (!local) {
+          nnUrls = mountsManager.getNNUrls();
+          for (String url : nnUrls) {
+            URI nameNodeUri = URI.create(url);
+            ClientProtocol cp = dfs.getClient().createDfsClient(nameNodeUri, getConf()).getNamenode();
+            cp.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE, false);
+            nnProtos.put(url, cp);
+          }
+        }
       }
       // run each benchmark
       long beforeUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();

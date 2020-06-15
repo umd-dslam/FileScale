@@ -289,6 +289,15 @@ public class MountsManager extends AbstractService {
     }
   }
 
+  public String[] getNNUrls() {
+    HashSet<String> urls = new HashSet<>();
+    ImmutableList<MountEntry> entries = this.mounts;
+    for (MountEntry entry : entries) {
+      urls.add(entry.fsUri);
+    }
+    return urls.toArray(new String[urls.size()]);
+  }
+
   public void dump() {
     ImmutableList<MountEntry> entries = this.mounts;
     StringBuilder result = new StringBuilder();
