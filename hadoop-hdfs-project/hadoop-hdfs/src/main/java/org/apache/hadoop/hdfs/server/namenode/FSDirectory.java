@@ -175,6 +175,7 @@ public class FSDirectory implements Closeable {
   private int quotaInitThreads;
 
   private final int inodeXAttrsLimit; //inode xattrs max limit
+  private boolean localNN = true;
 
   // A set of directories that have been protected using the
   // dfs.namenode.protected.directories setting. These directories cannot
@@ -411,10 +412,24 @@ public class FSDirectory implements Closeable {
 
     initUsersToBypassExtProvider(conf);
 
-    // initialize a mount manager
-    mountsManager = new MountsManager();
-    mountsManager.init(new HdfsConfiguration());
-    mountsManager.start();
+    String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+    if (enableNNProxy != null) {
+      if (Boolean.parseBoolean(enableNNProxy)) {
+        String NNProxyQuorum = System.getenv("NNPROXY_ZK_QUORUM");
+        String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+        if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
+          // initialize a mount manager
+          mountsManager = new MountsManager();
+          mountsManager.init(new HdfsConfiguration());
+          mountsManager.start();
+          localNN = false;
+        }
+      }
+    }
+  }
+
+  public boolean isLocalNN() {
+    return localNN;
   }
 
   private void initUsersToBypassExtProvider(Configuration conf) {

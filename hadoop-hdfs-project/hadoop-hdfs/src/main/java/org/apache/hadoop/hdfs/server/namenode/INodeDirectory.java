@@ -781,29 +781,17 @@ public class INodeDirectory extends INodeWithAdditionalFields
       node.setLocalName(DFSUtil.string2Bytes(name));
 
       // get mount point from zookeeper
-      boolean local = true;
-      String[] address = new String[2];
-      String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
-      if (enableNNProxy != null) {
-        if (Boolean.parseBoolean(enableNNProxy)) {
-          String NNProxyQuorum = System.getenv("NNPROXY_ZK_QUORUM");
-          String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
-          if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
-            local = false;
-            try {
-              // LOG.info(existingPath + " : " + mpoint);
-              String mpoint = FSDirectory.getInstance().getMountsManager().resolve(existingPath);
-              address = mpoint.replace("hdfs://","").split(":");
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
-          }
-        }
-      }
-
-      if (local) {
+      if (FSDirectory.getInstance().isLocalNN()) {
         localRename(node);
       } else {
+        String[] address = new String[2];
+        try {
+          // LOG.info(existingPath + " : " + mpoint);
+          String mpoint = FSDirectory.getInstance().getMountsManager().resolve(existingPath);
+          address = mpoint.replace("hdfs://","").split(":");
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
         remoteRename(node, address[0]);
       }
     }
