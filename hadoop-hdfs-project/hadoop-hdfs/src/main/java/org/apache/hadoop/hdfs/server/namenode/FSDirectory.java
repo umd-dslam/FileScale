@@ -213,7 +213,7 @@ public class FSDirectory implements Closeable {
   private final String supergroup;
   private final INodeId inodeId;
 
-  private final MountsManager mountsManager = null;
+  private MountsManager mountsManager = null;
   private final FSEditLog editLog;
 
   private HdfsFileStatus[] reservedStatuses;
