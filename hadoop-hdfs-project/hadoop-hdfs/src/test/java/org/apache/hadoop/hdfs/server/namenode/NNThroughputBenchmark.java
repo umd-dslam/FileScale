@@ -614,12 +614,13 @@ public class NNThroughputBenchmark implements Tool {
       for(int idx=0; idx < numThreads; idx++) {
         int threadOps = opsPerThread[idx];
         fileNames[idx] = new String[threadOps];
-        for(int jdx=0; jdx < threadOps; jdx++)
+        for(int jdx=0; jdx < threadOps; jdx++) {
           filename = nameGenerator.getNextFileName("ThroughputBench");
           if (!local) {
             filename += String.valueOf(ipcode);
           }
           fileNames[idx][jdx] = filename;
+        }
       }
     }
 
