@@ -610,11 +610,12 @@ public class NNThroughputBenchmark implements Tool {
       LOG.info("Current host address: " + inetAddress.getHostAddress() + ", HashCode: " + ipcode);
       LOG.info("Generate " + numOpsRequired + " intputs for " + getOpName());
       fileNames = new String[numThreads][];
+      String filename = null;
       for(int idx=0; idx < numThreads; idx++) {
         int threadOps = opsPerThread[idx];
         fileNames[idx] = new String[threadOps];
         for(int jdx=0; jdx < threadOps; jdx++)
-          String filename = nameGenerator.getNextFileName("ThroughputBench");
+          filename = nameGenerator.getNextFileName("ThroughputBench");
           if (!local) {
             filename += String.valueOf(ipcode);
           }
