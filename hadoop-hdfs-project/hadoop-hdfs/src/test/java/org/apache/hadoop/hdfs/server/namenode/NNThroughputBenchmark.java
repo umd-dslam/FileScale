@@ -157,6 +157,11 @@ public class NNThroughputBenchmark implements Tool {
           mountsManager = new MountsManager();
           mountsManager.init(new HdfsConfiguration());
           mountsManager.start();
+          try {
+            mountsManager.waitUntilInstalled();
+          } catch (Exception ex) {
+            throw new RuntimeException(ex); 
+          }
           local = false;
           nnProtos = new HashMap<String, ClientProtocol>();
         }

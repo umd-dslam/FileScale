@@ -422,6 +422,11 @@ public class FSDirectory implements Closeable {
           mountsManager = new MountsManager();
           mountsManager.init(new HdfsConfiguration());
           mountsManager.start();
+          try {
+            mountsManager.waitUntilInstalled();
+          } catch (Exception ex) {
+            throw new RuntimeException(ex); 
+          }
           localNN = false;
         }
       }
