@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.net.InetAddress;
 
 import com.google.common.base.Preconditions;
 
@@ -604,14 +605,22 @@ public class NNThroughputBenchmark implements Tool {
       clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
           false);
       // int generatedFileIdx = 0;
+      InetAddress inetAddress = InetAddress.getLocalHost();
+      int ipcode = inetAddress.getHostAddress().hashCode();
+      LOG.info("Current host address: " + inetAddress.getHostAddress() + ", HashCode: " + ipcode);
       LOG.info("Generate " + numOpsRequired + " intputs for " + getOpName());
       fileNames = new String[numThreads][];
+      String filename = null;
       for(int idx=0; idx < numThreads; idx++) {
         int threadOps = opsPerThread[idx];
         fileNames[idx] = new String[threadOps];
-        for(int jdx=0; jdx < threadOps; jdx++)
-          fileNames[idx][jdx] = nameGenerator.
-                                  getNextFileName("ThroughputBench");
+        for(int jdx=0; jdx < threadOps; jdx++) {
+          filename = nameGenerator.getNextFileName("ThroughputBench");
+          if (!local) {
+            filename += String.valueOf(ipcode);
+          }
+          fileNames[idx][jdx] = filename;
+        }
       }
     }
 
