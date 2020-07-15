@@ -31,6 +31,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.LinkedList;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.fs.PathIsNotDirectoryException;
 import org.apache.hadoop.fs.StorageType;
@@ -686,65 +688,70 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public void remoteRename(INode node, String address) {
     // String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    Long old_id = node.getId();
     if (node.isDirectory()) {
-      INodeDirectory inode = node.asDirectory().copyINodeDirectory();
-      long oldParent = node.getId();
-      long newParent = node.getId() + NameNode.getId();
-      inode.setId(newParent);
-
-      // TODO: using stored procedure to optimize and update the immediated childs
-      // update immediate childs's parent id
-      HashSet<Long> childs = ((INodeDirectory)node).getCurrentChildrenList2();
-      for (long id : childs) {
-        INode child = FSDirectory.getInstance().getInode(id);
+      Queue<Long> q  = new LinkedList<>();
+      q.add(old_id);
+      Long id = null;
+      while ((id = q.poll()) != null) {
+        INode child = FSDirectory.getInstance().getInode(id);   
         if (child != null) {
-          child.setParent(newParent);
-          // write ahead log
           if (child.isDirectory()) {
-            INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
-            FSDirectory.getInstance().getEditLog().logMkDir(null, (INodeDirectory)child);
+            q.addAll(((INodeDirectory)child).getCurrentChildrenList2());
+          }
+
+          // log: delete old file or directory
+          FSDirectory.getInstance()
+            .getEditLog()
+            .logDelete(null, id, child.getModificationTime(), true);
+
+          child.setId(id + NameNode.getId());
+          if (id != old_id) {
+            child.setParent(child.getParentId() + NameNode.getId());
+          }
+
+          if (child.isDirectory()) {
+            // log: create new diretory
+            FSDirectory.getInstance()
+              .getEditLog()
+              .logMkDir(null, (INodeDirectory)child);
           } else {
-            INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) child.getId());
-            FSDirectory.getInstance().getEditLog().logOpenFile(null, (INodeFile)child, true, true);
+            // log: create new file
+            FSDirectory.getInstance()
+              .getEditLog()
+              .logOpenFile(null, (INodeFile)child, true, true);
           }
         }
       }
 
-
-      // invalidate old inode
-      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldParent);
       CompletableFuture.runAsync(() -> {
-        // update childs' parent
-        DatabaseINode.setParents(oldParent, newParent);
-        // remove parent
-        DatabaseINode.removeINodeNoRecursive(oldParent);
+        // stored procedure: 2 DML statements
+        // (1) update subtree IDs
+        // (2) update immediate childs' parent field
+        DatabaseINode.updateSubtree(old_id, NameNode.getId(), node.getParentId());
       }, Database.getInstance().getExecutorService());
 
-      // local sync log
-      FSDirectory.getInstance()
-          .getEditLog()
-          .logDelete(null, oldParent, inode.getModificationTime(), true);
-
-      // remote logging
-      FSDirectory.getInstance().getEditLog().remoteLogMkDir(inode, address);
+      // invalidate inode, and childs will be evicted eventually
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) old_id);
     } else {
-      INodeFile inode = node.asFile().copyINodeFile();
-      inode.setId(node.getId() + NameNode.getId());
-      FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
-      if (uc != null) {
-        uc.updateFileUnderConstruction(inode.getId());
-      }
-
-      // invalidate old inode
-      long oldId = node.getId();
-      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) oldId);
-      INodeKeyedObjects.getRemoveSet().add(oldId);
-      // local sync log
+      // log: delete old file or directory
       FSDirectory.getInstance()
-          .getEditLog()
-          .logDelete(null, oldId, inode.getModificationTime(), true);
+        .getEditLog()
+        .logDelete(null, old_id, node.getModificationTime(), true);
 
-      FSDirectory.getInstance().getEditLog().remoteLogOpenFile(inode, address);
+      node.setId(old_id + NameNode.getId());
+      // log: create new file
+      FSDirectory.getInstance()
+        .getEditLog()
+        .logOpenFile(null, (INodeFile)node, true, true);
+
+      CompletableFuture.runAsync(() -> {
+        // stored procedure: 1 DML statements
+        DatabaseINode.setId(old_id, old_id + NameNode.getId(), node.getParentId());
+      }, Database.getInstance().getExecutorService());
+
+      // invalidate old node
+      INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) old_id);
     }
   }
 

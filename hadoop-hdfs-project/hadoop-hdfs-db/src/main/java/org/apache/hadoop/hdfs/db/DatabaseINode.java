@@ -1766,4 +1766,48 @@ public class DatabaseINode {
       LOG.info("batchUpdateINodes [UPDATE]");
     }
   }
+
+  public static void updateSubtree(final long dir_id, final long dest_id, final long new_parent) {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure(new NullCallback(), "UpdateSubtree", dir_id, dest_id, new_parent);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("updateSubtree [UPDATE]: " + dir_id);
+    }
+  }
+
+  public static void setId(final long old_id, final long new_id, final long new_parent) {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure(new NullCallback(), "SetId", old_id, new_id, new_parent);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("setId [UPDATE]: (" + old_id + ", " + new_id + ")");
+    }
+  }
 }
