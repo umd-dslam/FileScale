@@ -5,7 +5,7 @@ public class SetId extends VoltProcedure {
 
     "INSERT INTO inodes("
     + "id, name, accessTime, modificationTime, permission, header, parent"
-    + ") SELECT " +
+    + ") SELECT "
     + " ?, name, accessTime, modificationTime, permission, header, ?"
     + " FROM inodes WHERE id = ?;");
 
