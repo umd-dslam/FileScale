@@ -724,12 +724,12 @@ public class INodeDirectory extends INodeWithAdditionalFields
         }
       }
 
-      CompletableFuture.runAsync(() -> {
+      // CompletableFuture.runAsync(() -> {
         // stored procedure: 2 DML statements
         // (1) update subtree IDs
         // (2) update immediate childs' parent field
         DatabaseINode.updateSubtree(old_id, NameNode.getId(), node.getParentId());
-      }, Database.getInstance().getExecutorService());
+      // }, Database.getInstance().getExecutorService());
 
       // invalidate inode, and childs will be evicted eventually
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) old_id);
@@ -745,10 +745,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
         .getEditLog()
         .logOpenFile(null, (INodeFile)node, true, true);
 
-      CompletableFuture.runAsync(() -> {
+      // CompletableFuture.runAsync(() -> {
         // stored procedure: 1 DML statements
         DatabaseINode.setId(old_id, old_id + NameNode.getId(), node.getParentId());
-      }, Database.getInstance().getExecutorService());
+      // }, Database.getInstance().getExecutorService());
 
       // invalidate old node
       INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, (Long) old_id);
