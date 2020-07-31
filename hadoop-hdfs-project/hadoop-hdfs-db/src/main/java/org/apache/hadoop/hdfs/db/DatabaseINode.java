@@ -1135,6 +1135,49 @@ public class DatabaseINode {
     return childIds;
   }
 
+  public static List<String> getChildrenNames(final long parentId) {
+    List<String> childNames = new ArrayList<>();
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("GetChildrenNames", parentId).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            childNames.add(result.getString(0));
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        // check the existence of node in Postgres
+        String sql = "SELECT name FROM inodes WHERE parent = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, parentId);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          childNames.add(rs.getString(1));
+        }
+        rs.close();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.out.println(ex.getMessage());
+    }
+
+    // if (LOG.isInfoEnabled()) {
+    //   LOG.info("getChildrenIds: (" + childNames + "," + parentId + ")");
+    // }
+
+    return childNames;
+  }
+
   public static boolean addChild(final long childId, final String childName, final long parentId) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();

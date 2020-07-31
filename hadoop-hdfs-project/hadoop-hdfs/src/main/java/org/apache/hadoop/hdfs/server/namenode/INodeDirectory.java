@@ -85,7 +85,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   static final byte[] ROOT_NAME = DFSUtil.string2Bytes("");
 
-  private HashSet<Long> children = new HashSet<>();
+  private HashSet<String> children = new HashSet<>();
 
   public CuckooFilter<CharSequence> filter;
 
@@ -546,20 +546,32 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return sf.getChildrenList(this, snapshotId);
   }
 
-  public HashSet<Long> getCurrentChildrenList2() {
+  public HashSet<String> getCurrentChildrenList2() {
     if (children.isEmpty()) {
-      children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
+      children = new HashSet<>(DatabaseINode.getChildrenNames(getId()));
     }
     return children;
   }
 
+  public HashSet<Long> getCurrentChildrenList3() {
+    if (children.isEmpty()) {
+      return new HashSet<Long>(DatabaseINode.getChildrenIds(getId()));
+    }
+
+    HashSet<Long> childs = new HashSet<>(children.size());
+    for (String child : children) {
+      childs.add(FSDirectory.getInstance().getInode(getId(), child).getId());
+    }
+    return childs;
+  }
+
   private ReadOnlyList<INode> getCurrentChildrenList() {
     if (children.isEmpty()) {
-      children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
+      children = new HashSet<>(DatabaseINode.getChildrenNames(getId()));
     }
     List<INode> childs = new ArrayList<>(DEFAULT_FILES_PER_DIRECTORY);
-    for (long id : children) {
-      INode child = FSDirectory.getInstance().getInode(id);
+    for (String cname : children) {
+      INode child = FSDirectory.getInstance().getInode(getId(), cname);
       if (child != null) {
         childs.add(child);
       }
@@ -614,7 +626,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     if (children.isEmpty()) {
       return true;
     }
-    return children.remove(child.getId());
+    return children.remove(child.getLocalName());
   }
 
   /**
@@ -697,7 +709,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         INode child = FSDirectory.getInstance().getInode(id);   
         if (child != null) {
           if (child.isDirectory()) {
-            q.addAll(((INodeDirectory)child).getCurrentChildrenList2());
+            q.addAll(((INodeDirectory)child).getCurrentChildrenList3());
           }
 
           // log: delete old file or directory
@@ -757,7 +769,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public boolean addChild(INode node) {
     node.setParent(getId());
-    children.add(node.getId());
+    children.add(node.getLocalName());
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
     }
@@ -779,7 +791,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
 
     INode inode = node;
-    children.add(node.getId());
+    children.add(name);
     filter.put(String.valueOf(getId()) + name);
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
       node.getParent().filter.delete(String.valueOf(node.getParentId()) + node.getLocalName());
@@ -871,11 +883,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
       byte blockStoragePolicyId, QuotaCounts counts, boolean useCache,
       int lastSnapshotId) {
     if (children.isEmpty()) {
-      children = new HashSet<>(DatabaseINode.getChildrenIds(getId()));
+      children = new HashSet<>(DatabaseINode.getChildrenNames(getId()));
     }
     if (!children.isEmpty()) {
-      for (long childId : children) {
-        INode child = FSDirectory.getInstance().getInode(childId);
+      for (String cname : children) {
+        INode child = FSDirectory.getInstance().getInode(getId(), cname);
         if (child != null) {
           final byte childPolicyId = child.getStoragePolicyIDForQuota(
               blockStoragePolicyId);
@@ -1021,7 +1033,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   /** Set the children list to null. */
   public void clearChildren() {
-    // this.children = null;
+    this.children = null;
   }
 
   @Override
