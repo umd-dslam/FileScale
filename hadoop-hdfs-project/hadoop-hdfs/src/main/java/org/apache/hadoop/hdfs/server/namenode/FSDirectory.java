@@ -771,7 +771,9 @@ public class FSDirectory implements Closeable {
     if (fileId == HdfsConstants.GRANDFATHER_INODE_ID) {
       iip = resolvePath(pc, src, DirOp.WRITE);
     } else {
-      INode inode = getInode(fileId);
+      byte[][] paths = INode.getPathComponents(src));
+      INode inode = getInode(DFSUtil.byteArray2PathString(paths, 0, path.length - 1),
+        DFSUtil.bytes2String(path[path.length - 1]));
       if (inode == null) {
         iip = INodesInPath.fromComponents(INode.getPathComponents(src));
       } else {
@@ -1552,18 +1554,9 @@ public class FSDirectory implements Closeable {
       }
     }
   }
-  
-  /**
-   * Get the inode from inodeMap based on its inode id.
-   * @param id The given id
-   * @return The inode associated with the given id
-   */
-  public INode getInode(long id) {
-    return inodeMap.get(id);
-  }
 
-  public INode getInode(long parentId, String childName) {
-    return inodeMap.get(parentId, childName);
+  public INode getInode(String parentName, String childName) {
+    return inodeMap.get(parentName, childName);
   }
 
   public boolean findInode(INodeFile file) {

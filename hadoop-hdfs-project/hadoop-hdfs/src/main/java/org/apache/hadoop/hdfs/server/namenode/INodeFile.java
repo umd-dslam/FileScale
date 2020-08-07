@@ -23,6 +23,7 @@ import static org.apache.hadoop.hdfs.protocol.BlockType.STRIPED;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.NO_SNAPSHOT_ID;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -646,7 +647,7 @@ public class INodeFile extends INodeWithAdditionalFields
         ~HeaderFormat.MAX_REDUNDANCY) | replication;
     header = HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.
         combine(layoutRedundancy, head);
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   /** Set the replication factor of this file. */
@@ -698,7 +699,7 @@ public class INodeFile extends INodeWithAdditionalFields
   private void setStoragePolicyID(byte storagePolicyId) {
     header = HeaderFormat.STORAGE_POLICY_ID.BITS.combine(storagePolicyId,
       getHeaderLong());
-    INodeKeyedObjects.getBackupSet().add(getId()); 
+    INodeKeyedObjects.getBackupSet().add(getPath()); 
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,
@@ -747,7 +748,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   public void setHeaderLong(long header) {
     this.header = header;
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   /** @return the blocks of the file. */

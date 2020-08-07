@@ -568,18 +568,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return children;
   }
 
-  public HashSet<Long> getCurrentChildrenList3() {
-    if (children.isEmpty()) {
-      return new HashSet<Long>(DatabaseINode.getChildrenIds(getId()));
-    }
-
-    HashSet<Long> childs = new HashSet<>(children.size());
-    for (String child : children) {
-      childs.add(FSDirectory.getInstance().getInode(getPath(), child).getId());
-    }
-    return childs;
-  }
-
   private ReadOnlyList<INode> getCurrentChildrenList() {
     if (children.isEmpty()) {
       children = new HashSet<>(DatabaseINode.getChildrenNames(getId()));
@@ -711,25 +699,25 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public void remoteRename(INode node, String oldName, String oldParent, String newParent, String address) {
     // FIXME: replace NameNode.getId() with 10000 to simplify the ID assignments
-    Long skip_id = oldParent.size();
+    Long skip_id = oldParent.length();
     Long old_id = node.getId();
     if (node.isDirectory()) {
-      Queue<String> q  = new LinkedList<>();
-      q.add(oldParent + oldName);
+      Queue<ImmutablePair<String, String>> q = new LinkedList<>();
+      q.add(new ImmutablePair<>(oldParent, oldName));
 
       // log: delete the old directory
       FSDirectory.getInstance()
         .getEditLog()
         .logDelete(null, old_id, node.getModificationTime(), true);
 
-      String id = null;
+      ImmutablePair<String, String> id = null;
       while ((id = q.poll()) != null) {
-        INode child = FSDirectory.getInstance().getInode(id);   
+        INode child = FSDirectory.getInstance().getInode(id.getLeft(), id.getRight());   
         if (child != null) {
           if (child.isDirectory()) {
             HashSet<String> childNames = ((INodeDirectory)child).getCurrentChildrenList2();
             for (String cname : childNames) {
-              q.add(child.getPath() + cname);
+              q.add(new ImmutablePair<>(child.getPath(), cname));
             }
           }
 

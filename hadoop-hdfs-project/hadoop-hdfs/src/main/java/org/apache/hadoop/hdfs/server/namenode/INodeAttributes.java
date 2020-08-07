@@ -37,6 +37,8 @@ public interface INodeAttributes {
    */
   public byte[] getLocalNameBytes();
 
+  public String getPath();
+
   /** @return the user name. */
   public String getUserName();
 

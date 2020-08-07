@@ -128,7 +128,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.modificationTime = modificationTime;
     this.accessTime = accessTime;
 
-    INodeKeyedObjects.getBackupSet().add(id);
+    INodeKeyedObjects.getBackupSet().add(parentName + name);
   }
 
   public void InitINodeWithAdditionalFields(
@@ -317,6 +317,11 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   @Override
+  public final String getPath() {
+    return getParentName() + getLocalName();
+  }
+
+  @Override
   public final byte[] getLocalNameBytes() {
     if (name == null) {
       String strName = DatabaseINode.getName(getId());
@@ -332,7 +337,11 @@ public abstract class INodeWithAdditionalFields extends INode {
     } else {
       this.name = null;
     }
-    INodeKeyedObjects.getBackupSet().add(getId());
+    if (this.isDirectory()) {
+      ((INodeDirectory) this).renameINodeDirectory();
+    } else {
+      ((INodeFile) this).renameINodeFile(); 
+    }
   }
 
   /** Clone the {@link PermissionStatus}. */
@@ -348,12 +357,12 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   private final void setPermission(long perm) {
     permission = perm;
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
     permission = f.BITS.combine(n, getPermissionLong());
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   @Override
@@ -450,7 +459,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final void setModificationTime(long modificationTime) {
     this.modificationTime = modificationTime;
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   @Override
@@ -469,7 +478,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final void setAccessTime(long accessTime) {
     this.accessTime = accessTime;
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   protected void addFeature(Feature f) {
@@ -568,10 +577,6 @@ public abstract class INodeWithAdditionalFields extends INode {
     // return new XAttrFeature(getId());
 
     return null;
-  }
-
-  public String getPath() {
-    return getParentName() + getLocalName();
   }
 
   @Override
