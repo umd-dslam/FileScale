@@ -2,7 +2,8 @@ import org.voltdb.*;
 
 public class InsertINode extends VoltProcedure {
 
-  public final SQLStmt sql =
+  public final SQLStmt sql1 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
+  public final SQLStmt sql2 =
       new SQLStmt(
           "UPSERT INTO inodes("
               + "	id, name, accessTime, modificationTime, permission, header, parent, parentName"
@@ -18,7 +19,9 @@ public class InsertINode extends VoltProcedure {
       final long header,
       final String parentName)
       throws VoltAbortException {
-    voltQueueSQL(sql, id, name, accessTime, modificationTime, permission, header, pid, parentName);
+    voltQueueSQL(sql1, id);
+    voltExecuteSQL();
+    voltQueueSQL(sql2, id, name, accessTime, modificationTime, permission, header, pid, parentName);
     voltExecuteSQL();
     return 1;
   }

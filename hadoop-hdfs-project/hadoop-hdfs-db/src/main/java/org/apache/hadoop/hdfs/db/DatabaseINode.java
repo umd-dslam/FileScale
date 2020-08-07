@@ -396,6 +396,48 @@ public class DatabaseINode {
     }
   }
 
+  public static void renameInode(
+      final long id,
+      final long pid,
+      final String name,
+      final long accessTime,
+      final long modificationTime,
+      final long permission,
+      final long header,
+      final String parentName) {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient()
+              .callProcedure(
+                  new NullCallback(),
+                  "RenameINode",
+                  id,
+                  pid,
+                  name,
+                  accessTime,
+                  modificationTime,
+                  permission,
+                  header,
+                  parentName);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("renameInode: (" + id + ")");
+    }
+  }
+
   public static void setAccessTime(final long id, final long accessTime) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
@@ -1821,14 +1863,16 @@ public class DatabaseINode {
     }
   }
 
-  public static void updateSubtree(final long dir_id, final long dest_id, final long new_parent) {
+  public static void updateSubtree(final long dir_id, final long dest_id, final String old_parent_name,
+    final String new_parent_name, final long new_parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
           obj.getVoltClient()
-              .callProcedure(new NullCallback(), "UpdateSubtree", dir_id, dest_id, new_parent);
+              .callProcedure("UpdateSubtree", dir_id, dest_id, old_parent_name,
+              new_parent_name, new_parent);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -1844,14 +1888,14 @@ public class DatabaseINode {
     }
   }
 
-  public static void setId(final long old_id, final long new_id, final long new_parent) {
+  public static void setId(final long old_id, final long new_id, final String new_parent_name, final long new_parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
           obj.getVoltClient()
-              .callProcedure(new NullCallback(), "SetId", old_id, new_id, new_parent);
+              .callProcedure("SetId", old_id, new_id, new_parent_name, new_parent);
         } catch (Exception e) {
           e.printStackTrace();
         }

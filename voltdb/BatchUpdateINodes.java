@@ -6,7 +6,7 @@ public class BatchUpdateINodes extends VoltProcedure {
       new SQLStmt(
           "UPSERT INTO inodes("
               + "parent, id, name, modificationTime, accessTime, permission, header, parentName"
-              + ") VALUES (?, ?, ?, ?, ?, ?, ?);");
+              + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
   public final SQLStmt sql2 =
       new SQLStmt("UPSERT INTO inodeuc(id, clientName, clientMachine) VALUES (?, ?, ?);");
 

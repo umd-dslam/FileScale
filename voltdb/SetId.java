@@ -5,15 +5,15 @@ public class SetId extends VoltProcedure {
 
     public final SQLStmt sql1 = new SQLStmt(
       "SELECT id, name, accessTime, modificationTime, permission,"
-      + "header, parent from inodes WHERE id = ?;");
+      + "header, parent, parentName from inodes WHERE id = ?;");
   
     public final SQLStmt sql2 = new SQLStmt("DELETE FROM inodes where id = ?;");
   
     public final SQLStmt sql3 = new SQLStmt("INSERT INTO inodes("
-      + "id, name, accessTime, modificationTime, permission, header, parent"
-      + ") VALUES (?, ?, ?, ?, ?, ?, ?);");
+      + "id, name, accessTime, modificationTime, permission, header, parent, parentName"
+      + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
 
-  public long run(final long old_id, final long new_id, final long new_parent) throws VoltAbortException {
+  public long run(final long old_id, final long new_id, final String new_parent_name, final long new_parent) throws VoltAbortException {
     voltQueueSQL(sql1, old_id);
     VoltTable[] results = voltExecuteSQL();
 
@@ -28,7 +28,8 @@ public class SetId extends VoltProcedure {
           results[j].fetchRow(i).getLong(3),
           results[j].fetchRow(i).getLong(4),
           results[j].fetchRow(i).getLong(5),
-          new_parent);
+          new_parent,
+          new_parent_name);
       }
     }
     return 1;

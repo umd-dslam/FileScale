@@ -100,6 +100,20 @@ public class INodeDirectory extends INodeWithAdditionalFields
     super.updateINode(0L);
   }
 
+  public void renameINodeDirectory() {
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.renameInode(
+          getId(),
+          getParentId(),
+          getLocalName(),
+          getAccessTime(),
+          getModificationTime(),
+          getPermissionLong(),
+          0L,
+          getParentName());
+      }, Database.getInstance().getExecutorService());
+  }
+
   public INodeDirectory copyINodeDirectory() {
     INodeDirectory inode = new INodeDirectory(getId());
     inode.InitINodeDirectory(
@@ -666,7 +680,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return true;
   }
 
-  public void localRename(INode node, String oldName, String oldParent) {
+  public void localRename(INode node, String oldName, String oldParent, String newParent) {
     // String name = DFSUtil.bytes2String(node.getLocalNameBytes());
     if (node.isDirectory()) {
       INodeDirectory inode = node.asDirectory().copyINodeDirectory();
@@ -675,11 +689,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
       INodeKeyedObjects.getCache()
           .put(inode.getPath(), inode);
 
-      // inode.updateINodeDirectory();
-      INodeKeyedObjects.getBackupSet().add(inode.getId());
-
       // rename directory - logging
       FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
+      inode.renameINodeDirectory();
     } else {
       INodeFile inode = node.asFile().copyINodeFile();
       FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
@@ -691,16 +703,15 @@ public class INodeDirectory extends INodeWithAdditionalFields
       INodeKeyedObjects.getCache()
           .put(inode.getPath(), inode);
 
-      // inode.updateINodeFile();
-      INodeKeyedObjects.getBackupSet().add(inode.getId());
-
       // rename file - logging
       FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, true);
+      inode.renameINodeFile();
     }
   }
 
-  public void remoteRename(INode node, String oldName, String oldParent, String address) {
-    // String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+  public void remoteRename(INode node, String oldName, String oldParent, String newParent, String address) {
+    // FIXME: replace NameNode.getId() with 10000 to simplify the ID assignments
+    Long skip_id = oldParent.size();
     Long old_id = node.getId();
     if (node.isDirectory()) {
       Queue<String> q  = new LinkedList<>();
@@ -722,10 +733,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
             }
           }
 
-          child.setId(child.getId() + NameNode.getId());
+          child.setId(child.getId() + 100000);
           if (child.getId() != old_id) {
-            child.setParent(child.getParentId() + NameNode.getId());
-            // TODO: update parent name
+            child.setParent(child.getParentId() + 100000);
+            child.setParentName(newParent + child.getParentName().substring(skip_id));
           }
 
           if (child.isDirectory()) {
@@ -743,10 +754,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
 
       // CompletableFuture.runAsync(() -> {
-        // stored procedure: 2 DML statements
-        // (1) update subtree IDs
-        // (2) update immediate childs' parent field
-        DatabaseINode.updateSubtree(old_id, NameNode.getId(), node.getParentId());
+        // stored procedure:
+        // (1) update subtree IDs and parent fields
+        DatabaseINode.updateSubtree(old_id, 100000, oldParent, newParent, node.getParentId());
       // }, Database.getInstance().getExecutorService());
 
       // invalidate inode, and childs will be evicted eventually
@@ -757,7 +767,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         .getEditLog()
         .logDelete(null, old_id, node.getModificationTime(), true);
 
-      node.setId(old_id + NameNode.getId());
+      node.setId(old_id + 100000);
       // log: create new file
       FSDirectory.getInstance()
         .getEditLog()
@@ -765,7 +775,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
       // CompletableFuture.runAsync(() -> {
         // stored procedure: 1 DML statements
-        DatabaseINode.setId(old_id, old_id + NameNode.getId(), node.getParentId());
+        DatabaseINode.setId(old_id, old_id + 100000, newParent, node.getParentId());
       // }, Database.getInstance().getExecutorService());
 
       // invalidate old node
@@ -807,10 +817,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
       node.setParent(getId());
       node.setParentName(getPath());
       node.setLocalName(DFSUtil.string2Bytes(name));
+      String newParent = node.getParentName();
 
       // get mount point from zookeeper
       if (FSDirectory.getInstance().isLocalNN()) {
-        localRename(node, oldName, oldParent);
+        localRename(node, oldName, oldParent, newParent);
       } else {
         String[] address = new String[2];
         try {
@@ -820,7 +831,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         } catch (Exception e) {
           e.printStackTrace();
         }
-        remoteRename(node, oldName, oldParent, address[0]);
+        remoteRename(node, oldName, oldParent, newParent, address[0]);
       }
     }
 

@@ -355,6 +355,21 @@ public class INodeFile extends INodeWithAdditionalFields
     super.updateINode(header);
   }
 
+
+  public void renameINodeFile() {
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.renameInode(
+          getId(),
+          getParentId(),
+          getLocalName(),
+          getAccessTime(),
+          getModificationTime(),
+          getPermissionLong(),
+          getHeaderLong(),
+          getParentName());
+      }, Database.getInstance().getExecutorService());
+  }
+
   public INodeFile copyINodeFile() {
     INodeFile inode = new INodeFile(this.getId());
     inode.InitINodeFile(getId(), getLocalNameBytes(),

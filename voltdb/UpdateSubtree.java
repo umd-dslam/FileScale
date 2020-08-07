@@ -7,29 +7,34 @@ public class UpdateSubtree extends VoltProcedure {
 
   public final SQLStmt sql2 = new SQLStmt(
     "SELECT id, name, accessTime, modificationTime, permission,"
-    + "header, parent from inodes WHERE id = ?;");
+    + "header, parent, parentName from inodes WHERE id = ?;");
 
   public final SQLStmt sql3 = new SQLStmt("INSERT INTO inodes("
-    + "id, name, accessTime, modificationTime, permission, header, parent"
-    + ") VALUES (?, ?, ?, ?, ?, ?, ?);");
+    + "id, name, accessTime, modificationTime, permission, header, parent, parentName"
+    + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
 
   public final SQLStmt sql4 = new SQLStmt("DELETE FROM inodes where id = ?;");
 
-  public long run(final long dir_id, final long dest_id, final long new_parent) throws VoltAbortException {
+  public long run(final long dir_id, final long dest_id, final String old_parent_name,
+    final String new_parent_name, final long new_parent) throws VoltAbortException {
     List<Long> set = new ArrayList<>();
     set.add(dir_id);
 
-    dest_id = 100000;
-
     int i = 0;
     while (i < set.size()) {
-      long cid = set.get(i);
-      i++;
-      voltQueueSQL(sql1, cid);
+      while (i < set.size()) {
+        voltQueueSQL(sql1, set.get(i));
+        i++;
+      }
       VoltTable[] res = voltExecuteSQL();
-      int count = res[0].getRowCount();
-      for (int j = 0; j < count; ++j) {
-        set.add(res[0].fetchRow(j).getLong(0));
+      for (int j = 0; j < res.length; ++j) {
+        for (int k = 0; k < res[j].getRowCount(); ++k) {
+          VoltTableRow row = res[j].fetchRow(k);
+          row.resetRowPosition();
+          while (row.advanceRow()) {
+            set.add(row.getLong(0));
+          }
+        }
       }
     }
  
@@ -44,7 +49,8 @@ public class UpdateSubtree extends VoltProcedure {
     Long permission = null;
     Long header = null;
     Long parent = null;
-     for (int j = 0; j < res.length; ++j) {
+    String parentName = null;
+    for (int j = 0; j < res.length; ++j) {
       for (i = 0; i < res[j].getRowCount(); ++i) {
         VoltTableRow row = res[j].fetchRow(i);
         row.resetRowPosition();
@@ -56,13 +62,16 @@ public class UpdateSubtree extends VoltProcedure {
          permission = row.getLong(4);
          header = row.getLong(5);
          parent = row.getLong(6);
+         parentName = row.getString(7);
         }
         if (id == dir_id) {
           id += dest_id; 
           parent = new_parent;
+          parentName = new_parent_name; 
         } else {
           id += dest_id; 
           parent += dest_id;
+          parentName = new_parent_name + parentName.substring(old_parent_name.size())
         }
 
         voltQueueSQL(sql3,
@@ -72,7 +81,8 @@ public class UpdateSubtree extends VoltProcedure {
           modificationTime,
           permission,
           header,
-          parent);
+          parent,
+          parentName);
       }
     }
     voltExecuteSQL();    
