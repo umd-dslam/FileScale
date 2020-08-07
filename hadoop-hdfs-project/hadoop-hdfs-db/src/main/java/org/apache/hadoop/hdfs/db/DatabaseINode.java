@@ -905,6 +905,45 @@ public class DatabaseINode {
     return res;
   }
 
+  public static String getParentName(final long id) {
+    String res = null;
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("GetParentName", id).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getString(0);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "SELECT parentName FROM inodes WHERE id = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, id);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          res = rs.getString(1);
+        }
+        rs.close();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    if (LOG.isInfoEnabled()) {
+      LOG.info("parent name [GET]: (" + id + "," + res + ")");
+    }
+    return res;
+  }
+
   public static long getChild(final long parentId, final String childName) {
     long childId = -1;
     try {

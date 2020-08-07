@@ -729,7 +729,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
           if (child.isDirectory()) {
             HashSet<String> childNames = ((INodeDirectory)child).getCurrentChildrenList2();
             for (String cname : childNames) {
-              q.add(child.getPath() + cname));
+              q.add(child.getPath() + cname);
             }
           }
 
