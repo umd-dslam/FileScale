@@ -184,7 +184,7 @@ public class TestFSImage {
     long preferredBlockSize = 128*1024*1024;
     INodeFile file = new INodeFile(id, name, permissionStatus, mtime, atime,
         blocks, null, erasureCodingPolicyID, preferredBlockSize,
-        (byte) 0, BlockType.STRIPED);
+        (byte) 0, BlockType.STRIPED, null);
     ByteArrayOutputStream bs = new ByteArrayOutputStream();
 
     // Construct StripedBlocks for the INode

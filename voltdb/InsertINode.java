@@ -5,7 +5,7 @@ public class InsertINode extends VoltProcedure {
   public final SQLStmt sql =
       new SQLStmt(
           "UPSERT INTO inodes("
-              + "	id, name, accessTime, modificationTime, permission, header, parent"
+              + "	id, name, accessTime, modificationTime, permission, header, parent, parentName"
               + ") VALUES (?, ?, ?, ?, ?, ?, ?);");
 
   public long run(
@@ -15,9 +15,10 @@ public class InsertINode extends VoltProcedure {
       final long accessTime,
       final long modificationTime,
       final long permission,
-      final long header)
+      final long header,
+      final String parentName)
       throws VoltAbortException {
-    voltQueueSQL(sql, id, name, accessTime, modificationTime, permission, header, pid);
+    voltQueueSQL(sql, id, name, accessTime, modificationTime, permission, header, pid, parentName);
     voltExecuteSQL();
     return 1;
   }

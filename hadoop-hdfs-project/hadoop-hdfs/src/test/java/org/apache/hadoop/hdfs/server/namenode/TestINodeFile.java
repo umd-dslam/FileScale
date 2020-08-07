@@ -94,7 +94,7 @@ public class TestINodeFile {
 
   static public INodeFile createINodeFile(long id) {
     return new INodeFile(id, ("file" + id).getBytes(), perm, 0L, 0L, null,
-        (short)3, 1024L);
+        (short)3, 1024L, null);
   }
 
   static void toCompleteFile(INodeFile file) {
@@ -103,7 +103,7 @@ public class TestINodeFile {
 
   INodeFile createINodeFile(short replication, long preferredBlockSize) {
     return new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID, null, perm, 0L, 0L,
-        null, replication, preferredBlockSize);
+        null, replication, preferredBlockSize, null);
   }
 
   INodeFile createStripedINodeFile(long preferredBlockSize) {
@@ -111,12 +111,12 @@ public class TestINodeFile {
         null, null,
         StripedFileTestUtil.getDefaultECPolicy().getId(),
         preferredBlockSize,
-        HdfsConstants.WARM_STORAGE_POLICY_ID, STRIPED);
+        HdfsConstants.WARM_STORAGE_POLICY_ID, STRIPED, null);
   }
 
   private static INodeFile createINodeFile(byte storagePolicyID) {
     return new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID, null, perm, 0L, 0L,
-        null, (short)3, null, 1024L, storagePolicyID, CONTIGUOUS);
+        null, (short)3, null, 1024L, storagePolicyID, CONTIGUOUS, null);
   }
 
   @Test
@@ -144,7 +144,7 @@ public class TestINodeFile {
       new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID,
           null, perm, 0L, 0L, null, new Short((short) 3) /*replication*/,
           StripedFileTestUtil.getDefaultECPolicy().getId() /*ec policy*/,
-          preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS);
+          preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS, null);
       fail("INodeFile construction should fail when both replication and " +
           "ECPolicy requested!");
     } catch (IllegalArgumentException iae) {
@@ -154,7 +154,7 @@ public class TestINodeFile {
     try {
       new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID,
           null, perm, 0L, 0L, null, null /*replication*/, null /*ec policy*/,
-          preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS);
+          preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS, null);
       fail("INodeFile construction should fail when replication param not " +
           "provided for contiguous layout!");
     } catch (IllegalArgumentException iae) {
@@ -165,7 +165,7 @@ public class TestINodeFile {
       new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID,
           null, perm, 0L, 0L, null, Short.MAX_VALUE /*replication*/,
           null /*ec policy*/, preferredBlockSize,
-          HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS);
+          HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS, null);
       fail("INodeFile construction should fail when replication param is " +
           "beyond the range supported!");
     } catch (IllegalArgumentException iae) {
@@ -176,7 +176,7 @@ public class TestINodeFile {
     try {
       new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID,
           null, perm, 0L, 0L, null, replication, null /*ec policy*/,
-          preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, STRIPED);
+          preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, STRIPED, null);
       fail("INodeFile construction should fail when replication param is " +
           "provided for striped layout!");
     } catch (IllegalArgumentException iae) {
@@ -185,7 +185,7 @@ public class TestINodeFile {
 
     inodeFile = new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID,
         null, perm, 0L, 0L, null, replication, null /*ec policy*/,
-        preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS);
+        preferredBlockSize, HdfsConstants.WARM_STORAGE_POLICY_ID, CONTIGUOUS, null);
 
     Assert.assertTrue(!inodeFile.isStriped());
     Assert.assertEquals(replication.shortValue(),
@@ -378,7 +378,7 @@ public class TestINodeFile {
     INodeFile[] iNodes = new INodeFile[nCount];
     for (int i = 0; i < nCount; i++) {
       iNodes[i] = new INodeFile(i, null, perm, 0L, 0L, null, replication,
-          preferredBlockSize);
+          preferredBlockSize, null);
       iNodes[i].setLocalName(DFSUtil.string2Bytes(fileNamePrefix + i));
       BlockInfo newblock = new BlockInfoContiguous(replication);
       iNodes[i].addBlock(newblock);
@@ -436,7 +436,7 @@ public class TestINodeFile {
     {//cast from INodeFileUnderConstruction
       final INode from = new INodeFile(
           HdfsConstants.GRANDFATHER_INODE_ID, null, perm, 0L, 0L, null, replication,
-          1024L);
+          1024L, null);
       from.asFile().toUnderConstruction("client", "machine");
     
       //cast to INodeFile, should success
@@ -1192,7 +1192,7 @@ public class TestINodeFile {
   public void testFileUnderConstruction() {
     replication = 3;
     final INodeFile file = new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID, null,
-        perm, 0L, 0L, null, replication, 1024L);
+        perm, 0L, 0L, null, replication, 1024L, null);
     assertFalse(file.isUnderConstruction());
 
     final String clientName = "client";

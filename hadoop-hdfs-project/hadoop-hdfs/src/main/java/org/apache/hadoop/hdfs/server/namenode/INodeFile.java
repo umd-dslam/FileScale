@@ -258,19 +258,20 @@ public class INodeFile extends INodeWithAdditionalFields
 
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
             long atime, BlockInfo[] blklist, short replication,
-            long preferredBlockSize) {
+            long preferredBlockSize, String parentName) {
     this(id, name, permissions, mtime, atime, blklist, replication, null,
-        preferredBlockSize, (byte) 0, CONTIGUOUS);
+        preferredBlockSize, (byte) 0, CONTIGUOUS, parentName);
   }
 
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
       long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
-      long preferredBlockSize, byte storagePolicyID, BlockType blockType) {
+      long preferredBlockSize, byte storagePolicyID, BlockType blockType,
+      String parentName) {
     super(id, name, permissions, mtime, atime,
       HeaderFormat.toLong(preferredBlockSize,
         HeaderFormat.getBlockLayoutRedundancy(
           blockType, replication, ecPolicyID), storagePolicyID
-        )
+        ), parentName
       );
     
     header = HeaderFormat.toLong(preferredBlockSize,
@@ -288,12 +289,12 @@ public class INodeFile extends INodeWithAdditionalFields
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
       long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
       long preferredBlockSize, byte storagePolicyID, BlockType blockType,
-      INodeDirectory parent) {
+      INodeDirectory parent, String parentName) {
     super(id, name, permissions, mtime, atime,
       HeaderFormat.toLong(preferredBlockSize,
         HeaderFormat.getBlockLayoutRedundancy(
           blockType, replication, ecPolicyID), storagePolicyID
-        ), parent);
+        ), parent, parentName);
     
     header = HeaderFormat.toLong(preferredBlockSize,
       HeaderFormat.getBlockLayoutRedundancy(
@@ -339,14 +340,14 @@ public class INodeFile extends INodeWithAdditionalFields
 
   // Copy InodeFile
   private void InitINodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
-      long atime, long header, INodeDirectory parent) {
-    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, atime, header, parent);
+      long atime, long header, INodeDirectory parent, String parentName) {
+    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, atime, header, parent, parentName);
     this.header = header;
   }
 
   public void InitINodeFile(long parent, long id, byte[] name, long permissions, long mtime,
-      long atime, long header) {
-    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header);
+      long atime, long header, String parentName) {
+    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header, parentName);
     this.header = header;
   }
 
@@ -357,7 +358,7 @@ public class INodeFile extends INodeWithAdditionalFields
   public INodeFile copyINodeFile() {
     INodeFile inode = new INodeFile(this.getId());
     inode.InitINodeFile(getId(), getLocalNameBytes(),
-      getPermissionStatus(), getModificationTime(), getAccessTime(), getHeaderLong(), getParent());
+      getPermissionStatus(), getModificationTime(), getAccessTime(), getHeaderLong(), getParent(), getParentName());
     return inode;
   }
 

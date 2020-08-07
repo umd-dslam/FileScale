@@ -797,7 +797,7 @@ public class FSImageFormat {
 
       INodeFile file = new INodeFile(inodeId, localName, permissions,
           modificationTime, atime, (BlockInfoContiguous[]) blocks,
-          replication, blockSize);
+          replication, blockSize, null);
       if (underConstruction) {
         file.toUnderConstruction(clientName, clientMachine);
       }
@@ -831,7 +831,7 @@ public class FSImageFormat {
         counter.increment();
       }
       final INodeDirectory dir = new INodeDirectory(inodeId, localName,
-          permissions, modificationTime);
+          permissions, modificationTime, null);
       if (nsQuota >= 0 || dsQuota >= 0) {
         dir.addDirectoryWithQuotaFeature(new DirectoryWithQuotaFeature.Builder().
             nameSpaceQuota(nsQuota).storageSpaceQuota(dsQuota).build());

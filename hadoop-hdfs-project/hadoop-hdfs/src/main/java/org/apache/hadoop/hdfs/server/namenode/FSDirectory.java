@@ -112,11 +112,10 @@ public class FSDirectory implements Closeable {
 
   private static INodeDirectory createRoot(FSNamesystem namesystem) {
     INodeDirectory r = new INodeDirectory(INodeId.ROOT_INODE_ID, INodeDirectory.ROOT_NAME,
-      namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L);
+      namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L, null);
     r.setParent(0L);
-    INodeKeyedObjects.getCache().put(new CompositeKey((Long)INodeId.ROOT_INODE_ID,
-      new ImmutablePair<>(0L, r.getLocalName())),
-      r);
+    r.setParentName("");
+    INodeKeyedObjects.getCache().put(r.getLocalName(), r);
 
     // TODO: enable later
     // r.addDirectoryWithQuotaFeature(
@@ -1567,8 +1566,8 @@ public class FSDirectory implements Closeable {
     return inodeMap.get(parentId, childName);
   }
 
-  public boolean findInode(long id) {
-    return inodeMap.find(id);
+  public boolean findInode(INodeFile file) {
+    return inodeMap.find(file);
   }
   
   @VisibleForTesting
@@ -1714,9 +1713,9 @@ public class FSDirectory implements Closeable {
       /* This is not a /.reserved/ path so do nothing. */
     } else if (Arrays.equals(DOT_INODES, pathComponents[2])) {
       /* It's a /.reserved/.inodes path. */
-      if (nComponents > 3) {
-        pathComponents = resolveDotInodesPath(pathComponents, fsd);
-      }
+      // if (nComponents > 3) {
+      //   pathComponents = resolveDotInodesPath(pathComponents, fsd);
+      // }
     } else if (Arrays.equals(RAW, pathComponents[2])) {
       /* It's /.reserved/raw so strip off the /.reserved/raw prefix. */
       if (nComponents == 3) {
@@ -1748,7 +1747,7 @@ public class FSDirectory implements Closeable {
     if (id == INodeId.ROOT_INODE_ID && pathComponents.length == 4) {
       return new byte[][]{INodeDirectory.ROOT_NAME};
     }
-    INode inode = fsd.getInode(id);
+    INode inode = null;
     if (inode == null) {
       throw new FileNotFoundException(
           "File for given inode path does not exist: " +

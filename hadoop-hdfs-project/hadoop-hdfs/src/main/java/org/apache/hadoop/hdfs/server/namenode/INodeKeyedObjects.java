@@ -15,9 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class INodeKeyedObjects {
-  private static IndexedCache<CompositeKey, INode> cache;
+  private static IndexedCache<String, INode> cache;
 
-  private static Set<Long> concurrentUpdateSet;
+  private static Set<String> concurrentUpdateSet;
   private static Set<Long> concurrentRemoveSet;
   private static long preRemoveSize = 0;
   private static long preUpdateSize = 0;
@@ -28,9 +28,9 @@ public class INodeKeyedObjects {
 
   INodeKeyedObjects() {}
 
-  public static Set<Long> getBackupSet() {
+  public static Set<String> getBackupSet() {
     if (concurrentUpdateSet == null) {
-      ConcurrentHashMap<Long, Integer> map = new ConcurrentHashMap<>();
+      ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
       concurrentUpdateSet = map.newKeySet();
     }
     return concurrentUpdateSet;
@@ -53,7 +53,7 @@ public class INodeKeyedObjects {
     final int num = 1024;
     long updateSize = concurrentUpdateSet.size();
     if (updateSize >= num) {
-      Iterator<Long> iterator = concurrentUpdateSet.iterator();
+      Iterator<String> iterator = concurrentUpdateSet.iterator();
       if (LOG.isInfoEnabled()) {
         LOG.info("Sync files/directories from cache to database.");
       }
@@ -64,9 +64,10 @@ public class INodeKeyedObjects {
       List<Long> fileIds = new ArrayList<>();
       List<String> fileAttr = new ArrayList<>();
       while (iterator.hasNext()) {
-        INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, iterator.next());
+        INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
 
         strAttr.add(inode.getLocalName());
+        strAttr.add(inode.getParentName());
         longAttr.add(inode.getParentId());
         longAttr.add(inode.getId());
         longAttr.add(inode.getModificationTime());
@@ -103,10 +104,11 @@ public class INodeKeyedObjects {
           List<String> strAttr = new ArrayList<>();
           List<Long> fileIds = new ArrayList<>();
           List<String> fileAttr = new ArrayList<>();
-          for (Long id : concurrentUpdateSet) {
-            INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, id);
+          for (String path : concurrentUpdateSet) {
+            INode inode = INodeKeyedObjects.getCache().getIfPresent(path);
 
             strAttr.add(inode.getLocalName());
+            strAttr.add(inode.getParentName());
             longAttr.add(inode.getParentId());
             longAttr.add(inode.getId());
             longAttr.add(inode.getModificationTime());
@@ -208,7 +210,7 @@ public class INodeKeyedObjects {
   // --------------------------------------------------------
   // caffeine cache
 
-  public static IndexedCache<CompositeKey, INode> getCache() {
+  public static IndexedCache<String, INode> getCache() {
     if (cache == null) {
       concurrentUpdateSet = ConcurrentHashMap.newKeySet();
       concurrentRemoveSet = ConcurrentHashMap.newKeySet();
@@ -234,7 +236,7 @@ public class INodeKeyedObjects {
                         || cause == RemovalCause.EXPIRED
                         || cause == RemovalCause.SIZE) {
                       if (LOG.isInfoEnabled()) {
-                        LOG.info("Cache Evicted: INode = " + ((CompositeKey) keys).getK1());
+                        LOG.info("Cache Evicted: INode = " + (String) keys);
                       }
                       // stored procedure: update inode in db
                       INode inode = (INode) value;
@@ -252,9 +254,7 @@ public class INodeKeyedObjects {
                   })
               .maximumSize(num);
       cache =
-          new IndexedCache.Builder<CompositeKey, INode>()
-              .withIndex(Long.class, ck -> ck.getK1())
-              .withIndex(Pair.class, ck -> ck.getK3())
+          new IndexedCache.Builder<String, INode>()
               .buildFromCaffeine(cfein);
     }
     return cache;

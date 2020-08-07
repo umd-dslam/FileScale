@@ -522,7 +522,7 @@ public class LeaseManager {
           fsnamesystem.writeLockInterruptibly();
           try {
             if (!fsnamesystem.isInSafeMode()) {
-              needSync = checkLeases();
+              // needSync = checkLeases();
             }
           } finally {
             fsnamesystem.writeUnlock("leaseManager");
@@ -570,7 +570,8 @@ public class LeaseManager {
       String newHolder = getInternalLeaseHolder();
       for(Long id : leaseINodeIds) {
         try {
-          INodesInPath iip = INodesInPath.fromINode(fsd.getInode(id));
+          INodesInPath iip = null;
+          // INodesInPath iip = INodesInPath.fromINode(fsd.getInode(id));
           p = iip.getPath();
           // Sanity check to make sure the path is correct
           if (!p.startsWith("/")) {
@@ -673,7 +674,7 @@ public class LeaseManager {
 
   @VisibleForTesting
   public void runLeaseChecks() {
-    checkLeases();
+    // checkLeases();
   }
 
 }

@@ -47,63 +47,15 @@ public class INodeMap {
     return DatabaseINode.getINodesNum();
   }
 
-  /**
-   * Get the {@link INode} with the given id from the map.
-   *
-   * @param id ID of the {@link INode}.
-   * @return The {@link INode} in the map with the given id. Return null if no such {@link INode} in
-   *     the map.
-   */
-  public INode get(long id) {
-    INode inode = INodeKeyedObjects.getCache().getIfPresent(Long.class, id);
-    if (inode == null) {
-      DatabaseINode.LoadINode node = new DatabaseINode().loadINode(id);
-      if (node == null) return null;
-      byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
-      if (node.header != 0L) {
-        inode = new INodeFile(node.id);
-        inode.asFile().setNumBlocks();
-        inode
-            .asFile()
-            .InitINodeFile(
-                node.parent,
-                node.id,
-                name,
-                node.permission,
-                node.modificationTime,
-                node.accessTime,
-                node.header);
-      } else {
-        inode = new INodeDirectory(node.id);
-        inode
-            .asDirectory()
-            .InitINodeDirectory(
-                node.parent,
-                node.id,
-                name,
-                node.permission,
-                node.modificationTime,
-                node.accessTime,
-                node.header);
-      }
-      INodeKeyedObjects.getCache()
-          .put(
-              new CompositeKey((Long) node.id, new ImmutablePair<>((Long) node.parent, node.name)),
-              inode);
-    }
-    return inode;
-  }
 
-  public INode get(long parentId, String childName) {
-    INode inode =
-        INodeKeyedObjects.getCache()
-            .getIfPresent(Pair.class, new ImmutablePair<>((Long) parentId, childName));
+  public INode get(String parentName, String childName) {
+    INode inode = INodeKeyedObjects.getCache().getIfPresent(parentName + childName);
     if (inode == null) {
-      INodeDirectory parent = get(parentId).asDirectory();
-      if (!parent.filter.mightContain(String.valueOf(parentId) + childName)) {
+      INodeDirectory parent = INodeKeyedObjects.getCache().getIfPresent(parentName).asDirectory();
+      if (!parent.filter.mightContain(String.valueOf(parent.getId()) + childName)) {
         return null;
       }
-      DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parentId, childName);
+      DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parent.getId(), childName);
       if (node == null) return null;
       byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
       if (node.header != 0L) {
@@ -118,7 +70,8 @@ public class INodeMap {
                 node.permission,
                 node.modificationTime,
                 node.accessTime,
-                node.header);
+                node.header,
+                node.parentName);
       } else {
         inode = new INodeDirectory(node.id);
         inode
@@ -130,19 +83,26 @@ public class INodeMap {
                 node.permission,
                 node.modificationTime,
                 node.accessTime,
-                node.header);
+                node.header,
+                node.parentName);
       }
       INodeKeyedObjects.getCache()
-          .put(new CompositeKey((Long) node.id, new ImmutablePair<>(parentId, childName)), inode);
+          .put(parentName + childName, inode);
     }
     return inode;
   }
 
-  public boolean find(long id) {
-    if (INodeKeyedObjects.getCache().getIfPresent(Long.class, id) != null
-        || DatabaseINode.checkInodeExistence(id)) {
+
+  public boolean find(INodeFile file) {
+    if (INodeKeyedObjects.getCache().getIfPresent(file.getPath()) != null) {
       return true;
     }
+
+    INodeDirectory parent = file.getParent();
+    if (parent.filter.mightContain(String.valueOf(parent.getId()) + file.getLocalName())) {
+      return true;
+    }
+
     return false;
   }
 

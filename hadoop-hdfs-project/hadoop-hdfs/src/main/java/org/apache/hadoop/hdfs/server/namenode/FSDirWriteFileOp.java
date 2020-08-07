@@ -449,12 +449,12 @@ class FSDirWriteFileOp {
       if (underConstruction) {
         newNode = newINodeFile(id, localName, permissions, modificationTime,
             modificationTime, replicationFactor, ecPolicyID, preferredBlockSize,
-            storagePolicyId, blockType, null);
+            storagePolicyId, blockType, null, existing.getPath());
         newNode.toUnderConstruction(clientName, clientMachine);
       } else {
         newNode = newINodeFile(id, localName, permissions, modificationTime, atime,
             replicationFactor, ecPolicyID, preferredBlockSize,
-            storagePolicyId, blockType, null);
+            storagePolicyId, blockType, null, existing.getPath());
       }
       INodesInPath iip = fsd.addINode(existing, newNode,
           permissions.getPermission());
@@ -562,7 +562,7 @@ class FSDirWriteFileOp {
       final Byte ecPolicyID = (isStriped ? ecPolicy.getId() : null);
       INodeFile newNode = newINodeFile(fsd.allocateNewInodeId(), localName, permissions,
           modTime, modTime, replicationFactor, ecPolicyID, preferredBlockSize,
-          blockType, existing.getINode(existing.length() - 1).asDirectory());
+          blockType, existing.getINode(existing.length() - 1).asDirectory(), existing.getPath());
       newNode.toUnderConstruction(clientName, clientMachine);
       newiip = fsd.addINode(existing, newNode, permissions.getPermission());
     } finally {
@@ -733,21 +733,19 @@ class FSDirWriteFileOp {
   private static INodeFile newINodeFile(
       long id, byte[] localName, PermissionStatus permissions, long mtime, long atime,
       Short replication, Byte ecPolicyID, long preferredBlockSize,
-      byte storagePolicyId, BlockType blockType, INodeDirectory parent) {
+      byte storagePolicyId, BlockType blockType, INodeDirectory parent, String parentName) {
     INodeFile file = new INodeFile(id, localName, permissions, mtime, atime,
         BlockInfo.EMPTY_ARRAY, replication, ecPolicyID, preferredBlockSize,
-        storagePolicyId, blockType, parent);
-    INodeKeyedObjects.getCache().put(new CompositeKey((Long)id,
-      new ImmutablePair<>(parent.getId(), file.getLocalName())),
-      file);
+        storagePolicyId, blockType, parent, parentName);
+    INodeKeyedObjects.getCache().put(file.getPath(), file);
     return file;
   }
 
   private static INodeFile newINodeFile(long id, byte[] localName, PermissionStatus permissions,
       long mtime, long atime, Short replication, Byte ecPolicyID,
-      long preferredBlockSize, BlockType blockType, INodeDirectory parent) {
+      long preferredBlockSize, BlockType blockType, INodeDirectory parent, String parentName) {
     return newINodeFile(id, localName, permissions, mtime, atime, replication, ecPolicyID,
-        preferredBlockSize, (byte)0, blockType, parent);
+        preferredBlockSize, (byte)0, blockType, parent, parentName);
   }
 
   /**

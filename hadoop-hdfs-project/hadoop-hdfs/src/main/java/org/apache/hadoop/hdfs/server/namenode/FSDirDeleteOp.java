@@ -267,7 +267,7 @@ class FSDirDeleteOp {
     }
 
     INodeKeyedObjects.getRemoveSet().add(targetNode.getId());
-    INodeKeyedObjects.getCache().invalidateAllWithIndex(Long.class, targetNode.getId());
+    INodeKeyedObjects.getCache().invalidate(targetNode.getPath());
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "

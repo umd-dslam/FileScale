@@ -98,7 +98,7 @@ public class TestLeaseManager {
     Thread.sleep(waitTime);
 
     //Initiate a call to checkLease. This should exit within the test timeout
-    lm.checkLeases();
+    // lm.checkLeases();
     assertTrue(lm.countLease() < numLease);
   }
 
@@ -451,7 +451,7 @@ public class TestLeaseManager {
       String fileName = DFSUtil.bytes2String(fileNameBytes);
       INodeFile iNodeFile = new INodeFile(
           inodeId.incrementAndGet(), fileNameBytes,
-          p, 0L, 0L, BlockInfo.EMPTY_ARRAY, (short) 1, 1L);
+          p, 0L, 0L, BlockInfo.EMPTY_ARRAY, (short) 1, 1L, null);
       iNodeFile.setParent(prev);
       pathINodeMap.put(fileName, iNodeFile);
     }
@@ -475,6 +475,6 @@ public class TestLeaseManager {
         "dummy", "dummy", new FsPermission((short) 0777));
     return new INodeFile(
         inodeId, new String("foo-" + inodeId).getBytes(), p, 0L, 0L,
-        BlockInfo.EMPTY_ARRAY, (short) 1, 1L);
+        BlockInfo.EMPTY_ARRAY, (short) 1, 1L, null);
   }
 }

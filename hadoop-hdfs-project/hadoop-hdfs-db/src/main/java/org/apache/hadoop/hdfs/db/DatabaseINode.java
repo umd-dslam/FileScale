@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,6 +26,7 @@ public class DatabaseINode {
 
   public class LoadINode {
     public final long parent;
+    public final String parentName;
     public final long id;
     public final String name;
     public final long permission;
@@ -36,6 +36,7 @@ public class DatabaseINode {
 
     LoadINode(
         long parent,
+        String parentName,
         long id,
         String name,
         long permission,
@@ -43,6 +44,7 @@ public class DatabaseINode {
         long accessTime,
         long header) {
       this.parent = parent;
+      this.parentName = parentName;
       this.id = id;
       this.name = name;
       this.permission = permission;
@@ -53,6 +55,10 @@ public class DatabaseINode {
 
     long getParent() {
       return parent;
+    }
+
+    String getParentName() {
+      return parentName;
     }
 
     long getId() {
@@ -94,12 +100,13 @@ public class DatabaseINode {
             res =
                 new LoadINode(
                     result.getLong(0),
-                    result.getLong(1),
-                    result.getString(2),
-                    result.getLong(3),
+                    result.getString(1),
+                    result.getLong(2),
+                    result.getString(3),
                     result.getLong(4),
                     result.getLong(5),
-                    result.getLong(6));
+                    result.getLong(6),
+                    result.getLong(7));
           }
         } catch (Exception e) {
           e.printStackTrace();
@@ -107,7 +114,7 @@ public class DatabaseINode {
       } else {
         Connection conn = obj.getConnection();
         String sql =
-            "SELECT parent, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE id = ?;";
+            "SELECT parent, parentName, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE id = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
         pst.setLong(1, id);
         ResultSet rs = pst.executeQuery();
@@ -115,12 +122,13 @@ public class DatabaseINode {
           res =
               new LoadINode(
                   rs.getLong(1),
-                  rs.getLong(2),
-                  rs.getString(3),
-                  rs.getLong(4),
+                  rs.getString(2),
+                  rs.getLong(3),
+                  rs.getString(4),
                   rs.getLong(5),
                   rs.getLong(6),
-                  rs.getLong(7));
+                  rs.getLong(7),
+                  rs.getLong(8));
         }
         rs.close();
         pst.close();
@@ -151,12 +159,13 @@ public class DatabaseINode {
             res =
                 new LoadINode(
                     result.getLong(0),
-                    result.getLong(1),
-                    result.getString(2),
-                    result.getLong(3),
+                    result.getString(1),
+                    result.getLong(2),
+                    result.getString(3),
                     result.getLong(4),
                     result.getLong(5),
-                    result.getLong(6));
+                    result.getLong(6),
+                    result.getLong(7));
           }
         } catch (Exception e) {
           e.printStackTrace();
@@ -164,7 +173,7 @@ public class DatabaseINode {
       } else {
         Connection conn = obj.getConnection();
         String sql =
-            "SELECT parent, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE parent = ? AND name = ?;";
+            "SELECT parent, parentName, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE parent = ? AND name = ?;";
         PreparedStatement pst = conn.prepareStatement(sql);
         pst.setLong(1, parentId);
         pst.setString(2, childName);
@@ -173,12 +182,13 @@ public class DatabaseINode {
           res =
               new LoadINode(
                   rs.getLong(1),
-                  rs.getLong(2),
-                  rs.getString(3),
-                  rs.getLong(4),
+                  rs.getString(2),
+                  rs.getLong(3),
+                  rs.getString(4),
                   rs.getLong(5),
                   rs.getLong(6),
-                  rs.getLong(7));
+                  rs.getLong(7),
+                  rs.getLong(8));
         }
         rs.close();
         pst.close();
@@ -319,7 +329,8 @@ public class DatabaseINode {
       final long accessTime,
       final long modificationTime,
       final long permission,
-      final long header) {
+      final long header,
+      final String parentName) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
@@ -335,7 +346,8 @@ public class DatabaseINode {
                   accessTime,
                   modificationTime,
                   permission,
-                  header);
+                  header,
+                  parentName);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -555,7 +567,6 @@ public class DatabaseINode {
       LOG.info("parent [UPDATE]: (" + id + "," + parent + ")");
     }
   }
-
 
   public static void setParents(final long oldparent, final long newparent) {
     try {
@@ -1004,7 +1015,7 @@ public class DatabaseINode {
               + "   UNION ALL"
               + "       SELECT d.id, d.parent, d.name FROM cte"
               + "   JOIN inodes d ON cte.parent = d.id"
-              + ") SELECT id, name FROM cte;";
+              + ") SELECT parent, name FROM cte;";
       PreparedStatement pst = conn.prepareStatement(sql);
       pst.setLong(1, childId);
       ResultSet rs = pst.executeQuery();
@@ -1816,7 +1827,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "UpdateSubtree", dir_id, dest_id, new_parent);
+          obj.getVoltClient()
+              .callProcedure(new NullCallback(), "UpdateSubtree", dir_id, dest_id, new_parent);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -1838,7 +1850,8 @@ public class DatabaseINode {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "SetId", old_id, new_id, new_parent);
+          obj.getVoltClient()
+              .callProcedure(new NullCallback(), "SetId", old_id, new_id, new_parent);
         } catch (Exception e) {
           e.printStackTrace();
         }
