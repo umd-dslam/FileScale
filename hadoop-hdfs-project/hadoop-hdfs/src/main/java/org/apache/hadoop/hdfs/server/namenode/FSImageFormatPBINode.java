@@ -199,33 +199,34 @@ public final class FSImageFormatPBINode {
     }
 
     void loadINodeDirectorySection(InputStream in) throws IOException {
-      final List<INodeReference> refList = parent.getLoaderContext()
-         .getRefList();
-      while (true) {
-        INodeDirectorySection.DirEntry e = INodeDirectorySection.DirEntry
-            .parseDelimitedFrom(in);
-        // note that in is a LimitedInputStream
-        if (e == null) {
-          break;
-        }
+      // final List<INodeReference> refList = parent.getLoaderContext()
+      //    .getRefList();
+      // while (true) {
+      //   INodeDirectorySection.DirEntry e = INodeDirectorySection.DirEntry
+      //       .parseDelimitedFrom(in);
+      //   // note that in is a LimitedInputStream
+      //   if (e == null) {
+      //     break;
+      //   }
 
-        // TODO(gangliao): clean code
-        // long id = dir.getInode(e.getParent()).getId();
-        // for (long childId : DatabaseINode.getChildrenIds(id)){
-        //   INode child = dir.getInode(childId);
-        //   addToParent(id, child);
-        // }
+      //   // TODO(gangliao): clean code
+      //   // long id = dir.getInode(e.getParent()).getId();
+      //   // for (long childId : DatabaseINode.getChildrenIds(id)){
+      //   //   INode child = dir.getInode(childId);
+      //   //   addToParent(id, child);
+      //   // }
 
-        INodeDirectory p = dir.getInode(e.getParent()).asDirectory();
-        for (long id : e.getChildrenList()) {
-          INode child = dir.getInode(id);
-          addToParent(p, child);
-        }
-        for (int refId : e.getRefChildrenList()) {
-          INodeReference ref = refList.get(refId);
-          addToParent(p, ref);
-        }
-      }
+      //   INodeDirectory p = dir.getInode(e.getParent()).asDirectory();
+      //   for (long id : e.getChildrenList()) {
+      //     INode child = dir.getInode(id);
+      //     addToParent(p, child);
+      //   }
+      //   for (int refId : e.getRefChildrenList()) {
+      //     INodeReference ref = refList.get(refId);
+      //     addToParent(p, ref);
+      //   }
+      // }
+      return;
     }
 
     void loadINodeSection(InputStream in, StartupProgress prog,

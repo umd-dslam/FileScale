@@ -1841,7 +1841,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     for (DatanodeDescriptor dataNode :
         blockManager.getDatanodeManager().getDatanodes()) {
       for (long ucFileId : dataNode.getLeavingServiceStatus().getOpenFiles()) {
-        INode ucFile = getFSDirectory().getInode(ucFileId);
+        // INode ucFile = getFSDirectory().getInode(ucFileId);
+        INode ucFile = null;
         if (ucFile == null || ucFileId <= prevId ||
             openFileIds.contains(ucFileId)) {
           // probably got deleted or
@@ -3653,8 +3654,9 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
 
   @Override
   public INodeFile getBlockCollection(long id) {
-    INode inode = getFSDirectory().getInode(id);
-    return inode == null ? null : inode.asFile();
+    // INode inode = getFSDirectory().getInode(id);
+    // return inode == null ? null : inode.asFile();
+    return null;
   }
 
   void commitBlockSynchronization(ExtendedBlock oldBlock,

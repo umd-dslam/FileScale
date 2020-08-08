@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -38,7 +39,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.Lists;
 
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.BatchedRemoteIterator.BatchedListEntries;
@@ -310,8 +311,8 @@ public class LeaseManager {
     int count = 0;
     String fullPathName = null;
     for (Long inodeId: inodeIds) {
-      Pair<String, String> path = leasesByName.get(inodeId); 
-      final INodeFile inodeFile = currentINode = fsnamesystem.getFSDirectory().getInode(path.getLeft(), path.getRight()).asFile();
+      Pair<String, String> key = leasesByName.get(inodeId); 
+      final INodeFile inodeFile = fsnamesystem.getFSDirectory().getInode(key.getLeft(), key.getRight()).asFile();
       if (!inodeFile.isUnderConstruction()) {
         LOG.warn("The file {} is not under construction but has lease.",
             inodeFile.getFullPathName());
@@ -421,7 +422,7 @@ public class LeaseManager {
     if (lease != null) {
       removeLease(lease, src.getId());
     }
-    return addLease(newHolder, src.getId());
+    return addLease(newHolder, src.getId(), src.getParentName(), src.getLocalName());
   }
 
   /**

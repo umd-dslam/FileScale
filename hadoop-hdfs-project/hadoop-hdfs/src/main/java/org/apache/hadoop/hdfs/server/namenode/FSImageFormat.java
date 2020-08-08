@@ -73,7 +73,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.MD5Hash;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Pair;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -1482,8 +1482,8 @@ public class FSImageFormat {
         out.writeInt(filesWithUC.size() + snapshotUCMap.size()); // write the size
 
         for (Long id : filesWithUC) {
-          Pair<String, String> path = leaseManager.getLeaseByName().get(id);
-          INodeFile file = dir.getInode(path.getLeft(), path.getRight()).asFile();
+          Pair<String, String> key = leaseManager.getLeaseByName().get(id);
+          INodeFile file = dir.getInode(key.getLeft(), key.getRight()).asFile();
           String path = file.getFullPathName();
           FSImageSerialization.writeINodeUnderConstruction(
                   out, file, path);
