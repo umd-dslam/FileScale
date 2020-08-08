@@ -65,7 +65,7 @@ public class CreateEditsLog {
                                       new FsPermission((short)0777));
     INodeId inodeId = new INodeId();
     INodeDirectory dirInode = new INodeDirectory(inodeId.nextValue(), null, p,
-      0L);
+      0L, null);
     editLog.logMkDir(BASE_PATH, dirInode);
     BlockInfo[] blocks = new BlockInfo[blocksPerFile];
     
@@ -92,7 +92,7 @@ public class CreateEditsLog {
       // Log the new sub directory in edits
       if ((iF % nameGenerator.getFilesPerDirectory())  == 0) {
         String currentDir = nameGenerator.getCurrentDir();
-        dirInode = new INodeDirectory(inodeId.nextValue(), null, p, 0L);
+        dirInode = new INodeDirectory(inodeId.nextValue(), null, p, 0L, null);
         editLog.logMkDir(currentDir, dirInode);
       }
       INodeFile fileUc = new INodeFile(inodeId.nextValue(), null,
