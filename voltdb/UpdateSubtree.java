@@ -71,7 +71,7 @@ public class UpdateSubtree extends VoltProcedure {
         } else {
           id += dest_id; 
           parent += dest_id;
-          parentName = new_parent_name + parentName.substring(old_parent_name.length())
+          parentName = new_parent_name + parentName.substring(old_parent_name.length());
         }
 
         voltQueueSQL(sql3,

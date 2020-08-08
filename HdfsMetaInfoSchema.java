@@ -92,7 +92,7 @@ public class HdfsMetaInfoSchema {
               + "   maxDate bigint, sequenceNumber int primary key, masterKeyId int, expiryDate bigint"
               + ");"
               + "CREATE TABLE inodes("
-              + "   id bigint, parent bigint NOT NULL, parentName varchar, name varchar,"
+              + "   id bigint, parent bigint NOT NULL, parentName varchar NOT NULL, name varchar,"
               + "   accessTime bigint, modificationTime bigint,"
               + "   header bigint, permission bigint,"
               + "   PRIMARY KEY (parentName, name)"
