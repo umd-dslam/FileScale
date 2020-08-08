@@ -1,6 +1,6 @@
 import org.voltdb.*;
 
-public class InsertINode extends VoltProcedure {
+public class RenameINode extends VoltProcedure {
 
   public final SQLStmt sql1 = new SQLStmt("DELETE FROM inodes WHERE id = ?;");
   public final SQLStmt sql2 =
