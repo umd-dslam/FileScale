@@ -73,6 +73,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.MD5Hash;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -548,42 +549,43 @@ public class FSImageFormat {
      */
     private void loadDirectoryWithSnapshot(DataInput in, Counter counter)
         throws IOException {
+          return;
       // Step 1. Identify the parent INode
-      long inodeId = in.readLong();
-      final INodeDirectory parent = this.namesystem.dir.getInode(inodeId)
-          .asDirectory();
+      // long inodeId = in.readLong();
+      // final INodeDirectory parent = this.namesystem.dir.getInode(inodeId)
+      //     .asDirectory();
       
-      // Check if the whole subtree has been saved (for reference nodes)
-      boolean toLoadSubtree = referenceMap.toProcessSubtree(parent.getId());
-      if (!toLoadSubtree) {
-        return;
-      }
+      // // Check if the whole subtree has been saved (for reference nodes)
+      // boolean toLoadSubtree = referenceMap.toProcessSubtree(parent.getId());
+      // if (!toLoadSubtree) {
+      //   return;
+      // }
 
-      // Step 2. Load snapshots if parent is snapshottable
-      int numSnapshots = in.readInt();
-      if (numSnapshots >= 0) {
-        // load snapshots and snapshotQuota
-        SnapshotFSImageFormat.loadSnapshotList(parent, numSnapshots, in, this);
-        if (parent.getDirectorySnapshottableFeature().getSnapshotQuota() > 0) {
-          // add the directory to the snapshottable directory list in 
-          // SnapshotManager. Note that we only add root when its snapshot quota
-          // is positive.
-          this.namesystem.getSnapshotManager().addSnapshottable(parent);
-        }
-      }
+      // // Step 2. Load snapshots if parent is snapshottable
+      // int numSnapshots = in.readInt();
+      // if (numSnapshots >= 0) {
+      //   // load snapshots and snapshotQuota
+      //   SnapshotFSImageFormat.loadSnapshotList(parent, numSnapshots, in, this);
+      //   if (parent.getDirectorySnapshottableFeature().getSnapshotQuota() > 0) {
+      //     // add the directory to the snapshottable directory list in 
+      //     // SnapshotManager. Note that we only add root when its snapshot quota
+      //     // is positive.
+      //     this.namesystem.getSnapshotManager().addSnapshottable(parent);
+      //   }
+      // }
 
-      // Step 3. Load children nodes under parent
-      loadChildren(parent, in, counter);
+      // // Step 3. Load children nodes under parent
+      // loadChildren(parent, in, counter);
       
-      // Step 4. load Directory Diff List
-      SnapshotFSImageFormat.loadDirectoryDiffList(parent, in, this);
+      // // Step 4. load Directory Diff List
+      // SnapshotFSImageFormat.loadDirectoryDiffList(parent, in, this);
       
-      // Recursively load sub-directories, including snapshot copies of deleted
-      // directories
-      int numSubTree = in.readInt();
-      for (int i = 0; i < numSubTree; i++) {
-        loadDirectoryWithSnapshot(in, counter);
-      }
+      // // Recursively load sub-directories, including snapshot copies of deleted
+      // // directories
+      // int numSubTree = in.readInt();
+      // for (int i = 0; i < numSubTree; i++) {
+      //   loadDirectoryWithSnapshot(in, counter);
+      // }
     }
     
    /**
@@ -954,7 +956,7 @@ public class FSImageFormat {
           // TODO: for HDFS-5428, we use reserved path for those INodeFileUC in
           // snapshot. If we support INode ID in the layout version, we can use
           // the inode id to find the oldnode.
-          oldnode = namesystem.dir.getInode(cons.getId()).asFile();
+          oldnode = namesystem.dir.getInode(cons.getParentName(), path).asFile();
           inSnapshot = true;
         } else {
           path = renameReservedPathsOnUpgrade(path, getLayoutVersion());
@@ -1480,7 +1482,8 @@ public class FSImageFormat {
         out.writeInt(filesWithUC.size() + snapshotUCMap.size()); // write the size
 
         for (Long id : filesWithUC) {
-          INodeFile file = dir.getInode(id).asFile();
+          Pair<String, String> path = leaseManager.getLeaseByName().get(id);
+          INodeFile file = dir.getInode(path.getLeft(), path.getRight()).asFile();
           String path = file.getFullPathName();
           FSImageSerialization.writeINodeUnderConstruction(
                   out, file, path);

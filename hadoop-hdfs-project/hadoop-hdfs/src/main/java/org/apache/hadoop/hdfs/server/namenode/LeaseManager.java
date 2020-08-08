@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.Pair;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -39,6 +38,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.Lists;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.BatchedRemoteIterator.BatchedListEntries;
@@ -177,6 +177,8 @@ public class LeaseManager {
   }
 
   Collection<Long> getINodeIdWithLeases() {return leasesById.keySet();}
+
+  HashMap<Long, Pair<String, String>> getLeaseByName() { return leasesByName; }
 
   /**
    * Get {@link INodesInPath} for all {@link INode} in the system

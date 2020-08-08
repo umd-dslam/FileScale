@@ -7884,7 +7884,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   public void removeXattr(long id, String xattrName) throws IOException {
     writeLock();
     try {
-      final INode inode = dir.getInode(id);
+      // final INode inode = dir.getInode(id);
+      final INode inode = null;
       if (inode == null) {
         return;
       }
