@@ -404,7 +404,7 @@ public class FSEditLogLoader {
             addCloseOp.storagePolicyId, addCloseOp.erasureCodingPolicyId);
         assert newFile != null;
         iip = INodesInPath.replace(iip, iip.length() - 1, newFile);
-        fsNamesys.leaseManager.addLease(addCloseOp.clientName, newFile.getId());
+        fsNamesys.leaseManager.addLease(addCloseOp.clientName, newFile.getId(), newFile.getParentName(), newFile.getLocalName());
 
         // add the op into retry cache if necessary
         if (toAddRetryCache) {

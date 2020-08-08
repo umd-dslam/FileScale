@@ -314,7 +314,7 @@ public final class ReencryptionUpdater implements Runnable {
         FileEdekInfo entry = it.next();
         // resolve the inode again, and skip if it's doesn't exist
         LOG.trace("Updating {} for re-encryption.", entry.getInodeId());
-        final INode inode = dir.getInode(entry.getInodeId());
+        final INode inode = dir.getInode(entry.getParentName(), entry.getInodeName());
         if (inode == null) {
           LOG.debug("INode {} doesn't exist, skipping re-encrypt.",
               entry.getInodeId());
@@ -478,7 +478,8 @@ public final class ReencryptionUpdater implements Runnable {
     dir.writeLock();
     try {
       handler.getTraverser().checkINodeReady(task.zoneId);
-      final INode zoneNode = dir.getInode(task.zoneId);
+      // final INode zoneNode = dir.getInode(task.zoneId);
+      final INode zoneNode = null;
       if (zoneNode == null) {
         // ez removed.
         return;

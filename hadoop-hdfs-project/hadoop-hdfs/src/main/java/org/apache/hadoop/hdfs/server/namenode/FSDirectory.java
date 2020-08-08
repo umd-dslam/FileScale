@@ -771,9 +771,9 @@ public class FSDirectory implements Closeable {
     if (fileId == HdfsConstants.GRANDFATHER_INODE_ID) {
       iip = resolvePath(pc, src, DirOp.WRITE);
     } else {
-      byte[][] paths = INode.getPathComponents(src));
-      INode inode = getInode(DFSUtil.byteArray2PathString(paths, 0, path.length - 1),
-        DFSUtil.bytes2String(path[path.length - 1]));
+      byte[][] paths = INode.getPathComponents(src);
+      INode inode = getInode(DFSUtil.byteArray2PathString(paths, 0, paths.length - 1),
+        DFSUtil.bytes2String(paths[paths.length - 1]));
       if (inode == null) {
         iip = INodesInPath.fromComponents(INode.getPathComponents(src));
       } else {

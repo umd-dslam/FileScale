@@ -68,7 +68,7 @@ public class TestLeaseManager {
             INodeId.ROOT_INODE_ID + 2, INodeId.ROOT_INODE_ID + 3,
             INodeId.ROOT_INODE_ID + 4);
     for (long id : ids) {
-      lm.addLease("foo", id);
+      lm.addLease("foo", id, null, null);
     }
 
     assertEquals(4, lm.getINodeIdWithLeases().size());
@@ -92,7 +92,7 @@ public class TestLeaseManager {
 
     for (long i = 0; i <= numLease - 1; i++) {
       //Add some leases to the LeaseManager
-      lm.addLease("holder"+i, INodeId.ROOT_INODE_ID + i);
+      lm.addLease("holder"+i, INodeId.ROOT_INODE_ID + i, null, null);
     }
     assertEquals(numLease, lm.countLease());
     Thread.sleep(waitTime);
@@ -119,12 +119,12 @@ public class TestLeaseManager {
   public void testCountPath() {
     LeaseManager lm = new LeaseManager(makeMockFsNameSystem());
 
-    lm.addLease("holder1", 1);
+    lm.addLease("holder1", 1, null, null);
     assertThat(lm.countPath(), is(1L));
 
-    lm.addLease("holder2", 2);
+    lm.addLease("holder2", 2, null, null);
     assertThat(lm.countPath(), is(2L));
-    lm.addLease("holder2", 2);                   // Duplicate addition
+    lm.addLease("holder2", 2, null, null);                   // Duplicate addition
     assertThat(lm.countPath(), is(2L));
 
     assertThat(lm.countPath(), is(2L));
@@ -214,7 +214,7 @@ public class TestLeaseManager {
       iNodeFile.toUnderConstruction("hbase", "gce-100");
       iNodeFile.setParent(rootInodeDirectory);
       when(fsDirectory.getInode(iNodeId)).thenReturn(iNodeFile);
-      lm.addLease("holder_" + iNodeId, iNodeId);
+      lm.addLease("holder_" + iNodeId, iNodeId, null, null);
     }
     verifyINodeLeaseCounts(fsNamesystem, lm, rootInodeDirectory,
         iNodeIds.size(), iNodeIds.size(), iNodeIds.size());
@@ -295,7 +295,7 @@ public class TestLeaseManager {
       iNodeFile.toUnderConstruction("hbase", "gce-100");
       iNodeFile.setParent(ancestorDirectory);
       when(fsDirectory.getInode(iNodeId)).thenReturn(iNodeFile);
-      leaseManager.addLease("holder_" + iNodeId, iNodeId);
+      leaseManager.addLease("holder_" + iNodeId, iNodeId, null, null);
     }
     verifyINodeLeaseCounts(fsNamesystem, leaseManager,
         ancestorDirectory, iNodeIds.size(), iNodeIds.size(), iNodeIds.size());
@@ -343,7 +343,7 @@ public class TestLeaseManager {
       long iNodeId = entry.getValue().getId();
       when(fsDirectory.getInode(iNodeId)).thenReturn(entry.getValue());
       if (entry.getKey().contains("log")) {
-        lm.addLease("holder_" + iNodeId, iNodeId);
+        lm.addLease("holder_" + iNodeId, iNodeId, null, null);
       }
     }
     assertEquals(pathTree.length, lm.getINodeIdWithLeases().size());
@@ -357,7 +357,7 @@ public class TestLeaseManager {
     Set<String> filesLeased = new HashSet<>(
         Arrays.asList("root.log", "a1.log", "c1.log", "n2.log"));
     for (String fileName : filesLeased) {
-      lm.addLease("holder", pathINodeMap.get(fileName).getId());
+      lm.addLease("holder", pathINodeMap.get(fileName).getId(), null, null);
     }
     assertEquals(filesLeased.size(), lm.getINodeIdWithLeases().size());
     assertEquals(filesLeased.size(), lm.getINodeWithLeases().size());

@@ -699,7 +699,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public void remoteRename(INode node, String oldName, String oldParent, String newParent, String address) {
     // FIXME: replace NameNode.getId() with 10000 to simplify the ID assignments
-    Long skip_id = oldParent.length();
+    int skip_id = oldParent.length();
     Long old_id = node.getId();
     if (node.isDirectory()) {
       Queue<ImmutablePair<String, String>> q = new LinkedList<>();

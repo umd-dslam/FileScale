@@ -405,7 +405,7 @@ class FSDirWriteFileOp {
     }
     fsn.leaseManager.addLease(
         newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()),
-        newNode.getId());
+        newNode.getId(), newNode.getParentName(), newNode.getLocalName());
     if (feInfo != null) {
       FSDirEncryptionZoneOp.setFileEncryptionInfo(fsd, iip, feInfo,
           XAttrSetFlag.CREATE);

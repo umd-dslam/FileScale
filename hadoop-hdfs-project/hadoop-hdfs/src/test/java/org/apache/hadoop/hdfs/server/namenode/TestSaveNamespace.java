@@ -645,7 +645,7 @@ public class TestSaveNamespace {
     DistributedFileSystem fs = cluster.getFileSystem();
     try {
       cluster.getNamesystem().leaseManager.addLease("me",
-              INodeId.ROOT_INODE_ID + 1);
+              INodeId.ROOT_INODE_ID + 1, null, null);
       fs.setSafeMode(SafeModeAction.SAFEMODE_ENTER);
       cluster.getNameNodeRpc().saveNamespace(0, 0);
       fs.setSafeMode(SafeModeAction.SAFEMODE_LEAVE);

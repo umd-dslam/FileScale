@@ -188,7 +188,7 @@ final class FSDirAppendOp {
     file.toUnderConstruction(leaseHolder, clientMachine);
 
     fsn.getLeaseManager().addLease(
-        file.getFileUnderConstructionFeature().getClientName(file.getId()), file.getId());
+        file.getFileUnderConstructionFeature().getClientName(file.getId()), file.getId(), file.getParentName(), file.getLocalName());
 
     LocatedBlock ret = null;
     if (!newBlock) {

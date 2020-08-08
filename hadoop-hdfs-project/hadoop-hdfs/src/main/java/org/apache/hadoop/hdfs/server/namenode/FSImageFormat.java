@@ -974,7 +974,7 @@ public class FSImageFormat {
         }
 
         if (!inSnapshot) {
-          namesystem.leaseManager.addLease(uc.getClientName(id), oldnode.getId());
+          namesystem.leaseManager.addLease(uc.getClientName(id), oldnode.getId(), oldnode.getParentName(), oldnode.getLocalName());
         }
       }
     }

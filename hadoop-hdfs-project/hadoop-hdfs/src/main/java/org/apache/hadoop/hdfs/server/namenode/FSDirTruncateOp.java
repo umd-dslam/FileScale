@@ -222,7 +222,7 @@ final class FSDirTruncateOp {
     file.toUnderConstruction(leaseHolder, clientMachine);
     assert file.isUnderConstruction() : "inode should be under construction.";
     fsn.getLeaseManager().addLease(
-        file.getFileUnderConstructionFeature().getClientName(file.getId()), file.getId());
+        file.getFileUnderConstructionFeature().getClientName(file.getId()), file.getId(), file.getParentName(), file.getLocalName());
     boolean shouldRecoverNow = (newBlock == null);
     BlockInfo oldBlock = file.getLastBlock();
 

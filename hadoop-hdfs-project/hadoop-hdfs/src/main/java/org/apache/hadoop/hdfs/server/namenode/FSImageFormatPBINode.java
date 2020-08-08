@@ -337,7 +337,7 @@ public final class FSImageFormatPBINode {
         INodeSection.FileUnderConstructionFeature uc = f.getFileUC();
         file.toUnderConstruction(uc.getClientName(), uc.getClientMachine());
         // update the lease manager
-        fsn.leaseManager.addLease(uc.getClientName(), file.getId());
+        fsn.leaseManager.addLease(uc.getClientName(), file.getId(), file.getParentName(), file.getLocalName());
         if (blocks.length > 0) {
           BlockInfo lastBlk = file.getLastBlock();
           // replace the last block of file
