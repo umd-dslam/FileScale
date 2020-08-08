@@ -149,7 +149,7 @@ public class LeaseManager {
     long numUCBlocks = 0;
     for (Long id : getINodeIdWithLeases()) {
       Pair<String, String> path = leasesByName.get(id); 
-      INode inode = fsnamesystem.getFSDirectory().getInode(path.getLeft(), path.getRight());
+      INode inode = fsnamesystem.getFSDirectory().getInode(path.getFirst(), path.getSecond());
       if (inode == null) {
         // The inode could have been deleted after getINodeIdWithLeases() is
         // called, check here, and ignore it if so
@@ -197,7 +197,7 @@ public class LeaseManager {
     INode currentINode;
     for (long inodeId : leasesById.keySet()) {
       Pair<String, String> path = leasesByName.get(inodeId); 
-      currentINode = fsnamesystem.getFSDirectory().getInode(path.getLeft(), path.getRight());
+      currentINode = fsnamesystem.getFSDirectory().getInode(path.getFirst(), path.getSecond());
       // A file with an active lease could get deleted, or its
       // parent directories could get recursively deleted.
       if (currentINode != null &&
@@ -312,7 +312,7 @@ public class LeaseManager {
     String fullPathName = null;
     for (Long inodeId: inodeIds) {
       Pair<String, String> key = leasesByName.get(inodeId); 
-      final INodeFile inodeFile = fsnamesystem.getFSDirectory().getInode(key.getLeft(), key.getRight()).asFile();
+      final INodeFile inodeFile = fsnamesystem.getFSDirectory().getInode(key.getFirst(), key.getSecond()).asFile();
       if (!inodeFile.isUnderConstruction()) {
         LOG.warn("The file {} is not under construction but has lease.",
             inodeFile.getFullPathName());

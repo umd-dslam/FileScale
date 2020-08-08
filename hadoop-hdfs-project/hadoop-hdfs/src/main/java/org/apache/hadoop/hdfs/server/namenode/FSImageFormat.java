@@ -1483,7 +1483,7 @@ public class FSImageFormat {
 
         for (Long id : filesWithUC) {
           Pair<String, String> key = leaseManager.getLeaseByName().get(id);
-          INodeFile file = dir.getInode(key.getLeft(), key.getRight()).asFile();
+          INodeFile file = dir.getInode(key.getFirst(), key.getSecond()).asFile();
           String path = file.getFullPathName();
           FSImageSerialization.writeINodeUnderConstruction(
                   out, file, path);
