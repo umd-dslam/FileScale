@@ -23,6 +23,7 @@ import static org.apache.hadoop.hdfs.protocol.BlockType.STRIPED;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.NO_SNAPSHOT_ID;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -258,19 +259,20 @@ public class INodeFile extends INodeWithAdditionalFields
 
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
             long atime, BlockInfo[] blklist, short replication,
-            long preferredBlockSize) {
+            long preferredBlockSize, String parentName) {
     this(id, name, permissions, mtime, atime, blklist, replication, null,
-        preferredBlockSize, (byte) 0, CONTIGUOUS);
+        preferredBlockSize, (byte) 0, CONTIGUOUS, parentName);
   }
 
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
       long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
-      long preferredBlockSize, byte storagePolicyID, BlockType blockType) {
+      long preferredBlockSize, byte storagePolicyID, BlockType blockType,
+      String parentName) {
     super(id, name, permissions, mtime, atime,
       HeaderFormat.toLong(preferredBlockSize,
         HeaderFormat.getBlockLayoutRedundancy(
           blockType, replication, ecPolicyID), storagePolicyID
-        )
+        ), parentName
       );
     
     header = HeaderFormat.toLong(preferredBlockSize,
@@ -288,12 +290,12 @@ public class INodeFile extends INodeWithAdditionalFields
   INodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
       long atime, BlockInfo[] blklist, Short replication, Byte ecPolicyID,
       long preferredBlockSize, byte storagePolicyID, BlockType blockType,
-      INodeDirectory parent) {
+      INodeDirectory parent, String parentName) {
     super(id, name, permissions, mtime, atime,
       HeaderFormat.toLong(preferredBlockSize,
         HeaderFormat.getBlockLayoutRedundancy(
           blockType, replication, ecPolicyID), storagePolicyID
-        ), parent);
+        ), parent, parentName);
     
     header = HeaderFormat.toLong(preferredBlockSize,
       HeaderFormat.getBlockLayoutRedundancy(
@@ -339,14 +341,14 @@ public class INodeFile extends INodeWithAdditionalFields
 
   // Copy InodeFile
   private void InitINodeFile(long id, byte[] name, PermissionStatus permissions, long mtime,
-      long atime, long header, INodeDirectory parent) {
-    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, atime, header, parent);
+      long atime, long header, INodeDirectory parent, String parentName) {
+    super.InitINodeWithAdditionalFields(id, name, permissions, mtime, atime, header, parent, parentName);
     this.header = header;
   }
 
   public void InitINodeFile(long parent, long id, byte[] name, long permissions, long mtime,
-      long atime, long header) {
-    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header);
+      long atime, long header, String parentName) {
+    super.InitINodeWithAdditionalFields(parent, id, name, permissions, mtime, atime, header, parentName);
     this.header = header;
   }
 
@@ -354,10 +356,25 @@ public class INodeFile extends INodeWithAdditionalFields
     super.updateINode(header);
   }
 
+
+  public void renameINodeFile() {
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.renameInode(
+          getId(),
+          getParentId(),
+          getLocalName(),
+          getAccessTime(),
+          getModificationTime(),
+          getPermissionLong(),
+          getHeaderLong(),
+          getParentName());
+      }, Database.getInstance().getExecutorService());
+  }
+
   public INodeFile copyINodeFile() {
     INodeFile inode = new INodeFile(this.getId());
     inode.InitINodeFile(getId(), getLocalNameBytes(),
-      getPermissionStatus(), getModificationTime(), getAccessTime(), getHeaderLong(), getParent());
+      getPermissionStatus(), getModificationTime(), getAccessTime(), getHeaderLong(), getParent(), getParentName());
     return inode;
   }
 
@@ -630,7 +647,7 @@ public class INodeFile extends INodeWithAdditionalFields
         ~HeaderFormat.MAX_REDUNDANCY) | replication;
     header = HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.
         combine(layoutRedundancy, head);
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   /** Set the replication factor of this file. */
@@ -682,7 +699,7 @@ public class INodeFile extends INodeWithAdditionalFields
   private void setStoragePolicyID(byte storagePolicyId) {
     header = HeaderFormat.STORAGE_POLICY_ID.BITS.combine(storagePolicyId,
       getHeaderLong());
-    INodeKeyedObjects.getBackupSet().add(getId()); 
+    INodeKeyedObjects.getBackupSet().add(getPath()); 
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,
@@ -731,7 +748,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   public void setHeaderLong(long header) {
     this.header = header;
-    INodeKeyedObjects.getBackupSet().add(getId());
+    INodeKeyedObjects.getBackupSet().add(getPath());
   }
 
   /** @return the blocks of the file. */

@@ -51,46 +51,28 @@ public class INodesInPath {
         Arrays.equals(HdfsServerConstants.DOT_SNAPSHOT_DIR_BYTES, pathComponent);
   }
 
-  private static Pair<INode[], byte[][]> getINodesAndPaths(final INode inode) {
-    Pair<List<Long>, List<String>> pairs = DatabaseINode.getParentIdsAndPaths(inode.getId());
-
-    List<Long> ids = pairs.getLeft();
-    List<String> names = pairs.getRight();
-    INode[] inodes = new INode[ids.size()];
-    byte[][] namebytes = new byte[ids.size()][];
-
-    for (int i = 0; i < ids.size(); ++i) {
-      inodes[i] = FSDirectory.getInstance().getInode(ids.get(i));
-      namebytes[i] = DFSUtil.string2Bytes(names.get(i));
-    }
-
-    return new ImmutablePair<>(inodes, namebytes);
-  }
-
   private static INode[] getINodes(final INode inode) {
-    int i;
-    List<Long> parents = DatabaseINode.getParentIds(inode.getId());
-    INode[] inodes = new INode[parents.size() + 1];
-    for (i = 0; i < parents.size(); ++i) {
-      inodes[i] = FSDirectory.getInstance().getInode(parents.get(i));
+    int depth = 0, index;
+    INode tmp = inode;
+    while (tmp != null) {
+      depth++;
+      tmp = tmp.getParent();
     }
-    inodes[i] = inode;
+    INode[] inodes = new INode[depth];
+    tmp = inode;
+    index = depth;
+    while (tmp != null) {
+      index--;
+      inodes[index] = tmp;
+      tmp = tmp.getParent();
+    }
     return inodes;
   }
 
   private static byte[][] getPaths(final INode[] inodes) {
-    // if inodes[0]'s name already existed in memory, we don't
-    // need to query all of them from database.
     byte[][] paths = new byte[inodes.length][];
-    if (inodes[0].isKeyCached()) {
-      for (int i = 0; i < inodes.length; i++) {
-        paths[i] = inodes[i].getKey();
-      }
-    } else {
-      List<String> pathlst = DatabaseINode.getPathComponents(inodes[inodes.length - 1].getId());
-      for (int i = 0; i < inodes.length; i++) {
-        paths[i] = DFSUtil.string2Bytes(pathlst.get(i));
-      }
+    for (int i = 0; i < inodes.length; i++) {
+      paths[i] = inodes[i].getKey();
     }
     return paths;
   }
@@ -102,8 +84,9 @@ public class INodesInPath {
    * @return INodesInPath
    */
   static INodesInPath fromINode(INode inode) {
-    Pair<INode[], byte[][]> res = getINodesAndPaths(inode);
-    return new INodesInPath(res.getLeft(), res.getRight());
+    INode[] inodes = getINodes(inode);
+    byte[][] paths = getPaths(inodes);
+    return new INodesInPath(inodes, paths);
   }
 
   /**
@@ -122,7 +105,8 @@ public class INodesInPath {
    * @return INodesInPath
    */
   static INodesInPath fromINode(final INodeDirectory rootDir, INode inode) {
-    return resolve(rootDir, getINodesAndPaths(inode).getRight());
+    byte[][] paths = getPaths(getINodes(inode));
+    return resolve(rootDir, paths);
   }
 
   static INodesInPath fromComponents(byte[][] components) {
@@ -243,15 +227,7 @@ public class INodesInPath {
         inodes = Arrays.copyOf(inodes, components.length);
       } else {
         // normal case, and also for resolving file/dir under snapshot root
-        if (isCreate && count == components.length - 1) {
-          curNode = INodeKeyedObjects.getCache().getIfPresent(Pair.class,
-            new ImmutablePair<>((Long)curNode.getId(), DFSUtil.bytes2String(childName)));
-          if (curNode == null) {
-            break;
-          }
-        } else {
           curNode = dir.getChild(childName, isSnapshot ? snapshotId : CURRENT_STATE_ID);
-        }
       }
     }
     return new INodesInPath(inodes, components, isRaw, isSnapshot, snapshotId);

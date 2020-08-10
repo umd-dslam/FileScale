@@ -1841,7 +1841,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     for (DatanodeDescriptor dataNode :
         blockManager.getDatanodeManager().getDatanodes()) {
       for (long ucFileId : dataNode.getLeavingServiceStatus().getOpenFiles()) {
-        INode ucFile = getFSDirectory().getInode(ucFileId);
+        // INode ucFile = getFSDirectory().getInode(ucFileId);
+        INode ucFile = null;
         if (ucFile == null || ucFileId <= prevId ||
             openFileIds.contains(ucFileId)) {
           // probably got deleted or
@@ -3653,8 +3654,9 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
 
   @Override
   public INodeFile getBlockCollection(long id) {
-    INode inode = getFSDirectory().getInode(id);
-    return inode == null ? null : inode.asFile();
+    // INode inode = getFSDirectory().getInode(id);
+    // return inode == null ? null : inode.asFile();
+    return null;
   }
 
   void commitBlockSynchronization(ExtendedBlock oldBlock,
@@ -5285,7 +5287,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   boolean isFileDeleted(INodeFile file) {
     assert hasReadLock();
     // Not in the inodeMap or in the snapshot but marked deleted.
-    if (dir.findInode(file.getId()) == false) {
+    if (dir.findInode(file) == false) {
       return true;
     }
 
@@ -7884,7 +7886,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   public void removeXattr(long id, String xattrName) throws IOException {
     writeLock();
     try {
-      final INode inode = dir.getInode(id);
+      // final INode inode = dir.getInode(id);
+      final INode inode = null;
       if (inode == null) {
         return;
       }

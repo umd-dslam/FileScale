@@ -159,6 +159,8 @@ public final class ReencryptionUpdater implements Runnable {
    */
   static final class FileEdekInfo {
     private final long inodeId;
+    private final String parentName;
+    private final String name;
     private final EncryptedKeyVersion existingEdek;
     private EncryptedKeyVersion edek = null;
 
@@ -166,6 +168,8 @@ public final class ReencryptionUpdater implements Runnable {
       assert dir.hasReadLock();
       Preconditions.checkNotNull(inode, "INodeFile is null");
       inodeId = inode.getId();
+      parentName = inode.getParentName();
+      name = inode.getLocalName();
       final FileEncryptionInfo fei = FSDirEncryptionZoneOp
           .getFileEncryptionInfo(dir, INodesInPath.fromINode(inode));
       Preconditions.checkNotNull(fei,
@@ -177,6 +181,14 @@ public final class ReencryptionUpdater implements Runnable {
 
     long getInodeId() {
       return inodeId;
+    }
+
+    String getParentName() {
+      return parentName;
+    }
+
+    String getInodeName() {
+      return name;
     }
 
     EncryptedKeyVersion getExistingEdek() {
@@ -302,7 +314,7 @@ public final class ReencryptionUpdater implements Runnable {
         FileEdekInfo entry = it.next();
         // resolve the inode again, and skip if it's doesn't exist
         LOG.trace("Updating {} for re-encryption.", entry.getInodeId());
-        final INode inode = dir.getInode(entry.getInodeId());
+        final INode inode = dir.getInode(entry.getParentName(), entry.getInodeName());
         if (inode == null) {
           LOG.debug("INode {} doesn't exist, skipping re-encrypt.",
               entry.getInodeId());
@@ -466,7 +478,8 @@ public final class ReencryptionUpdater implements Runnable {
     dir.writeLock();
     try {
       handler.getTraverser().checkINodeReady(task.zoneId);
-      final INode zoneNode = dir.getInode(task.zoneId);
+      // final INode zoneNode = dir.getInode(task.zoneId);
+      final INode zoneNode = null;
       if (zoneNode == null) {
         // ez removed.
         return;

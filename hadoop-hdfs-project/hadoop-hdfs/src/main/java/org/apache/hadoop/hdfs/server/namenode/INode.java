@@ -63,9 +63,15 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   /** parent is either an {@link INodeDirectory} or an {@link INodeReference}.*/
   long parent = -1L;
+  String parentName = null;  // full path
 
   INode(INode parent) {
     InitINode(parent);
+  }
+
+  INode(INode parent, String parentName) {
+    InitINode(parent);
+    this.parentName = parentName;
   }
 
   public void InitINode(INode parent) {
@@ -694,6 +700,14 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return parent;
   }
 
+  public final String getParentName() {
+    if (parentName == null) {
+      parentName = DatabaseINode.getParentName(getId()); 
+    }
+    return parentName;
+  }
+
+
   /** @return the parent directory */
   public final INodeDirectory getParent() {
     long id = getParentId(); 
@@ -701,7 +715,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     if (id == DatabaseINode.LONG_NULL) {
       return null;
     } else {
-      INode dir = INodeKeyedObjects.getCache().getIfPresent(Long.class, id); 
+      INode dir = INodeKeyedObjects.getCache().getIfPresent(getParentName()); 
       if (dir == null) {
         dir = new INodeDirectory(id);
         DatabaseINode.LoadINode node = new DatabaseINode().loadINode(id);
@@ -715,11 +729,10 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
               node.permission,
               node.modificationTime,
               node.accessTime,
-              node.header);
+              node.header,
+              node.parentName);
 
-        INodeKeyedObjects.getCache().put(
-          new CompositeKey((Long)id,
-          new ImmutablePair<>(dir.getParentId(), dir.getLocalName())), dir.asDirectory());
+        INodeKeyedObjects.getCache().put(dir.getPath(), dir.asDirectory());
       }
       return dir.asDirectory();
     }
@@ -745,6 +758,10 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
 
   public final void setParent(long parentId) {
     this.parent = parentId;
+  }
+
+  public final void setParentName(String parentName) {
+    this.parentName = parentName;
   }
 
   /** Set container. */

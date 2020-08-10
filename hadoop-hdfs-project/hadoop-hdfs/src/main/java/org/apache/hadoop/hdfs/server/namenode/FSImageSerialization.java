@@ -170,7 +170,7 @@ public class FSImageSerialization {
     // Images in the pre-protobuf format will not have the lazyPersist flag,
     // so it is safe to pass false always.
     INodeFile file = new INodeFile(inodeId, name, perm, modificationTime,
-        modificationTime, blocksContiguous, blockReplication, preferredBlockSize);
+        modificationTime, blocksContiguous, blockReplication, preferredBlockSize, null);
     file.toUnderConstruction(clientName, clientMachine);
     return file;
   }

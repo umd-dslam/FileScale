@@ -21,6 +21,7 @@ import java.io.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.util.concurrent.CompletableFuture;
 import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -115,7 +116,9 @@ public class Block implements Writable, Comparable<Block> {
 
   public void set(long blkid, long len, long genStamp) {
     blockId = blkid;
-    DatabaseDatablock.insertBlock(blkid, len, genStamp); 
+    CompletableFuture.runAsync(() -> {
+      DatabaseDatablock.insertBlock(blkid, len, genStamp);
+      }, Database.getInstance().getExecutorService()); 
   }
 
   public byte getECPolicyId() {
