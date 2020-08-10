@@ -668,12 +668,23 @@ public class INodeDirectory extends INodeWithAdditionalFields
     return true;
   }
 
+  private final String getOldPath(String oldParent, String oldName) {
+    String path = null;
+    if (oldParent.equals("/")) {
+      path = oldParent + oldName;
+    } else {
+      path = oldParent + "/" + oldName;
+    }
+    return path;
+  }
+
   public void localRename(INode node, String oldName, String oldParent, String newParent) {
     // String name = DFSUtil.bytes2String(node.getLocalNameBytes());
+    String oldPath = getOldPath(oldParent, oldName);
     if (node.isDirectory()) {
       INodeDirectory inode = node.asDirectory().copyINodeDirectory();
 
-      INodeKeyedObjects.getCache().invalidate(oldParent + oldName);
+      INodeKeyedObjects.getCache().invalidate(oldPath);
       INodeKeyedObjects.getCache()
           .put(inode.getPath(), inode);
 
@@ -687,7 +698,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
         uc.updateFileUnderConstruction(inode.getId());
       }
 
-      INodeKeyedObjects.getCache().invalidate(oldParent + oldName);
+      INodeKeyedObjects.getCache().invalidate(oldPath);
       INodeKeyedObjects.getCache()
           .put(inode.getPath(), inode);
 
