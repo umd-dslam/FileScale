@@ -49,7 +49,13 @@ public class INodeMap {
 
 
   public INode get(String parentName, String childName) {
-    INode inode = INodeKeyedObjects.getCache().getIfPresent(parentName + childName);
+    String path = null;
+    if (parentName.equals("/")) {
+      path = parentName + childName;
+    } else {
+      path = parentName + "/" + childName;
+    }
+    INode inode = INodeKeyedObjects.getCache().getIfPresent(path);
     if (inode == null) {
       INodeDirectory parent = INodeKeyedObjects.getCache().getIfPresent(parentName).asDirectory();
       if (!parent.filter.mightContain(String.valueOf(parent.getId()) + childName)) {
@@ -86,8 +92,7 @@ public class INodeMap {
                 node.header,
                 node.parentName);
       }
-      INodeKeyedObjects.getCache()
-          .put(parentName + childName, inode);
+      INodeKeyedObjects.getCache().put(path, inode);
     }
     return inode;
   }

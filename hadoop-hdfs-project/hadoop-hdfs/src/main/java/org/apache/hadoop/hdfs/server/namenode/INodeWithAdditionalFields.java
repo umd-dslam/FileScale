@@ -128,7 +128,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.modificationTime = modificationTime;
     this.accessTime = accessTime;
 
-    INodeKeyedObjects.getBackupSet().add(parentName + name);
+    INodeKeyedObjects.getBackupSet().add(parentName + "/" + DFSUtil.bytes2String(name));
   }
 
   public void InitINodeWithAdditionalFields(
@@ -318,7 +318,13 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   @Override
   public final String getPath() {
-    return getParentName() + getLocalName();
+    String path = null;
+    if (getParentName().equals("/")) {
+      path = getParentName() + getLocalName();
+    } else {
+      path = getParentName() + "/" + getLocalName();
+    }
+    return path;
   }
 
   @Override

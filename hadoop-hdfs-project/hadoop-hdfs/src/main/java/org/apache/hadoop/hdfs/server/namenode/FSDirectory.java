@@ -115,7 +115,7 @@ public class FSDirectory implements Closeable {
       namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L, null);
     r.setParent(0L);
     r.setParentName("");
-    INodeKeyedObjects.getCache().put(r.getLocalName(), r);
+    INodeKeyedObjects.getCache().put(r.getPath(), r);
 
     // TODO: enable later
     // r.addDirectoryWithQuotaFeature(
