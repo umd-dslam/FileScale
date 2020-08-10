@@ -128,7 +128,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.modificationTime = modificationTime;
     this.accessTime = accessTime;
 
-    INodeKeyedObjects.getBackupSet().add(parentName + "/" + DFSUtil.bytes2String(name));
+    INodeKeyedObjects.getBackupSet().add(this.getPath());
   }
 
   public void InitINodeWithAdditionalFields(

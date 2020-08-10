@@ -65,9 +65,13 @@ public class INodeKeyedObjects {
       List<String> fileAttr = new ArrayList<>();
       while (iterator.hasNext()) {
         INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
-
+        if (inode == null) continue;
         strAttr.add(inode.getLocalName());
-        strAttr.add(inode.getParentName());
+        if (inode.getId() == 16385) {
+          strAttr.add(" ");
+        } else {
+          strAttr.add(inode.getParentName());
+        }
         longAttr.add(inode.getParentId());
         longAttr.add(inode.getId());
         longAttr.add(inode.getModificationTime());
@@ -96,6 +100,7 @@ public class INodeKeyedObjects {
       }
     } else {
       if (updateSize > 0 && preUpdateSize == updateSize) {
+        Iterator<String> iterator = concurrentUpdateSet.iterator();
         if (LOG.isInfoEnabled()) {
           LOG.info("Propagate updated files/directories from cache to database.");
         }
@@ -104,11 +109,15 @@ public class INodeKeyedObjects {
           List<String> strAttr = new ArrayList<>();
           List<Long> fileIds = new ArrayList<>();
           List<String> fileAttr = new ArrayList<>();
-          for (String path : concurrentUpdateSet) {
-            INode inode = INodeKeyedObjects.getCache().getIfPresent(path);
-
+          while (iterator.hasNext()) {
+            INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
+            if (inode == null) continue;
             strAttr.add(inode.getLocalName());
-            strAttr.add(inode.getParentName());
+            if (inode.getId() == 16385) {
+              strAttr.add(" ");
+            } else {
+              strAttr.add(inode.getParentName());
+            }
             longAttr.add(inode.getParentId());
             longAttr.add(inode.getId());
             longAttr.add(inode.getModificationTime());
@@ -124,12 +133,13 @@ public class INodeKeyedObjects {
                 fileAttr.add(uc.getClientName(inode.getId()));
                 fileAttr.add(uc.getClientMachine(inode.getId()));
               }
-            }              
+            }
+            iterator.remove();             
           }
           if (strAttr.size() > 0) {
             DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
           }
-          concurrentUpdateSet.clear();
+          concurrentUpdateSet = null;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -166,7 +176,12 @@ public class INodeKeyedObjects {
           }
           try {
             removeIds = new ArrayList<Long>(concurrentRemoveSet);
-            concurrentRemoveSet.clear();
+            Iterator<Long> iterator = concurrentRemoveSet.iterator();
+            while (iterator.hasNext()) {
+              iterator.next();
+              iterator.remove();
+            }
+            concurrentRemoveSet = null;
             DatabaseINode.batchRemoveINodes(removeIds);
           } catch (Exception e) {
             e.printStackTrace();

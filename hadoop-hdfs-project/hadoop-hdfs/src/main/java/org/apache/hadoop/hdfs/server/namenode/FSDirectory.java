@@ -112,9 +112,8 @@ public class FSDirectory implements Closeable {
 
   private static INodeDirectory createRoot(FSNamesystem namesystem) {
     INodeDirectory r = new INodeDirectory(INodeId.ROOT_INODE_ID, INodeDirectory.ROOT_NAME,
-      namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L, null);
+      namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L, "");
     r.setParent(0L);
-    r.setParentName("");
     INodeKeyedObjects.getCache().put(r.getPath(), r);
 
     // TODO: enable later
