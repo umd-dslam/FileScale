@@ -10,6 +10,7 @@ import java.sql.Types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
+import org.voltdb.client.*;
 
 public class DatabaseDatablock {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseDatablock.class);
@@ -18,18 +19,35 @@ public class DatabaseDatablock {
     boolean exist = false;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
-      String sql = "SELECT COUNT(blockId) FROM datablocks WHERE blockId = ?;";
-      PreparedStatement pst = conn.prepareStatement(sql);
-      pst.setLong(1, blkid);
-      ResultSet rs = pst.executeQuery();
-      while (rs.next()) {
-        if (rs.getInt(1) == 1) {
-          exist = true;
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("CheckBlockExistence", blkid).getResults();
+         VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            if (result.getLong(0) >= 1) {
+              exist = true;
+            }
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql = "SELECT COUNT(blockId) FROM datablocks WHERE blockId = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setLong(1, blkid);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          if (rs.getInt(1) == 1) {
+            exist = true;
+          }
+        }
+        rs.close();
+        pst.close();
       }
-      rs.close();
-      pst.close();
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
@@ -41,24 +59,30 @@ public class DatabaseDatablock {
   }
 
   public static void insertBlock(final long blkid, final long len, final long genStamp) {
-    if (checkBlockExistence(blkid)) {
-      return;
-    }
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
-      Connection conn = obj.getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure(new NullCallback(), "InsertBlock", blkid, len, genStamp);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
 
-      String sql =
-          "INSERT INTO datablocks(blockId, numBytes, generationStamp, ecPolicyId) VALUES (?, ?, ?, -1);";
+        String sql =
+            "INSERT INTO datablocks(blockId, numBytes, generationStamp, ecPolicyId) VALUES (?, ?, ?, -1);";
 
-      PreparedStatement pst = conn.prepareStatement(sql);
+        PreparedStatement pst = conn.prepareStatement(sql);
 
-      pst.setLong(1, blkid);
-      pst.setLong(2, len);
-      pst.setLong(3, genStamp);
+        pst.setLong(1, blkid);
+        pst.setLong(2, len);
+        pst.setLong(3, genStamp);
 
-      pst.executeUpdate();
-      pst.close();
+        pst.executeUpdate();
+        pst.close();
+      }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
