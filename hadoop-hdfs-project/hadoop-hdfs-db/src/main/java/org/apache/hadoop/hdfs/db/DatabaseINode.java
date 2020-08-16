@@ -1863,6 +1863,35 @@ public class DatabaseINode {
     }
   }
 
+  public static void batchRenameINodes(
+      final List<Long> longAttr,
+      final List<String> strAttr)
+      throws SQLException {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient()
+              .callProcedure(
+                  "BatchRenameINodes",
+                  longAttr.toArray(new Long[longAttr.size()]),
+                  strAttr.toArray(new String[strAttr.size()]));
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("BatchRenameINodes [UPDATE]");
+    }
+  }
+
   public static void batchUpdateINodes(
       final List<Long> longAttr,
       final List<String> strAttr,

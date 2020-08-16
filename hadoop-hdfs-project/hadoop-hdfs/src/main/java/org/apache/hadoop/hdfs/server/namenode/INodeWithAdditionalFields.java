@@ -128,7 +128,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     this.modificationTime = modificationTime;
     this.accessTime = accessTime;
 
-    INodeKeyedObjects.getBackupSet().add(this.getPath());
+    INodeKeyedObjects.getUpdateSet().add(this.getPath());
   }
 
   public void InitINodeWithAdditionalFields(
@@ -363,12 +363,12 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   private final void setPermission(long perm) {
     permission = perm;
-    INodeKeyedObjects.getBackupSet().add(getPath());
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
     permission = f.BITS.combine(n, getPermissionLong());
-    INodeKeyedObjects.getBackupSet().add(getPath());
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   @Override
@@ -465,7 +465,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final void setModificationTime(long modificationTime) {
     this.modificationTime = modificationTime;
-    INodeKeyedObjects.getBackupSet().add(getPath());
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   @Override
@@ -484,7 +484,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   @Override
   public final void setAccessTime(long accessTime) {
     this.accessTime = accessTime;
-    INodeKeyedObjects.getBackupSet().add(getPath());
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   protected void addFeature(Feature f) {
