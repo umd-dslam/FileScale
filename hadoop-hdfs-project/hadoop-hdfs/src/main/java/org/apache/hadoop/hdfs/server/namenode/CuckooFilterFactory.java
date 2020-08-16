@@ -47,7 +47,7 @@ public class CuckooFilterFactory extends BasePooledObjectFactory<CuckooFilter<Ch
   }
 
   @Override
-  public void destroyObject(PooledObject<CuckooFilter<CharSequence>> pooledObject) {
+  public void destroyObject(PooledObject<CuckooFilter<CharSequence>> pooledObject) throws Exception {
     super.destroyObject(pooledObject);
   }
 }

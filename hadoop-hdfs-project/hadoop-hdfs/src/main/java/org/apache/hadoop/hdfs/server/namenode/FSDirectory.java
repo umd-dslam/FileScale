@@ -465,7 +465,7 @@ public class FSDirectory implements Closeable {
   }
 
   // A helper method to initialize the pool using the config and object-factory.
-  private void initFilterPool() throws Exception {
+  private void initFilterPool() {
     try {
       // We use the GenericObjectPool implementation of Object Pool as this suffices for most needs.
       // When we create the object pool, we need to pass the Object Factory class that would be

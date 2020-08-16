@@ -366,6 +366,11 @@ public abstract class INodeReference extends INode {
   public int getDstSnapshotId() {
     return Snapshot.CURRENT_STATE_ID;
   }
+
+  @Override
+  public final String getPath() {
+    return referred.getPath();
+  }
   
   /** An anonymous reference with reference count. */
   public static class WithCount extends INodeReference {
