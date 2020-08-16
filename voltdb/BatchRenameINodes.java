@@ -12,9 +12,7 @@ public class BatchRenameINodes extends VoltProcedure {
 
   public long run(
       final long[] longAttrs,
-      final String[] strAttrs,
-      final long[] fileIds,
-      final String[] fileAttrs)
+      final String[] strAttrs)
       throws VoltAbortException {
     int size = strAttrs.length / 2;
     for (int i = 0; i < size; ++i) {
