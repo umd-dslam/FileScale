@@ -93,7 +93,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime, String parentName) {
     super(id, name, permissions, mtime, 0L, 0L, parentName);
-    initCuckooFilter();
+    filter = FSDirectory.getInstance().borrowFilter();
   }
 
   public void updateINodeDirectory() {
@@ -140,14 +140,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
       long mtime, String parentName) {
     super(parent, id, name, permissions, mtime, 0L, parentName);
-    initCuckooFilter();
+    filter = FSDirectory.getInstance().borrowFilter();
   }
 
   // Note: only used by the loader of image file
   public INodeDirectory(long id) {
     super(id);
     // FIXME: filter should be recovered from zookeeper or db.
-    initCuckooFilter();
+    filter = FSDirectory.getInstance().borrowFilter();
   }
 
   /**
@@ -176,16 +176,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
     //   removeFeature(aclFeature);
     //   addFeature(AclStorage.addAclFeature(aclFeature));
     // }
-  }
-  
-  private void initCuckooFilter() {
-    int childNums = 1024;
-    String nums = System.getenv("FILESCALE_FILES_PER_DIRECTORY");
-    if (nums != null) {
-      childNums = Integer.parseInt(nums);
-    }
-    filter = new CuckooFilter.Builder<CharSequence>(Funnels.stringFunnel(Charset.defaultCharset()), childNums)
-      .withFalsePositiveRate(0.001).withHashAlgorithm(Algorithm.xxHash64).build();
   }
 
   /** @return true unconditionally. */
