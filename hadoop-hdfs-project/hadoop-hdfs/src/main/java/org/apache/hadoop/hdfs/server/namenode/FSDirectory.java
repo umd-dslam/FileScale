@@ -99,6 +99,12 @@ import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_S
 import org.apache.hadoop.hdfs.db.*;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import org.apache.hadoop.hdfs.cuckoofilter4j.*;
+import org.apache.hadoop.hdfs.cuckoofilter4j.Utils.Algorithm;
+import com.google.common.hash.Funnels;
+import java.nio.charset.Charset;
+import org.apache.commons.pool2.impl.GenericObjectPool;
+
 /**
  * Both FSDirectory and FSNamesystem manage the state of the namespace.
  * FSDirectory is a pure in-memory data structure, all of whose operations
@@ -221,6 +227,8 @@ public class FSDirectory implements Closeable {
   // A HashSet of principals of users for whom the external attribute provider
   // will be bypassed
   private HashSet<String> usersToBypassExtAttrProvider = null;
+
+  private GenericObjectPool<CuckooFilter<CharSequence>> pool;
 
   // FIXME(gangliao): singleton pattern for Database
   // may cause problem for HDFS Federation
@@ -429,10 +437,56 @@ public class FSDirectory implements Closeable {
         }
       }
     }
+
+    initFilterPool();
   }
 
   public boolean isLocalNN() {
     return localNN;
+  }
+
+  public CuckooFilter<CharSequence> borrowFilter() {
+    CuckooFilter<CharSequence> filter = null;
+    try {
+      filter = pool.borrowObject();
+    } catch (Exception e) {
+      System.err.println("Failed to borrow a filter object : " + e.getMessage());
+      e.printStackTrace();
+      System.exit(-1);
+    }
+    return filter;
+  }
+
+  public void returnFilter(CuckooFilter<CharSequence> filter) {
+    // make sure the object is returned to the pool
+    if (null != filter) {
+      pool.returnObject(filter);
+    }
+  }
+
+  // A helper method to initialize the pool using the config and object-factory.
+  private void initFilterPool() {
+    try {
+      // We use the GenericObjectPool implementation of Object Pool as this suffices for most needs.
+      // When we create the object pool, we need to pass the Object Factory class that would be
+      // responsible for creating the objects.
+      // Also pass the config to the pool while creation.
+      pool = new GenericObjectPool<CuckooFilter<CharSequence>>(new CuckooFilterFactory());
+      String num = System.getenv("FILESCALE_FILTER_NUMBER");
+      if (num == null) {
+        pool.setMaxTotal(100000);
+      } else {
+        pool.setMaxTotal(Integer.parseInt(num));
+      }
+
+      pool.setMinIdle(1000);
+      pool.setMaxIdle(100000);
+      pool.setBlockWhenExhausted(false);
+      pool.preparePool();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(-1);
+    }
   }
 
   private void initUsersToBypassExtProvider(Configuration conf) {

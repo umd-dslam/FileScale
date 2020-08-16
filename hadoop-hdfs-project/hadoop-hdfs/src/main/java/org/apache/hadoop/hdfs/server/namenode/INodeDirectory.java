@@ -93,7 +93,13 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public INodeDirectory(long id, byte[] name, PermissionStatus permissions,
       long mtime, String parentName) {
     super(id, name, permissions, mtime, 0L, 0L, parentName);
-    initCuckooFilter();
+  }
+
+  public getFilter() {
+    if (filter == null) {
+      filter = FSDirectory.getInstance().borrowFilter();
+    }
+    return filter;
   }
 
   public void updateINodeDirectory() {
@@ -140,14 +146,12 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public INodeDirectory(INode parent, long id, byte[] name, PermissionStatus permissions,
       long mtime, String parentName) {
     super(parent, id, name, permissions, mtime, 0L, parentName);
-    initCuckooFilter();
   }
 
   // Note: only used by the loader of image file
   public INodeDirectory(long id) {
     super(id);
     // FIXME: filter should be recovered from zookeeper or db.
-    initCuckooFilter();
   }
 
   /**
@@ -176,16 +180,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
     //   removeFeature(aclFeature);
     //   addFeature(AclStorage.addAclFeature(aclFeature));
     // }
-  }
-  
-  private void initCuckooFilter() {
-    int childNums = 1024;
-    String nums = System.getenv("FILESCALE_FILES_PER_DIRECTORY");
-    if (nums != null) {
-      childNums = Integer.parseInt(nums);
-    }
-    filter = new CuckooFilter.Builder<CharSequence>(Funnels.stringFunnel(Charset.defaultCharset()), childNums)
-      .withFalsePositiveRate(0.001).withHashAlgorithm(Algorithm.xxHash64).build();
   }
 
   /** @return true unconditionally. */
@@ -645,7 +639,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public boolean addChild(INode node, final boolean setModTime,
       final int latestSnapshotId) {
 
-    if (filter.mightContain(String.valueOf(getId()) + node.getLocalName())) {
+    if (getFilter().mightContain(String.valueOf(getId()) + node.getLocalName())) {
       if (DatabaseINode.checkInodeExistence(getId(), node.getLocalName())) {
         return false;
       }
@@ -807,9 +801,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
     INode inode = node;
     children.add(name);
-    filter.put(String.valueOf(getId()) + name);
+    getFilter().put(String.valueOf(getId()) + name);
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
-      node.getParent().filter.delete(String.valueOf(node.getParentId()) + node.getLocalName());
+      node.getParent().getFilter().delete(String.valueOf(node.getParentId()) + node.getLocalName());
 
       String oldParent = node.getParentName();
       String oldName = node.getLocalName();

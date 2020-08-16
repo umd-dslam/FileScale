@@ -58,7 +58,7 @@ public class INodeMap {
     INode inode = INodeKeyedObjects.getCache().getIfPresent(path);
     if (inode == null) {
       INodeDirectory parent = INodeKeyedObjects.getCache().getIfPresent(parentName).asDirectory();
-      if (!parent.filter.mightContain(String.valueOf(parent.getId()) + childName)) {
+      if (!parent.getFilter().mightContain(String.valueOf(parent.getId()) + childName)) {
         return null;
       }
       DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parent.getId(), childName);
@@ -104,7 +104,7 @@ public class INodeMap {
     }
 
     INodeDirectory parent = file.getParent();
-    if (parent.filter.mightContain(String.valueOf(parent.getId()) + file.getLocalName())) {
+    if (parent.getFilter().mightContain(String.valueOf(parent.getId()) + file.getLocalName())) {
       return true;
     }
 
