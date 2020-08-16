@@ -18,8 +18,10 @@ public class INodeKeyedObjects {
   private static IndexedCache<String, INode> cache;
 
   private static Set<String> concurrentUpdateSet;
+  private static Set<String> concurrentRenameSet;
   private static Set<Long> concurrentRemoveSet;
   private static long preRemoveSize = 0;
+  private static long preRenameSize = 0;
   private static long preUpdateSize = 0;
 
   private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -28,7 +30,7 @@ public class INodeKeyedObjects {
 
   INodeKeyedObjects() {}
 
-  public static Set<String> getBackupSet() {
+  public static Set<String> getUpdateSet() {
     if (concurrentUpdateSet == null) {
       ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
       concurrentUpdateSet = map.newKeySet();
@@ -44,18 +46,22 @@ public class INodeKeyedObjects {
     return concurrentRemoveSet;
   }
 
-  public static void asyncUpdateDB() {
-    // In HDFS, the default log buffer size is 512 * 1024 bytes, or 512 KB.
-    // We assume that each object size is 512 bytes, then the size of
-    // concurrentUpdateSet should be 1024 which only records INode Id.
-    // Note: Using INode Id, it's easy to find INode object in cache.
+  public static Set<String> getRenameSet() {
+    if (concurrentRenameSet == null) {
+      ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+      concurrentRenameSet = map.newKeySet();
+    }
+    return concurrentRenameSet;
+  }
+
+  private void insertToDB() {
     int i = 0;
     final int num = 1024;
     long updateSize = concurrentUpdateSet.size();
     if (updateSize >= num) {
       Iterator<String> iterator = concurrentUpdateSet.iterator();
       if (LOG.isInfoEnabled()) {
-        LOG.info("Sync files/directories from cache to database.");
+        LOG.info("Sync update files/directories from cache to database.");
       }
 
       List<Long> longAttr = new ArrayList<>();
@@ -145,7 +151,11 @@ public class INodeKeyedObjects {
       }
     }
     preUpdateSize = concurrentUpdateSet.size();
+  }
 
+  private void removeToDB() {
+    int i = 0;
+    final int num = 1024;
     List<Long> removeIds = new ArrayList<>();
     long removeSize = concurrentRemoveSet.size();
     if (removeSize >= num) {
@@ -186,6 +196,101 @@ public class INodeKeyedObjects {
       }
     }
     preRemoveSize = concurrentRemoveSet.size();
+  }
+
+  private void renameToDB() {
+    int i = 0;
+    final int num = 1024;
+    long renameSize = concurrentRenameSet.size();
+    if (renameSize >= num) {
+      Iterator<String> iterator = concurrentRenameSet.iterator();
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Sync rename files/directories from cache to database.");
+      }
+
+      List<Long> longAttr = new ArrayList<>();
+      List<String> strAttr = new ArrayList<>();
+
+      while (iterator.hasNext()) {
+        INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
+        if (inode == null) continue;
+        strAttr.add(inode.getLocalName());
+        if (inode.getId() == 16385) {
+          strAttr.add(" ");
+        } else {
+          strAttr.add(inode.getParentName());
+        }
+        longAttr.add(inode.getParentId());
+        longAttr.add(inode.getId());
+        longAttr.add(inode.getModificationTime());
+        longAttr.add(inode.getAccessTime());
+        longAttr.add(inode.getPermissionLong());
+        if (inode.isDirectory()) {
+          longAttr.add(0L);
+        } else {
+          longAttr.add(inode.asFile().getHeaderLong());
+        }
+        iterator.remove();
+        if (++i >= num) break;
+      }
+      try {
+        if (strAttr.size() > 0) {
+          DatabaseINode.batchRenameINodes(longAttr, strAttr);
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      if (renameSize > 0 && preRenameSize == renameSize) {
+        Iterator<String> iterator = concurrentRenameSet.iterator();
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Propagate updated files/directories from cache to database.");
+        }
+        try {
+          List<Long> longAttr = new ArrayList<>();
+          List<String> strAttr = new ArrayList<>();
+          while (iterator.hasNext()) {
+            INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
+            if (inode == null) continue;
+            strAttr.add(inode.getLocalName());
+            if (inode.getId() == 16385) {
+              strAttr.add(" ");
+            } else {
+              strAttr.add(inode.getParentName());
+            }
+            longAttr.add(inode.getParentId());
+            longAttr.add(inode.getId());
+            longAttr.add(inode.getModificationTime());
+            longAttr.add(inode.getAccessTime());
+            longAttr.add(inode.getPermissionLong());
+            if (inode.isDirectory()) {
+              longAttr.add(0L);
+            } else {
+              longAttr.add(inode.asFile().getHeaderLong());
+            }
+            iterator.remove();
+          }
+          if (strAttr.size() > 0) {
+            DatabaseINode.batchRenameINodes(longAttr, strAttr);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    preRenameSize = concurrentRenameSet.size();
+  }
+
+  public static void asyncUpdateDB() {
+    // In HDFS, the default log buffer size is 512 * 1024 bytes, or 512 KB.
+    // We assume that each object size is 512 bytes, then the size of
+    // concurrentUpdateSet should be 1024 which only records INode Id.
+    // Note: Using INode Id, it's easy to find INode object in cache.
+    insertToDB();
+
+    removeToDB();
+
+    renameToDB();
   }
 
   public static void BackupSetToDB() {

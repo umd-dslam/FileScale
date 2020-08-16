@@ -647,7 +647,7 @@ public class INodeFile extends INodeWithAdditionalFields
         ~HeaderFormat.MAX_REDUNDANCY) | replication;
     header = HeaderFormat.BLOCK_LAYOUT_AND_REDUNDANCY.BITS.
         combine(layoutRedundancy, head);
-    INodeKeyedObjects.getBackupSet().add(getPath());
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   /** Set the replication factor of this file. */
@@ -699,7 +699,7 @@ public class INodeFile extends INodeWithAdditionalFields
   private void setStoragePolicyID(byte storagePolicyId) {
     header = HeaderFormat.STORAGE_POLICY_ID.BITS.combine(storagePolicyId,
       getHeaderLong());
-    INodeKeyedObjects.getBackupSet().add(getPath()); 
+    INodeKeyedObjects.getUpdateSet().add(getPath()); 
   }
 
   public final void setStoragePolicyID(byte storagePolicyId,
@@ -748,7 +748,7 @@ public class INodeFile extends INodeWithAdditionalFields
 
   public void setHeaderLong(long header) {
     this.header = header;
-    INodeKeyedObjects.getBackupSet().add(getPath());
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   /** @return the blocks of the file. */
