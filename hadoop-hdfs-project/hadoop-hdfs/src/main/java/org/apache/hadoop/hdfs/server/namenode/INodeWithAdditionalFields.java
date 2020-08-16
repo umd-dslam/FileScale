@@ -343,11 +343,6 @@ public abstract class INodeWithAdditionalFields extends INode {
     } else {
       this.name = null;
     }
-    if (this.isDirectory()) {
-      ((INodeDirectory) this).renameINodeDirectory();
-    } else {
-      ((INodeFile) this).renameINodeFile(); 
-    }
   }
 
   /** Clone the {@link PermissionStatus}. */

@@ -435,6 +435,7 @@ public class DatabaseINode {
     }
     if (LOG.isInfoEnabled()) {
       LOG.info("renameInode: (" + id + ")");
+      LOG.info(DatabaseUtils.getStackTrace());
     }
   }
 

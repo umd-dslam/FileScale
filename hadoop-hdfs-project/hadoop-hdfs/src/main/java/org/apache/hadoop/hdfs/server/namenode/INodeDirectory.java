@@ -684,7 +684,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
       // rename directory - logging
       FSDirectory.getInstance().getEditLog().logMkDir(null, inode);
-      inode.renameINodeDirectory();
+      INodeKeyedObjects.getRenameSet().add(inode.getPath());
     } else {
       INodeFile inode = node.asFile().copyINodeFile();
       FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
@@ -698,7 +698,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
       // rename file - logging
       FSDirectory.getInstance().getEditLog().logOpenFile(null, inode, true, true);
-      inode.renameINodeFile();
+      INodeKeyedObjects.getRenameSet().add(inode.getPath());
     }
   }
 

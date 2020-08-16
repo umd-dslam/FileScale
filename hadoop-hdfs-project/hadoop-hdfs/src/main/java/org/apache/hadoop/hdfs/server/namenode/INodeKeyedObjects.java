@@ -54,7 +54,7 @@ public class INodeKeyedObjects {
     return concurrentRenameSet;
   }
 
-  private void insertToDB() {
+  private static void insertToDB() {
     int i = 0;
     final int num = 1024;
     long updateSize = concurrentUpdateSet.size();
@@ -153,7 +153,7 @@ public class INodeKeyedObjects {
     preUpdateSize = concurrentUpdateSet.size();
   }
 
-  private void removeToDB() {
+  private static void removeToDB() {
     int i = 0;
     final int num = 1024;
     List<Long> removeIds = new ArrayList<>();
@@ -198,7 +198,7 @@ public class INodeKeyedObjects {
     preRemoveSize = concurrentRemoveSet.size();
   }
 
-  private void renameToDB() {
+  private static void renameToDB() {
     int i = 0;
     final int num = 1024;
     long renameSize = concurrentRenameSet.size();
