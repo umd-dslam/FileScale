@@ -687,10 +687,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
       INodeKeyedObjects.getRenameSet().add(inode.getPath());
     } else {
       INodeFile inode = node.asFile().copyINodeFile();
-      FileUnderConstructionFeature uc = ((INodeFile)node).getFileUnderConstructionFeature();
-      if (uc != null) {
-        uc.updateFileUnderConstruction(inode.getId());
-      }
 
       INodeKeyedObjects.getCache().invalidate(oldPath);
       INodeKeyedObjects.getCache()
