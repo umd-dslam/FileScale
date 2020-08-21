@@ -438,7 +438,7 @@ public class FSDirectory implements Closeable {
       }
     }
 
-    initFilterPool();
+    // initFilterPool();
   }
 
   public boolean isLocalNN() {

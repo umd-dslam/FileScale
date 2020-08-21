@@ -58,9 +58,12 @@ public class INodeMap {
     INode inode = INodeKeyedObjects.getCache().getIfPresent(path);
     if (inode == null) {
       INodeDirectory parent = INodeKeyedObjects.getCache().getIfPresent(parentName).asDirectory();
-      if (!parent.getFilter().mightContain(String.valueOf(parent.getId()) + childName)) {
+      if (!parent.getCurrentChildrenList2().contain(childName)) {
         return null;
       }
+      // if (!parent.getFilter().mightContain(String.valueOf(parent.getId()) + childName)) {
+      //   return null;
+      // }
       DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parent.getId(), childName);
       if (node == null) return null;
       byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
@@ -91,6 +94,7 @@ public class INodeMap {
                 node.accessTime,
                 node.header,
                 node.parentName);
+        inode.resetCurrentChildrenList();
       }
       INodeKeyedObjects.getCache().put(path, inode);
     }
@@ -104,9 +108,12 @@ public class INodeMap {
     }
 
     INodeDirectory parent = file.getParent();
-    if (parent.getFilter().mightContain(String.valueOf(parent.getId()) + file.getLocalName())) {
+    if (parent.getCurrentChildrenList2().contain(file.getLocalName())) {
       return true;
     }
+    // if (parent.getFilter().mightContain(String.valueOf(parent.getId()) + file.getLocalName())) {
+    //   return true;
+    // }
 
     return false;
   }
