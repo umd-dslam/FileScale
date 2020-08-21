@@ -649,7 +649,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     //   }
     // }
 
-    if (getCurrentChildrenList2().contain(node.getLocalName())) {
+    if (getCurrentChildrenList2().contains(node.getLocalName())) {
       return false;
     }
 
