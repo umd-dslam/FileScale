@@ -227,7 +227,21 @@ public class INodesInPath {
         inodes = Arrays.copyOf(inodes, components.length);
       } else {
         // normal case, and also for resolving file/dir under snapshot root
+        if (isCreate && count == components.length - 1) {
+          String path = null;
+          String parentName = dir.getPath();
+          if (parentName.equals("/")) {
+            path = parentName + childName;
+          } else {
+            path = parentName + "/" + childName;
+          }
+          curNode = INodeKeyedObjects.getCache().getIfPresent(path);
+          if (curNode == null) {
+            break;
+          }
+        } else {
           curNode = dir.getChild(childName, isSnapshot ? snapshotId : CURRENT_STATE_ID);
+        }
       }
     }
     return new INodesInPath(inodes, components, isRaw, isSnapshot, snapshotId);

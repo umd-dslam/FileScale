@@ -1102,7 +1102,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       if (priorSnapshotId == Snapshot.NO_SNAPSHOT_ID &&
           snapshotId == Snapshot.CURRENT_STATE_ID) {
         // destroy the whole subtree and collect blocks that should be deleted
-        destroyAndCollectBlocks(reclaimContext);
+        // destroyAndCollectBlocks(reclaimContext);
       } else {
         // make a copy the quota delta
         QuotaCounts old = reclaimContext.quotaDelta().getCountsCopy();
