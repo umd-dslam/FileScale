@@ -81,6 +81,14 @@ public class INodeFile extends INodeWithAdditionalFields
     return valueOf(inode, path, false);
   }
 
+  public String getParentPath() {
+    return getPath(path.length - 2);
+  }
+
+  public String getPath(int pos) {
+    return DFSUtil.byteArray2PathString(path, 0, pos + 1); // it's a length...
+  }
+
   /** Cast INode to INodeFile. */
   public static INodeFile valueOf(INode inode, String path, boolean acceptNull)
       throws FileNotFoundException {
@@ -88,7 +96,43 @@ public class INodeFile extends INodeWithAdditionalFields
       if (acceptNull) {
         return null;
       } else {
-        throw new FileNotFoundException("File does not exist: " + path);
+        byte[][] pathComponents = INode.getPathComponents(path);
+        pathComponents = resolveComponents(pathComponents, FSDirectory.getInstance());
+        String parentStr = DFSUtil.byteArray2PathString(pathComponents, 0, pathComponents.length - 1);
+        String childStr = pathComponents[pathComponents.length - 1];
+        DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parentStr, childStr);
+        if (node == null) return throw new FileNotFoundException("File does not exist: " + path);
+        byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
+        if (node.header != 0L) {
+          inode = new INodeFile(node.id);
+          inode.asFile().setNumBlocks();
+          inode
+              .asFile()
+              .InitINodeFile(
+                  node.parent,
+                  node.id,
+                  name,
+                  node.permission,
+                  node.modificationTime,
+                  node.accessTime,
+                  node.header,
+                  node.parentName);
+        } else {
+          inode = new INodeDirectory(node.id);
+          inode
+              .asDirectory()
+              .InitINodeDirectory(
+                  node.parent,
+                  node.id,
+                  name,
+                  node.permission,
+                  node.modificationTime,
+                  node.accessTime,
+                  node.header,
+                  node.parentName);
+          inode.asDirectory().resetCurrentChildrenList();
+        }
+        INodeKeyedObjects.getCache().put(path, inode);
       }
     }
     if (!inode.isFile()) {
