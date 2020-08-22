@@ -81,14 +81,6 @@ public class INodeFile extends INodeWithAdditionalFields
     return valueOf(inode, path, false);
   }
 
-  public String getParentPath() {
-    return getPath(path.length - 2);
-  }
-
-  public String getPath(int pos) {
-    return DFSUtil.byteArray2PathString(path, 0, pos + 1); // it's a length...
-  }
-
   /** Cast INode to INodeFile. */
   public static INodeFile valueOf(INode inode, String path, boolean acceptNull)
       throws FileNotFoundException {
