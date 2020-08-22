@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.fs.permission.PermissionStatus;
@@ -89,7 +90,8 @@ public class INodeFile extends INodeWithAdditionalFields
         return null;
       } else {
         byte[][] pathComponents = INode.getPathComponents(path);
-        pathComponents = resolveComponents(pathComponents, FSDirectory.getInstance());
+        FSDirectory fsd = FSDirectory.getInstance();
+        pathComponents = fsd.resolveComponents(pathComponents, fsd);
         String parentStr = DFSUtil.byteArray2PathString(pathComponents, 0, pathComponents.length - 1);
         String childStr = pathComponents[pathComponents.length - 1];
         DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parentStr, childStr);
