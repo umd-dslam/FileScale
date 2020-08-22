@@ -361,7 +361,7 @@ public class INodesInPath {
   }
 
   public void setLastINode(INode inode) {
-    inodes[nodes.length - 1] = inode; 
+    inodes[inodes.length - 1] = inode; 
   }
 
   byte[] getLastLocalName() {
