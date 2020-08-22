@@ -204,7 +204,7 @@ public class DatabaseINode {
     return res;
   }
 
-  public LoadINode loadINode(final long parentName, final String childName) {
+  public LoadINode loadINode(final String parentName, final String childName) {
     LoadINode res = null;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
