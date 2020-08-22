@@ -7,7 +7,7 @@ public class LoadINodeV3 extends VoltProcedure {
       new SQLStmt(
           "SELECT parent, parentName, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE parentName = ? AND name = ?;");
 
-  public VoltTable[] run(long parentName, String childName) throws VoltAbortException {
+  public VoltTable[] run(String parentName, String childName) throws VoltAbortException {
     voltQueueSQL(sql, parentName, childName);
     return voltExecuteSQL();
   }
