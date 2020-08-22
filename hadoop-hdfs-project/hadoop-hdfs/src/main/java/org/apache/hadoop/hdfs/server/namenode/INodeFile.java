@@ -101,7 +101,7 @@ public class INodeFile extends INodeWithAdditionalFields
         String parentStr = DFSUtil.byteArray2PathString(pathComponents, 0, pathComponents.length - 1);
         String childStr = pathComponents[pathComponents.length - 1];
         DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parentStr, childStr);
-        if (node == null) return throw new FileNotFoundException("File does not exist: " + path);
+        if (node == null) throw new FileNotFoundException("File does not exist: " + path);
         byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
         if (node.header != 0L) {
           inode = new INodeFile(node.id);
