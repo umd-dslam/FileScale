@@ -165,7 +165,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public INodeDirectory(INodeDirectory other, boolean adopt,
       Feature... featuresToCopy) {
     super(other);
-    filter = other.filter.copy();
+    // filter = other.filter.copy();
     final ReadOnlyList<INode> children = other.getCurrentChildrenList();
     if (adopt && children != null) {
       for (INode child : children) {
@@ -557,10 +557,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   public HashSet<String> getCurrentChildrenList2() {
     if (children.isEmpty()) {
-      children = new HashSet<>(DatabaseINode.getChildrenNames(getId()));
+      children = new HashSet<>();
     }
     return children;
   }
+
+  public void resetCurrentChildrenList() {
+    children = new HashSet<>(DatabaseINode.getChildrenNames(getId()));
+  }  
 
   private ReadOnlyList<INode> getCurrentChildrenList() {
     if (children.isEmpty()) {
@@ -639,10 +643,14 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public boolean addChild(INode node, final boolean setModTime,
       final int latestSnapshotId) {
 
-    if (getFilter().mightContain(String.valueOf(getId()) + node.getLocalName())) {
-      if (DatabaseINode.checkInodeExistence(getId(), node.getLocalName())) {
-        return false;
-      }
+    // if (getFilter().mightContain(String.valueOf(getId()) + node.getLocalName())) {
+    //   if (DatabaseINode.checkInodeExistence(getId(), node.getLocalName())) {
+    //     return false;
+    //   }
+    // }
+
+    if (getCurrentChildrenList2().contains(node.getLocalName())) {
+      return false;
     }
 
     if (isInLatestSnapshot(latestSnapshotId)) {
@@ -714,15 +722,19 @@ public class INodeDirectory extends INodeWithAdditionalFields
           if (child.isDirectory()) {
             HashSet<String> childNames = ((INodeDirectory)child).getCurrentChildrenList2();
             for (String cname : childNames) {
-              q.add(new ImmutablePair<>(child.getPath(), cname));
+              if (child.getId() == old_id) {
+                q.add(new ImmutablePair<>(getOldPath(oldParent, oldName), cname));
+              } else {
+                q.add(new ImmutablePair<>(child.getPath(), cname));
+              }
             }
           }
 
-          child.setId(child.getId() + 100000);
           if (child.getId() != old_id) {
             child.setParent(child.getParentId() + 100000);
             child.setParentName(newParent + child.getParentName().substring(skip_id));
           }
+          child.setId(child.getId() + 100000);
 
           if (child.isDirectory()) {
             // log: create new diretory
@@ -792,10 +804,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
 
     INode inode = node;
-    children.add(name);
-    getFilter().put(String.valueOf(getId()) + name);
+    // getFilter().put(String.valueOf(getId()) + name);
+    getCurrentChildrenList2().add(name);
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
-      node.getParent().getFilter().delete(String.valueOf(node.getParentId()) + node.getLocalName());
+      node.getParent().getCurrentChildrenList2().remove(node.getLocalName());
+      // node.getParent().getFilter().delete(String.valueOf(node.getParentId()) + node.getLocalName());
 
       String oldParent = node.getParentName();
       String oldName = node.getLocalName();

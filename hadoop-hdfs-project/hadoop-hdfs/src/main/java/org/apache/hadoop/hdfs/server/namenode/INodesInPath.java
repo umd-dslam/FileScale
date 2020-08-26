@@ -360,6 +360,10 @@ public class INodesInPath {
     return getINode(-1);
   }
 
+  public void setLastINode(INode inode) {
+    inodes[inodes.length - 1] = inode; 
+  }
+
   byte[] getLastLocalName() {
     return path[path.length - 1];
   }

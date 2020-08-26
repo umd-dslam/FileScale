@@ -204,6 +204,66 @@ public class DatabaseINode {
     return res;
   }
 
+  public LoadINode loadINode(final String parentName, final String childName) {
+    LoadINode res = null;
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results =
+              obj.getVoltClient().callProcedure("LoadINodeV3", parentName, childName).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res =
+                new LoadINode(
+                    result.getLong(0),
+                    result.getString(1),
+                    result.getLong(2),
+                    result.getString(3),
+                    result.getLong(4),
+                    result.getLong(5),
+                    result.getLong(6),
+                    result.getLong(7));
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        Connection conn = obj.getConnection();
+        String sql =
+            "SELECT parent, parentName, id, name, permission, modificationTime, accessTime, header FROM inodes WHERE parentName = ? AND name = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setString(1, parentName);
+        pst.setString(2, childName);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+          res =
+              new LoadINode(
+                  rs.getLong(1),
+                  rs.getString(2),
+                  rs.getLong(3),
+                  rs.getString(4),
+                  rs.getLong(5),
+                  rs.getLong(6),
+                  rs.getLong(7),
+                  rs.getLong(8));
+        }
+        rs.close();
+        pst.close();
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Load INode [GET]: (" + parentName + ", " + childName + ")");
+    }
+    return res;
+  }
+
   public static boolean checkInodeExistence(final long parentId, final String childName) {
     boolean exist = false;
     try {

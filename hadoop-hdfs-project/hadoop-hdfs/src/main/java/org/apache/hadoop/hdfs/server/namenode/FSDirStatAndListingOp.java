@@ -156,6 +156,9 @@ class FSDirStatAndListingOp {
       final INodesInPath iip = fsd.resolvePath(pc, src, DirOp.READ);
       src = iip.getPath();
       final INodeFile inode = INodeFile.valueOf(iip.getLastINode(), src);
+      if (iip.getLastINode() == null) {
+        iip.setLastINode(inode);
+      }
       if (fsd.isPermissionEnabled()) {
         fsd.checkPathAccess(pc, iip, FsAction.READ);
         fsd.checkUnreadableBySuperuser(pc, iip);
