@@ -722,15 +722,19 @@ public class INodeDirectory extends INodeWithAdditionalFields
           if (child.isDirectory()) {
             HashSet<String> childNames = ((INodeDirectory)child).getCurrentChildrenList2();
             for (String cname : childNames) {
-              q.add(new ImmutablePair<>(child.getPath(), cname));
+              if (child.getId() == old_id) {
+                q.add(new ImmutablePair<>(getOldPath(oldParent, oldName), cname));
+              } else {
+                q.add(new ImmutablePair<>(child.getPath(), cname));
+              }
             }
           }
 
-          child.setId(child.getId() + 100000);
           if (child.getId() != old_id) {
             child.setParent(child.getParentId() + 100000);
             child.setParentName(newParent + child.getParentName().substring(skip_id));
           }
+          child.setId(child.getId() + 100000);
 
           if (child.isDirectory()) {
             // log: create new diretory
@@ -800,11 +804,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
 
     INode inode = node;
-    children.add(name);
     // getFilter().put(String.valueOf(getId()) + name);
     getCurrentChildrenList2().add(name);
     if (node.getParentId() != getId() || !node.getLocalName().equals(name)) {
-      getCurrentChildrenList2().remove(node.getLocalName());
+      node.getParent().getCurrentChildrenList2().remove(node.getLocalName());
       // node.getParent().getFilter().delete(String.valueOf(node.getParentId()) + node.getLocalName());
 
       String oldParent = node.getParentName();
