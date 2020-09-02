@@ -346,27 +346,28 @@ public class MountsManager extends AbstractService {
         String newUri = cols[0];
         String mPoint = cols[1];
         boolean repartPoint = (cols.length > 2) ? true : false;
-        
-        // find the old mount point
-        String oldUri = this.lookupMap.get(mPoint).get(0).fsUri;
+        if (repartPoint) {
+          // find the old mount point
+          String oldUri = this.lookupMap.get(mPoint).get(0).fsUri;
 
-        // update the local cache in the old destination (NameNode)
-        try {
-          MountPartition mp = MountPartition.newBuilder()
-            .setMountPoint(mPoint)
-            .setOldUri(oldUri)
-            .setNewUri(newUri).build();
+          // update the local cache in the old destination (NameNode)
+          try {
+            MountPartition mp = MountPartition.newBuilder()
+              .setMountPoint(mPoint)
+              .setOldUri(oldUri)
+              .setNewUri(newUri).build();
 
-          byte[] data = mp.toByteArray();
-          FSMountRepartitionProtocol proxy = (FSMountRepartitionProtocol) RPC.getProxy(
-            FSMountRepartitionProtocol.class, FSMountRepartitionProtocol.versionID,
-            new InetSocketAddress(oldUri, 10086), new Configuration());
-          proxy.recordMove(data);
-        } catch (Exception e) {
-          e.printStackTrace();
+            byte[] data = mp.toByteArray();
+            FSMountRepartitionProtocol proxy = (FSMountRepartitionProtocol) RPC.getProxy(
+              FSMountRepartitionProtocol.class, FSMountRepartitionProtocol.versionID,
+              new InetSocketAddress(oldUri, 10086), new Configuration());
+            proxy.recordMove(data);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+
+          break;
         }
-
-        if (repartPoint) break;
       }
       // update mount table in Zookeeper
       framework.setData().forPath(zkMountTablePath, mounts.getBytes());
