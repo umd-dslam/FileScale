@@ -3,6 +3,8 @@ package org.apache.hadoop.hdfs.server.namenode;
 import static java.util.concurrent.TimeUnit.*;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.*;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class INodeKeyedObjects {
   private static IndexedCache<String, INode> cache;
+  private static Cache<String, String> move;
 
   private static Set<String> concurrentUpdateSet;
   private static Set<String> concurrentRenameSet;
@@ -374,5 +377,14 @@ public class INodeKeyedObjects {
               .buildFromCaffeine(cfein);
     }
     return cache;
+  }
+
+  public static Cache<String, String> getMoveCache() {
+    if (move == null) {
+      move =  Caffeine.newBuilder()
+              .expireAfterWrite(1000, TimeUnit.MILLISECONDS)
+              .build();      
+    }
+    return move;
   }
 }

@@ -16,6 +16,13 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.nnproxy.ProxyConfig;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.ipc.RPC;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.MountPartition;
+import org.apache.hadoop.hdfs.server.namenode.FSMountRepartitionProtocol;
+
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -323,6 +330,45 @@ public class MountsManager extends AbstractService {
     if (framework.checkExists().forPath(zkMountTablePath) == null) {
       framework.create().forPath(zkMountTablePath, mounts.getBytes());
     } else {
+      framework.setData().forPath(zkMountTablePath, mounts.getBytes());
+    }
+  }
+
+  public void repartition(String mounts) throws Exception {
+    if (framework.checkExists().forPath(zkMountTablePath) == null) {
+      framework.create().forPath(zkMountTablePath, mounts.getBytes());
+    } else {
+      for (String s : mounts.split("\n")) {
+        if (StringUtils.isEmpty(s)) {
+          continue;
+        }
+        String[] cols = s.split(" ");
+        String newUri = cols[0];
+        String mPoint = cols[1];
+        boolean repartPoint = (cols.length > 2) ? true : false;
+        
+        // find the old mount point
+        String oldUri = this.lookupMap.get(mPoint).get(0).fsUri;
+
+        // update the local cache in the old destination (NameNode)
+        try {
+          MountPartition mp = MountPartition.newBuilder()
+            .setMountPoint(mPoint)
+            .setOldUri(oldUri)
+            .setNewUri(newUri).build();
+
+          byte[] data = mp.toByteArray();
+          FSMountRepartitionProtocol proxy = (FSMountRepartitionProtocol) RPC.getProxy(
+            FSMountRepartitionProtocol.class, FSMountRepartitionProtocol.versionID,
+            new InetSocketAddress(oldUri, 10086), new Configuration());
+          proxy.recordMove(data);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        if (repartPoint) break;
+      }
+      // update mount table in Zookeeper
       framework.setData().forPath(zkMountTablePath, mounts.getBytes());
     }
   }

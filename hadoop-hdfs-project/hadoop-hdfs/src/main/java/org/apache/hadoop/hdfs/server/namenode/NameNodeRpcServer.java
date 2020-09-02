@@ -261,7 +261,7 @@ public class NameNodeRpcServer implements NamenodeProtocols {
   protected final InetSocketAddress clientRpcAddress;
 
   /** The RPC server that listens to logging requests from other namenodes */
-  protected final RPC.Server editLogRpcServer;
+  protected final RPC.Server mountRepartitionRpcServer;
 
   private final String minimumDataNodeVersion;
 
@@ -549,9 +549,9 @@ public class NameNodeRpcServer implements NamenodeProtocols {
       }
     }
 
-    // FSEditLog RPC Server
-    editLogRpcServer = new RPC.Builder(conf).setProtocol(FSEditLogProtocol.class)
-      .setInstance(new FSEditLogProtocolImpl())
+    // FSMountRepartition RPC Server
+    mountRepartitionRpcServer = new RPC.Builder(conf).setProtocol(FSMountRepartitionProtocol.class)
+      .setInstance(new FSMountRepartitionProtocolImpl())
       .setBindAddress("0.0.0.0")
       .setPort(10086)
       .setNumHandlers(handlerCount)
@@ -583,7 +583,7 @@ public class NameNodeRpcServer implements NamenodeProtocols {
    */
   void start() {
     clientRpcServer.start();
-    editLogRpcServer.start();
+    mountRepartitionRpcServer.start();
     if (serviceRpcServer != null) {
       serviceRpcServer.start();      
     }
@@ -597,6 +597,7 @@ public class NameNodeRpcServer implements NamenodeProtocols {
    */
   void join() throws InterruptedException {
     clientRpcServer.join();
+    mountRepartitionRpcServer.join();
     if (serviceRpcServer != null) {
       serviceRpcServer.join();      
     }
@@ -611,6 +612,9 @@ public class NameNodeRpcServer implements NamenodeProtocols {
   void stop() {
     if (clientRpcServer != null) {
       clientRpcServer.stop();
+    }
+    if (mountRepartitionRpcServer != null) {
+      mountRepartitionRpcServer.stop();
     }
     if (serviceRpcServer != null) {
       serviceRpcServer.stop();

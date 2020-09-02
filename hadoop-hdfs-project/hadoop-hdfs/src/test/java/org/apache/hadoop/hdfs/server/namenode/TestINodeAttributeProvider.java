@@ -109,6 +109,11 @@ public class TestINodeAttributeProvider {
         }
 
         @Override
+        public String getPath() {
+          return inode.getPath();
+        }
+
+        @Override
         public String getUserName() {
           return (useDefault) ? inode.getUserName() : "foo";
         }

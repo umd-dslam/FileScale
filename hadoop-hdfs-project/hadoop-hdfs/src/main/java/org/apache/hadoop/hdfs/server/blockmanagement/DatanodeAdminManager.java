@@ -744,7 +744,7 @@ public class DatanodeAdminManager {
         // Update various counts
         lowRedundancyBlocks++;
         if (bc.isUnderConstruction()) {
-          INode ucFile = namesystem.getFSDirectory().getInode(bc.getId());
+          INode ucFile = null;
           if (!(ucFile instanceof  INodeFile) ||
               !ucFile.asFile().isUnderConstruction()) {
             LOG.warn("File {} is not under construction. Skipping add to " +

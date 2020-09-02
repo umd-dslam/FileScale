@@ -233,7 +233,7 @@ public abstract class FSTreeTraverser {
     // If the readlock was reacquired, we need to resolve the paths again
     // in case things have changed. If our cursor file/dir is changed,
     // continue from the next one.
-    INode zoneNode = dir.getInode(startId);
+    INode zoneNode = dir.getInode(null, null);
     if (zoneNode == null) {
       throw new FileNotFoundException("Zone " + startId + " is deleted.");
     }

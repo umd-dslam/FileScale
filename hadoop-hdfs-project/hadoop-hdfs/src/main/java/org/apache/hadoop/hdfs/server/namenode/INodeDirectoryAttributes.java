@@ -57,6 +57,11 @@ public interface INodeDirectoryAttributes extends INodeAttributes {
     }
 
     @Override
+    public String getPath() {
+      return null;
+    }
+
+    @Override
     public boolean metadataEquals(INodeDirectoryAttributes other) {
       return other != null
           && getQuotaCounts().equals(other.getQuotaCounts())

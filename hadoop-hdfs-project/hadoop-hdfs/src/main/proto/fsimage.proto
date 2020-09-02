@@ -77,6 +77,15 @@ message NameSystemSection {
 }
 
 /**
+ * Name: MountPartition
+ */
+message MountPartition {
+  optional string mountPoint = 1;
+  optional string oldUri = 2;
+  optional string newUri = 3;  
+}
+
+/**
  * Permission is serialized as a 64-bit long. [0:24):[25:48):[48:64) (in Big Endian).
  * The first and the second parts are the string ids of the user and
  * group name, and the last 16 bits are the permission bits.
