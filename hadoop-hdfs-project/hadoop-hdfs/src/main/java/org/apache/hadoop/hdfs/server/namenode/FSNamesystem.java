@@ -104,6 +104,11 @@ import org.apache.hadoop.hdfs.protocol.SnapshotDiffReportListing;
 import org.apache.hadoop.hdfs.protocol.SnapshotDiffReport;
 import org.apache.hadoop.hdfs.server.common.ECTopologyVerifier;
 import org.apache.hadoop.hdfs.server.namenode.metrics.ReplicatedBlocksMBean;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.Operation;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.Operation.Flag;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.CryptoProtocol;
+import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.hdfs.server.protocol.SlowDiskReports;
 import org.apache.hadoop.util.Time;
 import static org.apache.hadoop.util.Time.now;
@@ -139,6 +144,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -2420,6 +2426,24 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             .values()));
   }
 
+  // find the new destination NameNode if mount point reparition happened before. 
+  private String destNN(String path) {
+    ConcurrentMap<String, String> moveMap = INodeKeyedObjects.getMoveCache().asMap();
+    String chosen = null;
+    for (String mp : moveMap.keySet()) {
+      if (!(path.startsWith(mp + "/") || path.equals(mp))) {
+        continue;
+      }
+      if (chosen == null || chosen.length() < mp.length()) {
+        chosen = mp;
+      }
+    }
+
+    if (chosen == null) return null;
+
+    return moveMap.get(chosen);
+  }
+
   /**
    * Create a new file entry in the namespace.
    * 
@@ -2432,8 +2456,69 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       boolean createParent, short replication, long blockSize,
       CryptoProtocolVersion[] supportedVersions, String ecPolicyName,
       boolean logRetryCache) throws IOException {
-
     HdfsFileStatus status;
+    if (INodeKeyedObjects.getMoveCache().estimatedSize() > 0) {
+      String newUri = destNN(src);
+      if (newUri != null) {
+        String[] address = new String[2];
+        address = newUri.replace("hdfs://", "").split(":");
+        try {
+          List<CryptoProtocol> cplist = new ArrayList<>();
+          for (CryptoProtocolVersion cp : supportedVersions) {
+            cplist.add(CryptoProtocol.newBuilder()
+              .setDescription(cp.getDescription())
+              .setVersion(cp.getVersion())
+              .setUnknownValue(cp.getUnknownValue())
+              .build());
+          }
+          List<Operation.Flag> flist = new ArrayList<>();
+          for (CreateFlag cf : flag) {
+            if (cf.getMode() == cf.CREATE.getMode())
+              flist.add(Operation.Flag.CREATE);
+            else if (cf.getMode() == cf.OVERWRITE.getMode())
+              flist.add(Operation.Flag.OVERWRITE);
+            else if (cf.getMode() == cf.APPEND.getMode())
+              flist.add(Operation.Flag.APPEND);
+            else if (cf.getMode() == cf.IGNORE_CLIENT_LOCALITY.getMode())
+              flist.add(Operation.Flag.IGNORE_CLIENT_LOCALITY);
+            else if (cf.getMode() == cf.SYNC_BLOCK.getMode())
+              flist.add(Operation.Flag.SYNC_BLOCK);
+            else if (cf.getMode() == cf.SHOULD_REPLICATE.getMode())
+              flist.add(Operation.Flag.SHOULD_REPLICATE);
+            else if (cf.getMode() == cf.LAZY_PERSIST.getMode())
+              flist.add(Operation.Flag.LAZY_PERSIST);
+            else if (cf.getMode() == cf.NEW_BLOCK.getMode())
+              flist.add(Operation.Flag.NEW_BLOCK);
+            else if (cf.getMode() == cf.NO_LOCAL_WRITE.getMode())
+              flist.add(Operation.Flag.NO_LOCAL_WRITE);
+          }
+
+          Operation.Create create = Operation.Create.newBuilder()
+            .setSrc(src)
+            .setPermissions(INodeWithAdditionalFields.PermissionStatusFormat.toLong(permissions))
+            .setHolder(holder)
+            .setClientMachine(clientMachine)
+            .setCreateParent(createParent)
+            .setReplication(replication)
+            .setBlockSize(blockSize)
+            .setEcPolicyName(ecPolicyName)
+            .setLogRetryCache(logRetryCache)
+            .addAllSupportedVersions(cplist)
+            .addAllFlag(flist)
+            .build();
+
+          byte[] params = create.toByteArray();
+          FSMountRepartitionProtocol proxy = (FSMountRepartitionProtocol) RPC.getProxy(
+            FSMountRepartitionProtocol.class, FSMountRepartitionProtocol.versionID,
+            new InetSocketAddress(address[0], 10086), new Configuration());
+          status = proxy.create(params);
+        } catch (Exception e) {
+          logAuditEvent(false, "create", src);
+          throw e;
+        }
+      }
+    }
+
     try {
       status = startFileInt(src, permissions, holder, clientMachine, flag,
           createParent, replication, blockSize, supportedVersions, ecPolicyName,
