@@ -2517,15 +2517,15 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           throw e;
         }
       }
-    }
-
-    try {
-      status = startFileInt(src, permissions, holder, clientMachine, flag,
-          createParent, replication, blockSize, supportedVersions, ecPolicyName,
-          logRetryCache);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "create", src);
-      throw e;
+    } else {
+      try {
+        status = startFileInt(src, permissions, holder, clientMachine, flag,
+            createParent, replication, blockSize, supportedVersions, ecPolicyName,
+            logRetryCache);
+      } catch (AccessControlException e) {
+        logAuditEvent(false, "create", src);
+        throw e;
+      }
     }
     logAuditEvent(true, "create", src, status);
     return status;
