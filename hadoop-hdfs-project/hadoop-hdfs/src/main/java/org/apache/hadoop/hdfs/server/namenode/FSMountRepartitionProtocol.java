@@ -19,10 +19,11 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
 import org.apache.hadoop.ipc.VersionedProtocol;
-
+import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.MountPartition;
 
 public interface FSMountRepartitionProtocol extends VersionedProtocol {
     public static final long versionID = 1L;
     public void recordMove(byte[] data) throws IOException;
+    public HdfsFileStatus create(byte[] params) throws IOException;
 }
