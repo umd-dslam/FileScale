@@ -2457,75 +2457,76 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       CryptoProtocolVersion[] supportedVersions, String ecPolicyName,
       boolean logRetryCache) throws IOException {
     HdfsFileStatus status;
+    String newUri = null;
     if (INodeKeyedObjects.getMoveCache().estimatedSize() > 0) {
-      String newUri = destNN(src);
-      if (newUri != null) {
-        String[] address = new String[2];
-        address = newUri.replace("hdfs://", "").split(":");
-        try {
-          List<CryptoProtocol> cplist = new ArrayList<>();
-          for (CryptoProtocolVersion cp : supportedVersions) {
-            cplist.add(CryptoProtocol.newBuilder()
-              .setDescription(cp.getDescription())
-              .setVersion(cp.getVersion())
-              .setUnknownValue(cp.getUnknownValue())
-              .build());
-          }
-          List<Operation.Flag> flist = new ArrayList<>();
-          for (CreateFlag cf : flag) {
-            if (cf.getMode() == cf.CREATE.getMode())
-              flist.add(Operation.Flag.CREATE);
-            else if (cf.getMode() == cf.OVERWRITE.getMode())
-              flist.add(Operation.Flag.OVERWRITE);
-            else if (cf.getMode() == cf.APPEND.getMode())
-              flist.add(Operation.Flag.APPEND);
-            else if (cf.getMode() == cf.IGNORE_CLIENT_LOCALITY.getMode())
-              flist.add(Operation.Flag.IGNORE_CLIENT_LOCALITY);
-            else if (cf.getMode() == cf.SYNC_BLOCK.getMode())
-              flist.add(Operation.Flag.SYNC_BLOCK);
-            else if (cf.getMode() == cf.SHOULD_REPLICATE.getMode())
-              flist.add(Operation.Flag.SHOULD_REPLICATE);
-            else if (cf.getMode() == cf.LAZY_PERSIST.getMode())
-              flist.add(Operation.Flag.LAZY_PERSIST);
-            else if (cf.getMode() == cf.NEW_BLOCK.getMode())
-              flist.add(Operation.Flag.NEW_BLOCK);
-            else if (cf.getMode() == cf.NO_LOCAL_WRITE.getMode())
-              flist.add(Operation.Flag.NO_LOCAL_WRITE);
-          }
-
-          Operation.Create create = Operation.Create.newBuilder()
-            .setSrc(src)
-            .setPermissions(INodeWithAdditionalFields.PermissionStatusFormat.toLong(permissions))
-            .setHolder(holder)
-            .setClientMachine(clientMachine)
-            .setCreateParent(createParent)
-            .setReplication(replication)
-            .setBlockSize(blockSize)
-            .setEcPolicyName(ecPolicyName)
-            .setLogRetryCache(logRetryCache)
-            .addAllSupportedVersions(cplist)
-            .addAllFlag(flist)
-            .build();
-
-          byte[] params = create.toByteArray();
-          FSMountRepartitionProtocol proxy = (FSMountRepartitionProtocol) RPC.getProxy(
-            FSMountRepartitionProtocol.class, FSMountRepartitionProtocol.versionID,
-            new InetSocketAddress(address[0], 10086), new Configuration());
-          status = proxy.create(params);
-        } catch (Exception e) {
-          logAuditEvent(false, "create", src);
-          throw e;
-        }
-      }
+      newUri = destNN(src);
     }
+    if (newUri != null) {
+      String[] address = new String[2];
+      address = newUri.replace("hdfs://", "").split(":");
+      try {
+        List<CryptoProtocol> cplist = new ArrayList<>();
+        for (CryptoProtocolVersion cp : supportedVersions) {
+          cplist.add(CryptoProtocol.newBuilder()
+            .setDescription(cp.getDescription())
+            .setVersion(cp.getVersion())
+            .setUnknownValue(cp.getUnknownValue())
+            .build());
+        }
+        List<Operation.Flag> flist = new ArrayList<>();
+        for (CreateFlag cf : flag) {
+          if (cf.getMode() == cf.CREATE.getMode())
+            flist.add(Operation.Flag.CREATE);
+          else if (cf.getMode() == cf.OVERWRITE.getMode())
+            flist.add(Operation.Flag.OVERWRITE);
+          else if (cf.getMode() == cf.APPEND.getMode())
+            flist.add(Operation.Flag.APPEND);
+          else if (cf.getMode() == cf.IGNORE_CLIENT_LOCALITY.getMode())
+            flist.add(Operation.Flag.IGNORE_CLIENT_LOCALITY);
+          else if (cf.getMode() == cf.SYNC_BLOCK.getMode())
+            flist.add(Operation.Flag.SYNC_BLOCK);
+          else if (cf.getMode() == cf.SHOULD_REPLICATE.getMode())
+            flist.add(Operation.Flag.SHOULD_REPLICATE);
+          else if (cf.getMode() == cf.LAZY_PERSIST.getMode())
+            flist.add(Operation.Flag.LAZY_PERSIST);
+          else if (cf.getMode() == cf.NEW_BLOCK.getMode())
+            flist.add(Operation.Flag.NEW_BLOCK);
+          else if (cf.getMode() == cf.NO_LOCAL_WRITE.getMode())
+            flist.add(Operation.Flag.NO_LOCAL_WRITE);
+        }
 
-    try {
-      status = startFileInt(src, permissions, holder, clientMachine, flag,
-          createParent, replication, blockSize, supportedVersions, ecPolicyName,
-          logRetryCache);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "create", src);
-      throw e;
+        Operation.Create create = Operation.Create.newBuilder()
+          .setSrc(src)
+          .setPermissions(INodeWithAdditionalFields.PermissionStatusFormat.toLong(permissions))
+          .setHolder(holder)
+          .setClientMachine(clientMachine)
+          .setCreateParent(createParent)
+          .setReplication(replication)
+          .setBlockSize(blockSize)
+          .setEcPolicyName(ecPolicyName)
+          .setLogRetryCache(logRetryCache)
+          .addAllSupportedVersions(cplist)
+          .addAllFlag(flist)
+          .build();
+
+        byte[] params = create.toByteArray();
+        FSMountRepartitionProtocol proxy = (FSMountRepartitionProtocol) RPC.getProxy(
+          FSMountRepartitionProtocol.class, FSMountRepartitionProtocol.versionID,
+          new InetSocketAddress(address[0], 10086), new Configuration());
+        status = proxy.create(params);
+      } catch (Exception e) {
+        logAuditEvent(false, "create", src);
+        throw e;
+      }
+    } else {
+      try {
+        status = startFileInt(src, permissions, holder, clientMachine, flag,
+            createParent, replication, blockSize, supportedVersions, ecPolicyName,
+            logRetryCache);
+      } catch (AccessControlException e) {
+        logAuditEvent(false, "create", src);
+        throw e;
+      }
     }
     logAuditEvent(true, "create", src, status);
     return status;
