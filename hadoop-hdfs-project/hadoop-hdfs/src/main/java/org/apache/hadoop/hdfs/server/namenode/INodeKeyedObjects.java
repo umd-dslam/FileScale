@@ -58,6 +58,9 @@ public class INodeKeyedObjects {
   }
 
   private static void insertToDB() {
+    if (concurrentUpdateSet == null) {
+      return;
+    }
     int i = 0;
     final int num = 1024;
     long updateSize = concurrentUpdateSet.size();
@@ -157,6 +160,9 @@ public class INodeKeyedObjects {
   }
 
   private static void removeToDB() {
+    if (concurrentRemoveSet == null) {
+      return;
+    }
     int i = 0;
     final int num = 1024;
     List<Long> removeIds = new ArrayList<>();
@@ -202,6 +208,9 @@ public class INodeKeyedObjects {
   }
 
   private static void renameToDB() {
+    if (concurrentRenameSet == null) {
+      return;
+    }
     int i = 0;
     final int num = 1024;
     long renameSize = concurrentRenameSet.size();
