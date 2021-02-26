@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.LinkedList;
+import java.util.Set;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.fs.PathIsNotDirectoryException;
 import org.apache.hadoop.fs.StorageType;
@@ -702,8 +703,52 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
   }
 
+void update_subtree(Set<INode> renameSet) {
+  List<Long> longAttr = new ArrayList<>();
+  List<String> strAttr = new ArrayList<>();
+
+  List<Long> fileIds = new ArrayList<>();
+  List<String> fileAttr = new ArrayList<>();
+  Iterator<INode> iterator = renameSet.iterator();
+  while (iterator.hasNext()) {
+    INode inode = iterator.next();
+    if (inode == null) continue;
+    strAttr.add(inode.getLocalName());
+    if (inode.getId() == 16385) {
+      strAttr.add(" ");
+    } else {
+      strAttr.add(inode.getParentName());
+    }
+    longAttr.add(inode.getParentId());
+    longAttr.add(inode.getId());
+    longAttr.add(inode.getModificationTime());
+    longAttr.add(inode.getAccessTime());
+    longAttr.add(inode.getPermissionLong());
+    if (inode.isDirectory()) {
+      longAttr.add(0L);
+    } else {
+      longAttr.add(inode.asFile().getHeaderLong());
+      FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+      if (uc != null) {
+        fileIds.add(inode.getId());
+        fileAttr.add(uc.getClientName(inode.getId()));
+        fileAttr.add(uc.getClientMachine(inode.getId()));
+      }
+    }
+    iterator.remove();
+  }
+  try {
+    if (strAttr.size() > 0) {
+      DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+    }
+  } catch (Exception e) {
+    e.printStackTrace();
+  }
+}
+
   public void remoteRename(INode node, String oldName, String oldParent, String newParent, String address) {
     // FIXME: replace NameNode.getId() with 10000 to simplify the ID assignments
+    newParent = "/nnThroughputBenchmark/rename";
     int skip_id = oldParent.length();
     Long old_id = node.getId();
     if (node.isDirectory()) {
@@ -716,6 +761,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
         .logDelete(null, old_id, node.getModificationTime(), true);
 
       ImmutablePair<String, String> id = null;
+      Set<INode> renameSet = new HashSet<>();
+
       while ((id = q.poll()) != null) {
         INode child = FSDirectory.getInstance().getInode(id.getLeft(), id.getRight());   
         if (child != null) {
@@ -731,10 +778,10 @@ public class INodeDirectory extends INodeWithAdditionalFields
           }
 
           if (child.getId() != old_id) {
-            child.setParent(child.getParentId() + 100000);
-            child.setParentName(newParent + child.getParentName().substring(skip_id));
+            child.setParent(child.getParentId() + 40000000);
           }
-          child.setId(child.getId() + 100000);
+          child.setParentName(newParent + child.getParentName() + child.getLocalName());
+          child.setId(child.getId() + 40000000);
 
           if (child.isDirectory()) {
             // log: create new diretory
@@ -747,13 +794,23 @@ public class INodeDirectory extends INodeWithAdditionalFields
               .getEditLog()
               .logOpenFile(null, (INodeFile)child, true, true);
           }
+
+          renameSet.add(child);
+          if (renameSet.size() >= 4096) {
+            update_subtree(renameSet);
+          }
         }
+      }
+      if (renameSet.size() > 0) {
+        update_subtree(renameSet);
       }
 
       // CompletableFuture.runAsync(() -> {
         // stored procedure:
         // (1) update subtree IDs and parent fields
-        DatabaseINode.updateSubtree(old_id, 100000, oldParent, newParent, node.getParentId());
+        // DatabaseINode.updateSubtree(old_id, 100000, oldParent, "/nnThroughputBenchmark/rename", node.getParentId());
+        // (2) remove all childs recursively
+        DatabaseINode.removeChild(old_id);
       // }, Database.getInstance().getExecutorService());
 
       // invalidate inode, and childs will be evicted eventually
