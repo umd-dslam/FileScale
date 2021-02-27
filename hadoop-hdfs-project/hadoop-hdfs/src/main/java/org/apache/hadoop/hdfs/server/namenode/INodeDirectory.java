@@ -825,17 +825,17 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
       iterator.remove();
     }
-    
+
     try {
       byte[] data = b.build().toByteArray();
 
       FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
         FSEditLogProtocol.class, FSEditLogProtocol.versionID,
-        new InetSocketAddress(nameNodeAddress, 10086), new Configuration());
+        new InetSocketAddress(nameNodeAddress, 10087), new Configuration());
       proxy.logEdit(data);
     } catch (Exception e) {
       e.printStackTrace();
-    }    
+    }
   }
 
   void update_subtree(Set<INode> renameSet) {
@@ -882,8 +882,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public void remoteRename(INode node, String oldName, String oldParent, String newParent, String address) {
-    // FIXME: replace NameNode.getId() with 10000 to simplify the ID assignments
-    newParent = "/nnThroughputBenchmark/rename";
+    // FIXME: replace NameNode.getId() with 40000000 to simplify the ID assignments
     int skip_id = oldParent.length();
     Long old_id = node.getId();
     if (node.isDirectory()) {
@@ -918,17 +917,17 @@ public class INodeDirectory extends INodeWithAdditionalFields
           }
           child.setId(child.getId() + 40000000);
 
-          if (child.isDirectory()) {
-            // log: create new diretory
-            FSDirectory.getInstance()
-              .getEditLog()
-              .logMkDir(null, (INodeDirectory)child);
-          } else {
-            // log: create new file
-            FSDirectory.getInstance()
-              .getEditLog()
-              .logOpenFile(null, (INodeFile)child, true, true);
-          }
+          // if (child.isDirectory()) {
+          //   // log: create new diretory
+          //   FSDirectory.getInstance()
+          //     .getEditLog()
+          //     .logMkDir(null, (INodeDirectory)child);
+          // } else {
+          //   // log: create new file
+          //   FSDirectory.getInstance()
+          //     .getEditLog()
+          //     .logOpenFile(null, (INodeFile)child, true, true);
+          // }
 
           renameSet.add(child);
           // if (renameSet.size() >= 5120) {
@@ -938,6 +937,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
       if (renameSet.size() > 0) {
         // update_subtree(renameSet);
+        LOG.info("#### address: " + address);
         update_subtree_v2(renameSet, address);
       }
 
@@ -1016,8 +1016,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
       } else {
         String[] address = new String[2];
         try {
-          // LOG.info(existingPath + " : " + mpoint);
           String mpoint = FSDirectory.getInstance().getMountsManager().resolve(existingPath);
+          LOG.info(existingPath + " : " + mpoint);
           address = mpoint.replace("hdfs://","").split(":");
         } catch (Exception e) {
           e.printStackTrace();
