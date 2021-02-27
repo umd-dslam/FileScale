@@ -773,7 +773,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
         .setId(newNode.getId())
         .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
         .setType(INodeSection.INode.Type.FILE).setFile(b)
-        .setParent(newNode.getParentId()).build();
+        .setParent(newNode.getParentId())
+        .setParentName(newNode.getParentName())
+        .build();
     } catch (Exception e) {	
         e.printStackTrace();	
     }
@@ -803,7 +805,9 @@ public class INodeDirectory extends INodeWithAdditionalFields
         .setId(newNode.getId())
         .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
         .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b)
-        .setParent(newNode.getParentId()).build();
+        .setParent(newNode.getParentId())
+        .setParentName(newNode.getParentName())
+        .build();
     } catch (Exception e) {	
         e.printStackTrace();	
     }

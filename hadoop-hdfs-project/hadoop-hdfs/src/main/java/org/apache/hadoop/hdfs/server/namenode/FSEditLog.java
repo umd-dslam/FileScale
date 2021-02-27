@@ -866,7 +866,9 @@ public class FSEditLog implements LogsPurgeable {
           .setId(newNode.getId())
           .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
           .setType(INodeSection.INode.Type.FILE).setFile(b)
-          .setParent(newNode.getParentId()).build();
+          .setParent(newNode.getParentId())
+          .setParentName(newNode.getParentName())
+          .build();
 
       byte[] data = r.toByteArray();
       FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
@@ -974,7 +976,9 @@ public class FSEditLog implements LogsPurgeable {
         .setId(newNode.getId())
         .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
         .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b)
-        .setParent(newNode.getParentId()).build();
+        .setParent(newNode.getParentId())
+        .setParentName(newNode.getParentName())
+        .build();
 
       byte[] data = r.toByteArray();
 

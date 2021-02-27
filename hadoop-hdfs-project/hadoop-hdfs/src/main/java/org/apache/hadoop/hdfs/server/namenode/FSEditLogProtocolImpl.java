@@ -103,7 +103,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         final INodeFile file = new INodeFile(n.getId(),
             n.getName().toByteArray(), permissions, f.getModificationTime(),
             f.getAccessTime(), blocks, replication, ecPolicyID,
-            f.getPreferredBlockSize(), (byte)f.getStoragePolicyID(), blockType, null);
+            f.getPreferredBlockSize(), (byte)f.getStoragePolicyID(), blockType, n.getParentName());
   
         if (f.hasAcl()) {
             int[] entries = AclEntryStatusFormat.toInt(loadAclEntries(f.getAcl(), null));
@@ -136,7 +136,11 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         }
 
         // set parent
-        file.setParent(n.getParent());
+        INode parent = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)n.getParent()); 	
+        if (parent != null) {
+            parent.asDirectory().addChild(file);	
+            // parent.asDirectory().filter.put(String.valueOf(dir.getParentId()) + dirname);
+        }
         return file;
     }
 
@@ -147,7 +151,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
 
       final PermissionStatus permissions = loadPermission(d.getPermission(), null);
       final INodeDirectory dir = new INodeDirectory(n.getId(), n.getName()
-          .toByteArray(), permissions, d.getModificationTime(), null);
+          .toByteArray(), permissions, d.getModificationTime(), n.getParentName());
       final long nsQuota = d.getNsQuota(), dsQuota = d.getDsQuota();
 
       if (d.hasAcl()) {
@@ -159,7 +163,11 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
       }
 
       // set parent
-      dir.setParent(n.getParent());
+      INode parent = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)n.getParent()); 	
+      if (parent != null) {
+        parent.asDirectory().addChild(dir);	
+        // parent.asDirectory().filter.put(String.valueOf(file.getParentId()) + filename);	
+      }
       return dir;
     }
 
@@ -177,28 +185,17 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
             switch (inode.getType()) {	
                 case FILE:	
                     INodeFile file = loadINodeFile(inode);	
-                    String filename = file.getLocalName();;	
+                    String filename = file.getLocalName();	
                     INodeKeyedObjects.getCache().put(file.getPath(), file);	
-                    // INodeKeyedObjects.getUpdateSet().add(file.getPath());	
                     FSDirectory.getInstance().getEditLog().logOpenFile(null, file, true, false);	
-                    parent = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)file.getParentId()); 	
-                    if (parent != null) {
-                        parent.asDirectory().addChild(file);	
-                        // parent.asDirectory().filter.put(String.valueOf(file.getParentId()) + filename);	
-                    }
+                    // INodeKeyedObjects.getUpdateSet().add(file.getPath());	
                     break;
                 case DIRECTORY:	
                     INodeDirectory dir = loadINodeDirectory(inode);	
                     String dirname = DFSUtil.bytes2String(dir.getLocalNameBytes());	
                     INodeKeyedObjects.getCache().put(dir.getPath(), dir);	
-                    // INodeKeyedObjects.getUpdateSet().add(inode.getPath());	
                     FSDirectory.getInstance().getEditLog().logMkDir(null, dir);	
-                    parent = INodeKeyedObjects.getCache().getIfPresent(
-                        Long.class, (Long)dir.getParentId()); 	
-                    if (parent != null) {	
-                        parent.asDirectory().addChild(dir);	
-                        // parent.asDirectory().filter.put(String.valueOf(dir.getParentId()) + dirname);	
-                    }
+                    // INodeKeyedObjects.getUpdateSet().add(inode.getPath());	
                     break;
                 default:	
                     break;
