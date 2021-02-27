@@ -136,7 +136,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         }
 
         // set parent
-        INode parent = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)n.getParent()); 	
+        INode parent = INodeKeyedObjects.getCache().getIfPresent(file.getParentName()); 	
         if (parent != null) {
             parent.asDirectory().addChild(file);	
             // parent.asDirectory().filter.put(String.valueOf(dir.getParentId()) + dirname);
@@ -163,7 +163,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
       }
 
       // set parent
-      INode parent = INodeKeyedObjects.getCache().getIfPresent(Long.class, (Long)n.getParent()); 	
+      INode parent = INodeKeyedObjects.getCache().getIfPresent(dir.getParentName()); 	
       if (parent != null) {
         parent.asDirectory().addChild(dir);	
         // parent.asDirectory().filter.put(String.valueOf(file.getParentId()) + filename);	
