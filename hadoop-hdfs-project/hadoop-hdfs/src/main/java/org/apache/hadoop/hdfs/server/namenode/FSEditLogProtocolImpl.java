@@ -53,6 +53,7 @@ import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Loader
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FileSummary;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FilesUnderConstructionSection.FileUnderConstructionEntry;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeDirectorySection;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.NamespaceSubtree;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.AclFeatureProto;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrCompactProto;
@@ -102,7 +103,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         final INodeFile file = new INodeFile(n.getId(),
             n.getName().toByteArray(), permissions, f.getModificationTime(),
             f.getAccessTime(), blocks, replication, ecPolicyID,
-            f.getPreferredBlockSize(), (byte)f.getStoragePolicyID(), blockType, null);
+            f.getPreferredBlockSize(), (byte)f.getStoragePolicyID(), blockType, n.getParentName());
   
         if (f.hasAcl()) {
             int[] entries = AclEntryStatusFormat.toInt(loadAclEntries(f.getAcl(), null));
@@ -135,7 +136,11 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
         }
 
         // set parent
-        file.setParent(n.getParent());
+        INode parent = INodeKeyedObjects.getCache().getIfPresent(file.getParentName()); 	
+        if (parent != null) {
+            parent.asDirectory().addChild(file);	
+            // parent.asDirectory().filter.put(String.valueOf(dir.getParentId()) + dirname);
+        }
         return file;
     }
 
@@ -146,7 +151,7 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
 
       final PermissionStatus permissions = loadPermission(d.getPermission(), null);
       final INodeDirectory dir = new INodeDirectory(n.getId(), n.getName()
-          .toByteArray(), permissions, d.getModificationTime(), null);
+          .toByteArray(), permissions, d.getModificationTime(), n.getParentName());
       final long nsQuota = d.getNsQuota(), dsQuota = d.getDsQuota();
 
       if (d.hasAcl()) {
@@ -158,13 +163,44 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
       }
 
       // set parent
-      dir.setParent(n.getParent());
+      INode parent = INodeKeyedObjects.getCache().getIfPresent(dir.getParentName()); 	
+      if (parent != null) {
+        parent.asDirectory().addChild(dir);	
+        // parent.asDirectory().filter.put(String.valueOf(file.getParentId()) + filename);	
+      }
       return dir;
     }
 
     @Override
     public void logEdit(byte[] in) throws IOException {
-        return;
+        NamespaceSubtree tree = null;
+        try {	
+            tree = NamespaceSubtree.parseFrom(in);	
+        } catch (InvalidProtocolBufferException e) {	
+            e.printStackTrace();	
+        }	
+
+        for (INodeSection.INode inode : tree.getInodesList()) {
+            INode parent;
+            switch (inode.getType()) {	
+                case FILE:	
+                    INodeFile file = loadINodeFile(inode);	
+                    String filename = file.getLocalName();	
+                    INodeKeyedObjects.getCache().put(file.getPath(), file);	
+                    FSDirectory.getInstance().getEditLog().logOpenFile(null, file, true, false);	
+                    // INodeKeyedObjects.getUpdateSet().add(file.getPath());	
+                    break;
+                case DIRECTORY:	
+                    INodeDirectory dir = loadINodeDirectory(inode);	
+                    String dirname = DFSUtil.bytes2String(dir.getLocalNameBytes());	
+                    INodeKeyedObjects.getCache().put(dir.getPath(), dir);	
+                    FSDirectory.getInstance().getEditLog().logMkDir(null, dir);	
+                    // INodeKeyedObjects.getUpdateSet().add(inode.getPath());	
+                    break;
+                default:	
+                    break;
+            }
+        }
     }
 
     @Override
