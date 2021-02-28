@@ -706,14 +706,37 @@ public class INodeDirectory extends INodeWithAdditionalFields
   public void localRename(INode node, String oldName, String oldParent, String newParent) {
     // String name = DFSUtil.bytes2String(node.getLocalNameBytes());
     String oldPath = getOldPath(oldParent, oldName);
+    int skip_id = oldParent.length();
+    Long old_id = node.getId();
     if (node.isDirectory()) {
-      INodeDirectory inode = node.asDirectory().copyINodeDirectory();
+      Queue<ImmutablePair<String, String>> q = new LinkedList<>();
+      q.add(new ImmutablePair<>(oldParent, oldName));
 
-      INodeKeyedObjects.getCache().invalidate(oldPath);
-      INodeKeyedObjects.getCache()
-          .put(inode.getPath(), inode);
+      ImmutablePair<String, String> id = null;
+      while ((id = q.poll()) != null) {
+        INode child = FSDirectory.getInstance().getInode(id.getLeft(), id.getRight());   
+        if (child != null) {
+          if (child.isDirectory()) {
+            HashSet<String> childNames = ((INodeDirectory)child).getCurrentChildrenList2();
+            for (String cname : childNames) {
+              if (child.getId() == old_id) {
+                q.add(new ImmutablePair<>(getOldPath(oldParent, oldName), cname));
+              } else {
+                q.add(new ImmutablePair<>(child.getPath(), cname));
+              }
+            }
+          }
 
-      INodeKeyedObjects.getRenameSet().add(inode.getPath());
+          if (child.getId() != old_id) {
+            child.setParent(child.getParentId() + 40000000);
+            child.setParentName(newParent + child.getParentName().substring(skip_id));
+          }
+          child.setId(child.getId() + 40000000);
+
+          INodeKeyedObjects.getCache().put(child.getPath(), child);
+          INodeKeyedObjects.getRenameSet().add(child.getPath());
+        }
+      }
     } else {
       INodeFile inode = node.asFile().copyINodeFile();
 
