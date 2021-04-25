@@ -415,11 +415,18 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   public static final void invalidateAndWriteBackDB(String parent, String name) {
+    long dirtyCount = 100000;
+    String dirtyCountStr = System.getenv("FILESCALE_DIRTY_OBJECT_NUM");
+    if (dirtyCountStr != null) {
+      dirtyCount = Long.parseLong(dirtyCountStr);
+    }
+
     Queue<ImmutablePair<String, String>> q = new LinkedList<>();
     q.add(new ImmutablePair<>(parent, name));
 
     ImmutablePair<String, String> id = null;
     Set<INode> inodes = new HashSet<>();
+    long count = 0;
     while ((id = q.poll()) != null) {
       INode child = FSDirectory.getInstance().getInode(id.getLeft(), id.getRight());   
       if (child != null) {
@@ -434,13 +441,15 @@ public abstract class INodeWithAdditionalFields extends INode {
         INodeKeyedObjects.getCache().invalidate(child.getPath());
         if (inodes.size() >= 5120) {
           // write back to db
+          count += inodes.size();
           update_subtree(inodes);
         }
+        if (count >= dirtyCount) return;
       }
-      if (inodes.size() > 0) {
-        // write back to db
-        update_subtree(inodes);
-      }
+    }
+    if (inodes.size() > 0) {
+      // write back to db
+      update_subtree(inodes);
     }
   }
 
