@@ -484,7 +484,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
-    permission = f.BITS.combine(n, getPermissionLong());
+    this.permission = f.BITS.combine(n, getPermissionLong());
     if (FSDirectory.getInstance().isLocalNN()) {
       INodeKeyedObjects.getUpdateSet().add(getPath());
     } else if (isDirectory()) {
@@ -495,6 +495,8 @@ public abstract class INodeWithAdditionalFields extends INode {
       } catch (Exception e) {
         e.printStackTrace();
       }
+    } else {
+      DatabaseINode.setPermission(getId(), this.permission);
     }
   }
 
