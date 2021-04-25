@@ -6,6 +6,7 @@ import dnl.utils.text.table.TextTable;
 import java.util.*;
 import java.util.concurrent.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.NodeCache;
@@ -134,6 +135,17 @@ public class MountsManager extends AbstractService {
       chosen = root;
     }
     return chosen.fsUri;
+  }
+
+  public Set<Pair<String, String>> resolveSubPaths(String path) {
+    Set<Pair<String, String>> subPaths = new HashSet<>();
+    ImmutableList<MountEntry> entries = this.mounts;
+    for (MountEntry entry: entries) {
+      if (entry.mountPoint.startsWith(path)) {
+        subPaths.add(Pair.of(entry.mountPoint, entry.fsUri.replace("hdfs://","").split(":")[0]));
+      }
+    }
+    return subPaths;
   }
 
   public String resolveForBench(String path) {

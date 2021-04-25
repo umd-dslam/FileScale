@@ -253,7 +253,7 @@ public class FSDirAttrOp {
       FSDirectory fsd, INodesInPath iip, FsPermission permissions)
       throws FileNotFoundException, UnresolvedLinkException,
              QuotaExceededException, SnapshotAccessControlException {
-    assert fsd.hasWriteLock();
+    // assert fsd.hasWriteLock();
     final INode inode = FSDirectory.resolveLastINode(iip);
     int snapshotId = iip.getLatestSnapshotId();
     inode.setPermission(permissions, snapshotId);

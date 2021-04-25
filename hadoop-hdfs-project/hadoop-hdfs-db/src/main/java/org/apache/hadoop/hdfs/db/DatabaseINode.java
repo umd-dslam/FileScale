@@ -587,6 +587,32 @@ public class DatabaseINode {
     }
   }
 
+  // (distributed) transaction
+  public static void setPermissions(final List<String> parents, final List<String> names, final long permission) {
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          obj.getVoltClient().callProcedure("SetPermissions",
+            parents.toArray(new String[parents.size()]),
+            names.toArray(new String[names.size()]),
+            permission);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("permissions [UPDATE]: (" + permission + ")");
+    } 
+  }
+
   public static void setPermission(final long id, final long permission) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
