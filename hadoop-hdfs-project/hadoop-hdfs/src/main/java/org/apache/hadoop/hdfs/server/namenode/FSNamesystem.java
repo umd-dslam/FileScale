@@ -1908,7 +1908,11 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     FileStatus auditStat;
     checkOperation(OperationCategory.WRITE);
     final FSPermissionChecker pc = getPermissionChecker();
-    // writeLock();
+
+    String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+    if (enableNNProxy == null) {
+      writeLock();
+    }
     try {
       checkOperation(OperationCategory.WRITE);
       checkNameNodeSafeMode("Cannot set permission for " + src);
@@ -1917,7 +1921,9 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       logAuditEvent(false, operationName, src);
       throw e;
     } finally {
-      // writeUnlock(operationName);
+      if (enableNNProxy == null) {
+        writeUnlock(operationName);
+      }
     }
     getEditLog().logSync();
     logAuditEvent(true, operationName, src, null, auditStat);
