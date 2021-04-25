@@ -915,6 +915,36 @@ public class NNThroughputBenchmark implements Tool {
   }
 
   /**
+   * Chmod file statistics.
+   * 
+   * Measure how many chmod calls the name-node can handle per second.
+   */
+   class ChmodFileStats extends OpenFileStats {
+    // Operation types
+    static final String OP_CHMOD_NAME = "chmod";
+    static final String OP_CHMOD_USAGE = 
+      "-op " + OP_CHMOD_NAME + OP_USAGE_ARGS;
+
+    ChmodFileStats(List<String> args) {
+      super(args);
+    }
+    
+    @Override
+    String getOpName() {
+      return OP_CHMOD_NAME;
+    }
+
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      long start = Time.now();
+      clientProto.setPermission(fileNames[daemonId][inputIdx], new FsPermission(755));
+      long end = Time.now();
+      return end-start;
+    }
+   }
+
+  /**
    * Rename file statistics.
    * 
    * Measure how many rename calls the name-node can handle per second.
@@ -959,6 +989,69 @@ public class NNThroughputBenchmark implements Tool {
       clientProto.rename(srcname, dstname);
       long end = Time.now();
       return end-start;
+    }
+  }
+
+  /**
+   * chmod entire directory: /nnThroughputBenchmark/create.
+   */
+  class ChmodDirStats extends OperationStatsBase {
+    // Operation types
+    static final String OP_CHMOD_NAME = "chmodDir";
+    static final String OP_CHMOD_USAGE = "-op chmodDir";
+
+    ChmodDirStats(List<String> args) {
+      super();
+      parseArguments(args);
+      numOpsRequired = 1;
+      numThreads = 1;
+      keepResults = true;
+    }
+
+    @Override
+    String getOpName() {
+      return OP_CHMOD_NAME;
+    }
+
+    @Override
+    void parseArguments(List<String> args) {
+      boolean ignoreUnrelatedOptions = verifyOpArgument(args);
+      if(args.size() > 2 && !ignoreUnrelatedOptions)
+        printUsage();
+    }
+
+    @Override
+    void generateInputs(int[] opsPerThread) throws IOException {
+      // do nothing
+    }
+
+    /**
+     * Does not require the argument
+     */
+    @Override
+    String getExecutionArgument(int daemonId) {
+      return null;
+    }
+
+    /**
+     * chmod entire benchmark directory.
+     */
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
+          false);
+      long start = Time.now();
+      clientProto.setPermission(BASE_DIR_NAME + "/create", new FsPermission(755));
+      long end = Time.now();
+      return end-start;
+    }
+
+    @Override
+    void printResults() {
+      LOG.info("--- " + getOpName() + " inputs ---");
+      LOG.info("Chmod directory " + BASE_DIR_NAME + "/create");
+      printStats();
     }
   }
 
@@ -1551,10 +1644,12 @@ public class NNThroughputBenchmark implements Tool {
         + " | \n\t" + DeleteFileStats.OP_DELETE_USAGE
         + " | \n\t" + FileStatusStats.OP_FILE_STATUS_USAGE
         + " | \n\t" + RenameFileStats.OP_RENAME_USAGE
+        + " | \n\t" + ChmodFileStats.OP_CHMOD_USAGE
         + " | \n\t" + BlockReportStats.OP_BLOCK_REPORT_USAGE
         + " | \n\t" + ReplicationStats.OP_REPLICATION_USAGE
         + " | \n\t" + CleanAllStats.OP_CLEAN_USAGE
         + " | \n\t" + RenameDirStats.OP_RENAME_USAGE
+        + " | \n\t" + ChmodDirStats.OP_CHMOD_USAGE 
         + " | \n\t" + GENERAL_OPTIONS_USAGE
     );
     System.err.println();
@@ -1620,6 +1715,10 @@ public class NNThroughputBenchmark implements Tool {
         opStat = new RenameFileStats(args);
         ops.add(opStat);
       }
+      if (runAll || ChmodFileStats.OP_CHMOD_NAME.equals(type)) {
+        opStat = new ChmodFileStats(args);
+        ops.add(opStat);
+      }
       if(runAll || BlockReportStats.OP_BLOCK_REPORT_NAME.equals(type)) {
         opStat = new BlockReportStats(args);
         ops.add(opStat);
@@ -1635,6 +1734,10 @@ public class NNThroughputBenchmark implements Tool {
       }
       if(runAll || RenameDirStats.OP_RENAME_NAME.equals(type)) {
         opStat = new RenameDirStats(args);
+        ops.add(opStat);
+      }
+      if(runAll || ChmodDirStats.OP_CHMOD_NAME.equals(type)) {
+        opStat = new ChmodDirStats(args);
         ops.add(opStat);
       }
       if(runAll || CleanAllStats.OP_CLEAN_NAME.equals(type)) {
