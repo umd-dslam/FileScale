@@ -29,4 +29,5 @@ public interface FSEditLogProtocol extends VersionedProtocol {
     public INodeDirectory loadINodeDirectory(INodeSection.INode n);
     public INodeFile loadINodeFile(INodeSection.INode n);
     public void logEdit(byte[] inode) throws IOException;
+    public void invalidateAndWriteBackDB(byte[] mpoint) throws IOException;
 }

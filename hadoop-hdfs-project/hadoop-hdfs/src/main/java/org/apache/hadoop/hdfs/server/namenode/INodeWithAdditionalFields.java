@@ -27,6 +27,12 @@ import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.LongBitFormat;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.MountPoint;
+import org.apache.hadoop.ipc.RPC;
+import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
+import com.google.protobuf.ByteString;
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * {@link INode} with additional fields including id, name, permission, access time and modification
@@ -365,7 +371,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
-  void update_subtree(Set<INode> inodes) {
+  private static void update_subtree(Set<INode> inodes) {
     List<Long> longAttr = new ArrayList<>();
     List<String> strAttr = new ArrayList<>();
 
@@ -408,9 +414,9 @@ public abstract class INodeWithAdditionalFields extends INode {
     }
   }
 
-  private final void invalidateAndWriteBackDB(String path) {
+  public static final void invalidateAndWriteBackDB(String parent, String name) {
     Queue<ImmutablePair<String, String>> q = new LinkedList<>();
-    q.add(new ImmutablePair<>(getParentName(), getLocalName()));
+    q.add(new ImmutablePair<>(parent, name));
 
     ImmutablePair<String, String> id = null;
     Set<INode> inodes = new HashSet<>();
@@ -436,22 +442,35 @@ public abstract class INodeWithAdditionalFields extends INode {
         update_subtree(inodes);
       }
     }
-
   }
 
   private final void remoteChmod(Set<Pair<String, String>> mpoints) {
     // 1. invalidate cache and write back dirty data
-    invalidateAndWriteBackDB(getPath());
-    // 2. execute distributed txn
+    invalidateAndWriteBackDB(getParentName(), getLocalName());
     List<String> parents = new ArrayList<>();
     List<String> names = new ArrayList<>();
     for (Pair<String, String> pair : mpoints) {
       File file = new File(pair.getLeft());
-      parents.add(file.getParent());
-      names.add(file.getName());
-
+      String parent = file.getParent();
+      String name = file.getName();
       String url = pair.getRight();
+      try {
+        MountPoint.Builder b = MountPoint.newBuilder().setParent(parent).setName(name);
+        byte[] data = b.build().toByteArray();
+  
+        FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+          FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+          new InetSocketAddress(url, 10087), new Configuration());
+        proxy.invalidateAndWriteBackDB(data);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+
+      parents.add(parent);
+      names.add(name);
     }
+
+    // 2. execute distributed txn
     DatabaseINode.setPermissions(parents, names, this.permission);
   }
 

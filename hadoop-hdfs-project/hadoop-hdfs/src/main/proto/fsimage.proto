@@ -120,6 +120,11 @@ message Operation {
   }
 }
 
+message MountPoint {
+  required string parent = 1;
+  required string name = 2;
+}
+
 // namespace subtree
 message NamespaceSubtree {
   repeated INodeSection.INode inodes = 1;

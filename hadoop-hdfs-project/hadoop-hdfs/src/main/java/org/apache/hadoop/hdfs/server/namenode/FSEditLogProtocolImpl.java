@@ -54,6 +54,7 @@ import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FileSummary;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FilesUnderConstructionSection.FileUnderConstructionEntry;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeDirectorySection;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.NamespaceSubtree;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.MountPoint;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.AclFeatureProto;
 import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrCompactProto;
@@ -201,6 +202,17 @@ public class FSEditLogProtocolImpl implements FSEditLogProtocol {
                     break;
             }
         }
+    }
+
+    @Override
+    public void invalidateAndWriteBackDB(byte[] in) throws IOException {
+        MountPoint mpoint = null;
+        try {	
+            mpoint = MountPoint.parseFrom(in);	
+        } catch (InvalidProtocolBufferException e) {	
+            e.printStackTrace();	
+        }	
+        INodeWithAdditionalFields.invalidateAndWriteBackDB(mpoint.getParent(), mpoint.getName());
     }
 
     @Override
