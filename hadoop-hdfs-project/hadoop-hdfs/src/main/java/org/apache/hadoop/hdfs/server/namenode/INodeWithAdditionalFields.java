@@ -14,6 +14,8 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.io.File;
+import java.util.*;
 import com.google.common.base.Preconditions;
 import java.util.concurrent.CompletableFuture;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -23,6 +25,8 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.LongBitFormat;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * {@link INode} with additional fields including id, name, permission, access time and modification
@@ -361,9 +365,109 @@ public abstract class INodeWithAdditionalFields extends INode {
     INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
+  void update_subtree(Set<INode> inodes) {
+    List<Long> longAttr = new ArrayList<>();
+    List<String> strAttr = new ArrayList<>();
+
+    List<Long> fileIds = new ArrayList<>();
+    List<String> fileAttr = new ArrayList<>();
+    Iterator<INode> iterator = inodes.iterator();
+    while (iterator.hasNext()) {
+      INode inode = iterator.next();
+      if (inode == null) continue;
+      strAttr.add(inode.getLocalName());
+      if (inode.getId() == 16385) {
+        strAttr.add(" ");
+      } else {
+        strAttr.add(inode.getParentName());
+      }
+      longAttr.add(inode.getParentId());
+      longAttr.add(inode.getId());
+      longAttr.add(inode.getModificationTime());
+      longAttr.add(inode.getAccessTime());
+      longAttr.add(inode.getPermissionLong());
+      if (inode.isDirectory()) {
+        longAttr.add(0L);
+      } else {
+        longAttr.add(inode.asFile().getHeaderLong());
+        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+        if (uc != null) {
+          fileIds.add(inode.getId());
+          fileAttr.add(uc.getClientName(inode.getId()));
+          fileAttr.add(uc.getClientMachine(inode.getId()));
+        }
+      }
+      iterator.remove();
+    }
+    try {
+      if (strAttr.size() > 0) {
+        DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private final void invalidateAndWriteBackDB(String path) {
+    Queue<ImmutablePair<String, String>> q = new LinkedList<>();
+    q.add(new ImmutablePair<>(getParentName(), getLocalName()));
+
+    ImmutablePair<String, String> id = null;
+    Set<INode> inodes = new HashSet<>();
+    while ((id = q.poll()) != null) {
+      INode child = FSDirectory.getInstance().getInode(id.getLeft(), id.getRight());   
+      if (child != null) {
+        if (child.isDirectory()) {
+          HashSet<String> childNames = ((INodeDirectory)child).getCurrentChildrenList2();
+          for (String cname : childNames) {
+            q.add(new ImmutablePair<>(child.getPath(), cname));
+          }
+        }
+        inodes.add(child);
+        // invalidate inode
+        INodeKeyedObjects.getCache().invalidate(child.getPath());
+        if (inodes.size() >= 5120) {
+          // write back to db
+          update_subtree(inodes);
+        }
+      }
+      if (inodes.size() > 0) {
+        // write back to db
+        update_subtree(inodes);
+      }
+    }
+
+  }
+
+  private final void remoteChmod(Set<Pair<String, String>> mpoints) {
+    // 1. invalidate cache and write back dirty data
+    invalidateAndWriteBackDB(getPath());
+    // 2. execute distributed txn
+    List<String> parents = new ArrayList<>();
+    List<String> names = new ArrayList<>();
+    for (Pair<String, String> pair : mpoints) {
+      File file = new File(pair.getLeft());
+      parents.add(file.getParent());
+      names.add(file.getName());
+
+      String url = pair.getRight();
+    }
+    DatabaseINode.setPermissions(parents, names, this.permission);
+  }
+
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
     permission = f.BITS.combine(n, getPermissionLong());
-    INodeKeyedObjects.getUpdateSet().add(getPath());
+    if (FSDirectory.getInstance().isLocalNN()) {
+      INodeKeyedObjects.getUpdateSet().add(getPath());
+    } else if (isDirectory()) {
+      try {
+        Set<Pair<String, String>> mpoints = FSDirectory.getInstance().getMountsManager().resolveSubPaths(getPath());
+        LOG.info(getPath() + " has sub-paths that are mounted into: " + mpoints);
+        remoteChmod(mpoints);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   @Override
