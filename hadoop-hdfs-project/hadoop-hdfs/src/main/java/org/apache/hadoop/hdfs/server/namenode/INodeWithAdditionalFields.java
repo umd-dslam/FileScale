@@ -415,6 +415,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   public static final void invalidateAndWriteBackDB(String parent, String name) {
+    LOG.info("invalidate dirty data under " + parent + " " + name);
     long dirtyCount = 100000;
     String dirtyCountStr = System.getenv("FILESCALE_DIRTY_OBJECT_NUM");
     if (dirtyCountStr != null) {
@@ -454,7 +455,6 @@ public abstract class INodeWithAdditionalFields extends INode {
 
   private final void remoteChmod(Set<Pair<String, String>> mpoints) {
     // 1. invalidate cache and write back dirty data
-    invalidateAndWriteBackDB(getParentName(), getLocalName());
     List<String> parents = new ArrayList<>();
     List<String> names = new ArrayList<>();
     for (Pair<String, String> pair : mpoints) {
@@ -463,13 +463,17 @@ public abstract class INodeWithAdditionalFields extends INode {
       String name = file.getName();
       String url = pair.getRight();
       try {
-        MountPoint.Builder b = MountPoint.newBuilder().setParent(parent).setName(name);
-        byte[] data = b.build().toByteArray();
-  
-        FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
-          FSEditLogProtocol.class, FSEditLogProtocol.versionID,
-          new InetSocketAddress(url, 10087), new Configuration());
-        proxy.invalidateAndWriteBackDB(data);
+        if (url == "localhost") {
+          invalidateAndWriteBackDB(parent, name);
+        } else {
+          MountPoint.Builder b = MountPoint.newBuilder().setParent(parent).setName(name);
+          byte[] data = b.build().toByteArray();
+    
+          FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+            FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+            new InetSocketAddress(url, 10087), new Configuration());
+          proxy.invalidateAndWriteBackDB(data);
+        }
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -479,6 +483,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     }
 
     // 2. execute distributed txn
+    LOG.info("Execute dist txn for chmod");
     DatabaseINode.setPermissions(parents, names, this.permission);
   }
 
