@@ -437,17 +437,16 @@ public abstract class INodeWithAdditionalFields extends INode {
           }
         }
         inodes.add(child);
+        count++;
         // invalidate inode
         INodeKeyedObjects.getCache().invalidate(child.getPath());
-        if (inodes.size() >= 5120) {
+        if (count < dirtyCount && inodes.size() >= 5120) {
           // write back to db
-          count += inodes.size();
           update_subtree(inodes);
         }
-        if (count >= dirtyCount) return;
       }
     }
-    if (inodes.size() > 0) {
+    if (count < dirtyCount && inodes.size() > 0) {
       // write back to db
       update_subtree(inodes);
     }
