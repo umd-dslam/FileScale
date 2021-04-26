@@ -937,8 +937,10 @@ public class NNThroughputBenchmark implements Tool {
     @Override
     long executeOp(int daemonId, int inputIdx, String ignore) 
     throws IOException {
+      String srcname = fileNames[daemonId][inputIdx];
+      srcname = srcname.replace("chmod", "create");
       long start = Time.now();
-      clientProto.setPermission(fileNames[daemonId][inputIdx], new FsPermission(755));
+      clientProto.setPermission(srcname, new FsPermission(755));
       long end = Time.now();
       return end-start;
     }
