@@ -421,6 +421,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     if (dirtyCountStr != null) {
       dirtyCount = Long.parseLong(dirtyCountStr);
     }
+    if (dirtyCount == 0) return;
 
     Queue<ImmutablePair<String, String>> q = new LinkedList<>();
     q.add(new ImmutablePair<>(parent, name));
@@ -441,7 +442,12 @@ public abstract class INodeWithAdditionalFields extends INode {
         count++;
         // invalidate inode
         INodeKeyedObjects.getCache().invalidate(child.getPath());
-        if (count < dirtyCount && inodes.size() >= 5120) {
+        if (count == dirtyCount) {
+          // write back to db
+          update_subtree(inodes);
+          break;
+        }
+        if (inodes.size() >= 5120) {
           // write back to db
           update_subtree(inodes);
         }
@@ -457,6 +463,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     // 1. invalidate cache and write back dirty data
     List<String> parents = new ArrayList<>();
     List<String> names = new ArrayList<>();
+    List<CompletableFuture<Void>> list = new ArrayList<>();
     for (Pair<String, String> pair : mpoints) {
       File file = new File(pair.getLeft());
       String parent = file.getParent();
@@ -464,15 +471,26 @@ public abstract class INodeWithAdditionalFields extends INode {
       String url = pair.getRight();
       try {
         if (url == "localhost") {
-          invalidateAndWriteBackDB(parent, name);
+          list.add(CompletableFuture.runAsync(
+            () -> {
+              invalidateAndWriteBackDB(parent, name);
+            },
+            Database.getInstance().getExecutorService()));
         } else {
-          MountPoint.Builder b = MountPoint.newBuilder().setParent(parent).setName(name);
-          byte[] data = b.build().toByteArray();
-    
-          FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
-            FSEditLogProtocol.class, FSEditLogProtocol.versionID,
-            new InetSocketAddress(url, 10087), new Configuration());
-          proxy.invalidateAndWriteBackDB(data);
+          list.add(CompletableFuture.runAsync(
+            () -> {
+              MountPoint.Builder b = MountPoint.newBuilder().setParent(parent).setName(name);
+              byte[] data = b.build().toByteArray();
+              try {
+                FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+                  FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+                  new InetSocketAddress(url, 10087), new Configuration());
+                proxy.invalidateAndWriteBackDB(data);
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+            },
+            Database.getInstance().getExecutorService()));
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -481,6 +499,7 @@ public abstract class INodeWithAdditionalFields extends INode {
       parents.add(parent);
       names.add(name);
     }
+    CompletableFuture.allOf(list.toArray(new CompletableFuture[list.size()])).join();
 
     // 2. execute distributed txn
     LOG.info("Execute dist txn for chmod");
