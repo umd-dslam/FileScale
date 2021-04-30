@@ -909,7 +909,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   public void remoteRename(INode node, String oldName, String oldParent, String newParent, String address) {
-    // FIXME: replace NameNode.getId() with 40000000 to simplify the ID assignments
     int skip_id = oldParent.length();
     Long old_id = node.getId();
     if (node.isDirectory()) {
@@ -917,14 +916,21 @@ public class INodeDirectory extends INodeWithAdditionalFields
       q.add(new ImmutablePair<>(oldParent, oldName));
 
       // log: delete the old directory
-      FSDirectory.getInstance()
-        .getEditLog()
-        .logDelete(null, old_id, node.getModificationTime(), true);
+      // FSDirectory.getInstance()
+      //   .getEditLog()
+      //   .logDelete(null, old_id, node.getModificationTime(), true);
 
       ImmutablePair<String, String> id = null;
       Set<INode> renameSet = new HashSet<>();
 
+      long dirtyCount = 100000;
+      String dirtyCountStr = System.getenv("FILESCALE_DIRTY_OBJECT_NUM");
+      if (dirtyCountStr != null) {
+        dirtyCount = Long.parseLong(dirtyCountStr);
+      }
+      long count = 0;
       while ((id = q.poll()) != null) {
+        if (dirtyCount == 0) break;
         INode child = FSDirectory.getInstance().getInode(id.getLeft(), id.getRight());   
         if (child != null) {
           if (child.isDirectory()) {
@@ -938,11 +944,11 @@ public class INodeDirectory extends INodeWithAdditionalFields
             }
           }
 
-          if (child.getId() != old_id) {
-            child.setParent(child.getParentId() + 40000000);
-            child.setParentName(newParent + child.getParentName().substring(skip_id));
-          }
-          child.setId(child.getId() + 40000000);
+          // if (child.getId() != old_id) {
+          //   child.setParent(child.getParentId() + 40000000);
+          //   child.setParentName(newParent + child.getParentName().substring(skip_id));
+          // }
+          // child.setId(child.getId() + 40000000);
 
           // if (child.isDirectory()) {
           //   // log: create new diretory
@@ -957,27 +963,29 @@ public class INodeDirectory extends INodeWithAdditionalFields
           // }
 
           renameSet.add(child);
-          // if (renameSet.size() >= 5120) {
-          //   update_subtree(renameSet);
-          // }
+          count++;
+          INodeKeyedObjects.getCache().invalidate(child.getPath());
+          if (count == dirtyCount) {
+            // write back to db
+            LOG.info("##");
+            update_subtree(renameSet);
+            break;
+          }
+          if (renameSet.size() >= 5120) {
+            update_subtree(renameSet);
+          }
         }
       }
-      if (renameSet.size() > 0) {
-        // update_subtree(renameSet);
-        LOG.info("#### address: " + address);
-        update_subtree_v2(renameSet, address);
+      if (count < dirtyCount && renameSet.size() > 0) {
+        update_subtree(renameSet);
+        // update_subtree_v2(renameSet, address);
       }
 
-      CompletableFuture.runAsync(() -> {
+      // CompletableFuture.runAsync(() -> {
         // stored procedure:
-        // (1) update subtree IDs and parent fields
-        // DatabaseINode.updateSubtree(old_id, 100000, oldParent, "/nnThroughputBenchmark/rename", node.getParentId());
-        // (2) remove all childs recursively
-        DatabaseINode.removeChild(old_id);
-      }, Database.getInstance().getExecutorService());
-
-      // invalidate inode, and childs will be evicted eventually
-      INodeKeyedObjects.getCache().invalidate(oldParent + oldName);
+        // update subtree IDs and parent fields
+        DatabaseINode.updateSubtree(old_id, 40000000, oldParent, "/nnThroughputBenchmark/rename", node.getParentId());
+      // }, Database.getInstance().getExecutorService());
     } else {
       // log: delete old file
       FSDirectory.getInstance()

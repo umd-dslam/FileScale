@@ -3109,7 +3109,10 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     FSDirRenameOp.RenameResult ret = null;
     checkOperation(OperationCategory.WRITE);
     final FSPermissionChecker pc = getPermissionChecker();
-    writeLock();
+    String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+    if (enableNNProxy == null) {
+      writeLock();
+    }
     try {
       checkOperation(OperationCategory.WRITE);
       checkNameNodeSafeMode("Cannot rename " + src);
@@ -3118,7 +3121,9 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       logAuditEvent(false, operationName, src, dst, null);
       throw e;
     } finally {
-      writeUnlock(operationName);
+      if (enableNNProxy == null) {
+        writeUnlock(operationName);
+      }
     }
     boolean success = ret.success;
     if (success) {
@@ -3135,7 +3140,10 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     FSDirRenameOp.RenameResult res = null;
     checkOperation(OperationCategory.WRITE);
     final FSPermissionChecker pc = getPermissionChecker();
-    writeLock();
+    String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+    if (enableNNProxy == null) {
+      writeLock();
+    }
     try {
       checkOperation(OperationCategory.WRITE);
       checkNameNodeSafeMode("Cannot rename " + src);
@@ -3146,10 +3154,12 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           Arrays.toString(options) + ")", src, dst, null);
       throw e;
     } finally {
-      writeUnlock(operationName);
+      if (enableNNProxy == null) {
+        writeUnlock(operationName);
+      }
     }
 
-    getEditLog().logSync();
+    // getEditLog().logSync();
 
     BlocksMapUpdateInfo collectedBlocks = res.collectedBlocks;
     if (!collectedBlocks.getToDeleteList().isEmpty()) {
