@@ -210,6 +210,13 @@ public class ProxyClientProtocolHandler implements ClientProtocol {
   }
 
   @Override
+  public HashSet<String> ls(String src)
+  throws UnresolvedLinkException, SnapshotAccessControlException, IOException {
+    RouteInfo srcRouteInfo = router.route(src);
+    return srcRouteInfo.upstream.ls(srcRouteInfo.realPath);
+  }
+
+  @Override
   public void concat(String trg, String[] srcs)
       throws IOException, UnresolvedLinkException, SnapshotAccessControlException {
     RouteInfo trgRouteInfo = router.route(trg);

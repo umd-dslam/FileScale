@@ -1064,6 +1064,16 @@ public class NameNodeRpcServer implements NamenodeProtocols {
     }
     return ret;
   }
+
+  @Override // ClientProtocol
+  public HashSet<String> ls(String src) throws IOException {
+    checkNNStartup();
+    if(stateChangeLog.isDebugEnabled()) {
+      stateChangeLog.debug("*DIR* NameNode.ls: " + src);
+    }
+    namesystem.checkOperation(OperationCategory.READ);
+    return namesystem.ls(src);
+  }
   
   @Override // ClientProtocol
   public void concat(String trg, String[] src) throws IOException {

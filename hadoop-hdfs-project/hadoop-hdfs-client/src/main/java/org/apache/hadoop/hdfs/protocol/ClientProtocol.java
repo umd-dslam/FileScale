@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -517,6 +518,18 @@ public interface ClientProtocol {
    */
   @AtMostOnce
   boolean rename(String src, String dst)
+      throws IOException;
+
+  /**
+   * list all direct children under a given directory in the file system namespace.
+   * @param src existing directory name.
+   * @return true if successful, or false if the path does not exist
+   *
+   * @throws SnapshotAccessControlException if path is in RO snapshot
+   * @throws IOException an I/O error occurred
+   */
+  @AtMostOnce
+  HashSet<String> ls(String src)
       throws IOException;
 
   /**
