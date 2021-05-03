@@ -1109,9 +1109,9 @@ public class NNThroughputBenchmark implements Tool {
       clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
           false);
       long start = Time.now();
-      HashSet<String> children = clientProto.ls(BASE_DIR_NAME + "/create/ThroughputBenchDir0");
+      List<String> children = clientProto.ls(BASE_DIR_NAME + "/create/ThroughputBenchDir0");
       long end = Time.now();
-      LOG.info("children: " + children);
+      // LOG.info("children: " + children);
       return end-start;
     }
 
@@ -1807,6 +1807,7 @@ public class NNThroughputBenchmark implements Tool {
       }
       if(runAll || ListFileStats.OP_LIST_NAME.equals(type)) {
         opStat = new ListFileStats(args);
+        ops.add(opStat);
       }
       if(runAll || ChmodDirStats.OP_CHMOD_NAME.equals(type)) {
         opStat = new ChmodDirStats(args);
