@@ -1066,7 +1066,7 @@ public class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override // ClientProtocol
-  public HashSet<String> ls(String src) throws IOException {
+  public List<String> ls(String src) throws IOException {
     checkNNStartup();
     if(stateChangeLog.isDebugEnabled()) {
       stateChangeLog.debug("*DIR* NameNode.ls: " + src);

@@ -529,7 +529,7 @@ public interface ClientProtocol {
    * @throws IOException an I/O error occurred
    */
   @AtMostOnce
-  HashSet<String> ls(String src)
+  List<String> ls(String src)
       throws IOException;
 
   /**
