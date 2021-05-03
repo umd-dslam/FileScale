@@ -3098,6 +3098,41 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   }
 
   /**
+   * List all children under a given directory.
+   */
+  HashSet<String> ls(String src) throws IOException {
+    final String operationName = "ls";
+    checkOperation(OperationCategory.READ);
+    HashSet<String> children = null;
+    final FSPermissionChecker pc = getPermissionChecker();
+    readLock();
+    try {
+      if (FSDirectory.isExactReservedName(src)) {
+        throw new InvalidPathException(src);
+      }
+      INodesInPath iip;
+      dir.readLock();
+      try {
+        iip = dir.resolvePath(pc, src, DirOp.READ);
+        dir.checkOwner(pc, iip);
+        final INode inode = FSDirectory.resolveLastINode(iip);
+        int snapshotId = iip.getLatestSnapshotId();
+        assert inode.isDirectory();
+        children = inode.asDirectory().getCurrentChildrenList2();
+      } finally {
+        dir.readUnlock();
+      }
+    } catch (AccessControlException e) {
+      logAuditEvent(false, operationName, src);
+      throw e;
+    } finally {
+      readUnlock(operationName);
+    }
+    logAuditEvent(true, operationName, src);
+    return children;
+  }
+  
+  /**
    * Change the indicated filename. 
    * @deprecated Use {@link #renameTo(String, String, boolean,
    * Options.Rename...)} instead.

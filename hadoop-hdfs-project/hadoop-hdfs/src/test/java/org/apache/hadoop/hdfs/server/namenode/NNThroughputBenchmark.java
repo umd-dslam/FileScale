@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.net.InetAddress;
 
@@ -1057,6 +1058,71 @@ public class NNThroughputBenchmark implements Tool {
     }
   }
 
+
+  /**
+   * list the directory's direct children: /nnThroughputBenchmark/create/ThroughputBenchDir0.
+   */
+  class ListFileStats extends OperationStatsBase {
+    // Operation types
+    static final String OP_LIST_NAME = "ls";
+    static final String OP_LIST_USAGE = "-op ls";
+
+    ListFileStats(List<String> args) {
+      super();
+      parseArguments(args);
+      numOpsRequired = 1;
+      numThreads = 1;
+      keepResults = true;
+    }
+
+    @Override
+    String getOpName() {
+      return OP_LIST_NAME;
+    }
+
+    @Override
+    void parseArguments(List<String> args) {
+      boolean ignoreUnrelatedOptions = verifyOpArgument(args);
+      if(args.size() > 2 && !ignoreUnrelatedOptions)
+        printUsage();
+    }
+
+    @Override
+    void generateInputs(int[] opsPerThread) throws IOException {
+      // do nothing
+    }
+
+    /**
+     * Does not require the argument
+     */
+    @Override
+    String getExecutionArgument(int daemonId) {
+      return null;
+    }
+
+    /**
+     * Rename entire benchmark directory.
+     */
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
+          false);
+      long start = Time.now();
+      HashSet<String> children = clientProto.ls(BASE_DIR_NAME + "/create/ThroughputBenchDir0");
+      long end = Time.now();
+      LOG.info("children: " + children);
+      return end-start;
+    }
+
+    @Override
+    void printResults() {
+      LOG.info("--- " + getOpName() + " inputs ---");
+      LOG.info("ls directory " + BASE_DIR_NAME + "/create/ThroughputBenchDir0");
+      printStats();
+    }
+  }
+
   /**
    * Rename entire directory: /nnThroughputBenchmark/create.
    */
@@ -1652,6 +1718,7 @@ public class NNThroughputBenchmark implements Tool {
         + " | \n\t" + CleanAllStats.OP_CLEAN_USAGE
         + " | \n\t" + RenameDirStats.OP_RENAME_USAGE
         + " | \n\t" + ChmodDirStats.OP_CHMOD_USAGE 
+        + " | \n\t" + ListFileStats.OP_LIST_USAGE
         + " | \n\t" + GENERAL_OPTIONS_USAGE
     );
     System.err.println();
@@ -1737,6 +1804,9 @@ public class NNThroughputBenchmark implements Tool {
       if(runAll || RenameDirStats.OP_RENAME_NAME.equals(type)) {
         opStat = new RenameDirStats(args);
         ops.add(opStat);
+      }
+      if(runAll || ListFileStats.OP_LIST_NAME.equals(type)) {
+        opStat = new ListFileStats(args);
       }
       if(runAll || ChmodDirStats.OP_CHMOD_NAME.equals(type)) {
         opStat = new ChmodDirStats(args);
