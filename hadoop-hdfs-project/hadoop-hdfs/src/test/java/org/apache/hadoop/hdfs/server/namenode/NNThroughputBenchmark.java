@@ -1807,6 +1807,7 @@ public class NNThroughputBenchmark implements Tool {
       }
       if(runAll || ListFileStats.OP_LIST_NAME.equals(type)) {
         opStat = new ListFileStats(args);
+        ops.add(opStat);
       }
       if(runAll || ChmodDirStats.OP_CHMOD_NAME.equals(type)) {
         opStat = new ChmodDirStats(args);
