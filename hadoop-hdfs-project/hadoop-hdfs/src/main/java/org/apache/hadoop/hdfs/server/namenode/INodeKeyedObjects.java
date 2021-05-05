@@ -15,6 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdfs.db.DatabaseINode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class INodeKeyedObjects {
   private static IndexedCache<String, INode> cache;
@@ -27,11 +28,22 @@ public class INodeKeyedObjects {
   private static long preRenameSize = 0;
   private static long preUpdateSize = 0;
 
+  // gloabal transaction ID (VoltDB)
+  private static AtomicLong txnId = new AtomicLong();;
+
   private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
   static final Logger LOG = LoggerFactory.getLogger(INodeKeyedObjects.class);
 
   INodeKeyedObjects() {}
+
+  public static long getTxnId() {
+    return txnId.longValue();
+  }
+
+  public static void setTxnId(long id) {
+    txnId.set(id);
+  }
 
   public static Set<String> getUpdateSet() {
     if (concurrentUpdateSet == null) {
@@ -105,7 +117,7 @@ public class INodeKeyedObjects {
       }
       try {
         if (strAttr.size() > 0) {
-          DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+          INodeKeyedObjects.setTxnId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -149,7 +161,7 @@ public class INodeKeyedObjects {
             iterator.remove();             
           }
           if (strAttr.size() > 0) {
-            DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+            INodeKeyedObjects.setTxnId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
           }
         } catch (Exception e) {
           e.printStackTrace();

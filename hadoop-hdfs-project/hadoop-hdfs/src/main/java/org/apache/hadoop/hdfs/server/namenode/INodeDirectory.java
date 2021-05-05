@@ -901,7 +901,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
     try {
       if (strAttr.size() > 0) {
-        DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr);
+        INodeKeyedObjects.setTxnId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -967,7 +967,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
           INodeKeyedObjects.getCache().invalidate(child.getPath());
           if (count == dirtyCount) {
             // write back to db
-            LOG.info("##");
             update_subtree(renameSet);
             break;
           }

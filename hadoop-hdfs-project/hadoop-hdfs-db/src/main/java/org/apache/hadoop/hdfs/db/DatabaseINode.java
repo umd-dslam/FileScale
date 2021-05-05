@@ -588,16 +588,22 @@ public class DatabaseINode {
   }
 
   // (distributed) transaction
-  public static void setPermissions(final List<String> parents, final List<String> names, final long permission) {
+  public static long setPermissions(final List<String> parents, final List<String> names, final long permission) {
+    long res = 0;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure("SetPermissions",
+          VoltTable[] results = obj.getVoltClient().callProcedure("SetPermissions",
             parents.toArray(new String[parents.size()]),
             names.toArray(new String[names.size()]),
-            permission);
+            permission).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          } 
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -609,17 +615,24 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("permissions [UPDATE]: (" + permission + ")");
+      LOG.info("txnId: " + res + " permissions [UPDATE]: (" + permission + ")");
     } 
+    return res;
   }
 
-  public static void setPermission(final long id, final long permission) {
+  public static long setPermission(final long id, final long permission) {
+    long res = 0;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient().callProcedure(new NullCallback(), "SetPermission", id, permission);
+          VoltTable[] results = obj.getVoltClient().callProcedure("SetPermission", id, permission).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }  
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -637,8 +650,9 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("permission [UPDATE]: (" + id + "," + permission + ")");
+      LOG.info("txnId: " + res + " permission [UPDATE]: (" + id + "," + permission + ")");
     }
+    return res;
   }
 
   public static void setHeader(final long id, final long header) {
@@ -1979,24 +1993,30 @@ public class DatabaseINode {
     }
   }
 
-  public static void batchUpdateINodes(
+  public static long batchUpdateINodes(
       final List<Long> longAttr,
       final List<String> strAttr,
       final List<Long> fileIds,
       final List<String> fileAttr)
       throws SQLException {
+    long res = 0;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient()
+          VoltTable[] results = obj.getVoltClient()
               .callProcedure(
                   "BatchUpdateINodes",
                   longAttr.toArray(new Long[longAttr.size()]),
                   strAttr.toArray(new String[strAttr.size()]),
                   fileIds.toArray(new Long[fileIds.size()]),
-                  fileAttr.toArray(new String[fileAttr.size()]));
+                  fileAttr.toArray(new String[fileAttr.size()])).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -2014,20 +2034,27 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("batchUpdateINodes [UPDATE]");
+      LOG.info("batchUpdateINodes [UPDATE] -- txnID: " + res);
     }
+    return res;
   }
 
-  public static void updateSubtree(final long dir_id, final long dest_id, final String old_parent_name,
+  public static long updateSubtree(final long dir_id, final long dest_id, final String old_parent_name,
     final String new_parent_name, final long new_parent) {
+    long res = 0;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient()
+          VoltTable[] results = obj.getVoltClient()
               .callProcedure("UpdateSubtree", dir_id, dest_id, old_parent_name,
-              new_parent_name, new_parent);
+              new_parent_name, new_parent).getResults();
+              VoltTable result = results[0];
+              result.resetRowPosition();
+              while (result.advanceRow()) {
+                res = result.getLong(0);
+              }
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -2039,8 +2066,9 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("updateSubtree [UPDATE]: " + dir_id);
+      LOG.info("txnId: " + res + " updateSubtree [UPDATE]: " + dir_id);
     }
+    return res;
   }
 
   public static void setId(final long old_id, final long new_id, final String new_parent_name, final long new_parent) {

@@ -87,6 +87,6 @@ public class UpdateSubtree extends VoltProcedure {
     }
     voltExecuteSQL();
 
-    return 1;
+    return getTxnId();
   }
 }
