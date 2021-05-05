@@ -77,6 +77,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveCachePoolOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveXAttrOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOldOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameSnapshotOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenewDelegationTokenOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RollingUpgradeFinalizeOp;
@@ -1041,6 +1042,23 @@ public class FSEditLog implements LogsPurgeable {
       .setSource(src)
       .setDestination(dst)
       .setTimestamp(timestamp)
+      .setOptions(options);
+    logRpcIds(op, toLogRpcIds);
+    logEdit(op);
+  }
+
+  /** 
+   * Add rename record to edit log (multi-partition request).
+   *
+   * The destination should be the file name, not the destination directory.
+   */
+  void logRenameMP(String src, String dst, long timestamp, boolean toLogRpcIds,
+      long start, long end, Options.Rename... options) {
+    RenameMPOp op = RenameMPOp.getInstance(cache.get())
+      .setSource(src)
+      .setDestination(dst)
+      .setTimestamp(timestamp)
+      .setOffset(start, end)
       .setOptions(options);
     logRpcIds(op, toLogRpcIds);
     logEdit(op);

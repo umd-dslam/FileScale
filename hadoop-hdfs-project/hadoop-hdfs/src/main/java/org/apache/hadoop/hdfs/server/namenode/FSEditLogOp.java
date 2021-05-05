@@ -47,6 +47,7 @@ import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_REMOVE_
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_REMOVE_ERASURE_CODING_POLICY;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_REMOVE_XATTR;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENAME;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENAME_MP;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENAME_OLD;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENAME_SNAPSHOT;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENEW_DELEGATION_TOKEN;
@@ -2927,6 +2928,197 @@ public abstract class FSEditLogOp {
       this.src = st.getValue("SRC");
       this.dst = st.getValue("DST");
       this.timestamp = Long.parseLong(st.getValue("TIMESTAMP"));
+      String opts = st.getValue("OPTIONS");
+      String o[] = opts.split("\\|");
+      this.options = new Rename[o.length];
+      for (int i = 0; i < o.length; i++) {
+        if (o[i].equals(""))
+          continue;
+        try {
+          this.options[i] = Rename.valueOf(o[i]);
+        } finally {
+          if (this.options[i] == null) {
+            System.err.println("error parsing Rename value: \"" + o[i] + "\"");
+          }
+        }
+      }
+      readRpcIdsFromXml(st);
+    }
+  }
+
+  /** {@literal @AtMostOnce} for {@link ClientProtocol#rename2} */
+  static class RenameMPOp extends FSEditLogOp {
+    int length;
+    String src;
+    String dst;
+    long timestamp;
+    long start;
+    long end;
+    Rename[] options;
+
+    RenameMPOp() {
+      super(OP_RENAME_MP);
+    }
+
+    static RenameMPOp getInstance(OpInstanceCache cache) {
+      return (RenameMPOp)cache.get(OP_RENAME_MP);
+    }
+
+    @Override
+    void resetSubFields() {
+      length = 0;
+      src = null;
+      dst = null;
+      timestamp = 0L;
+      options = null;
+      start = -1;
+      end = -1;
+    }
+
+    RenameMPOp setSource(String src) {
+      this.src = src;
+      return this;
+    }
+
+    RenameMPOp setDestination(String dst) {
+      this.dst = dst;
+      return this;
+    }
+    
+    RenameMPOp setTimestamp(long timestamp) {
+      this.timestamp = timestamp;
+      return this;
+    }
+    
+    RenameMPOp setOptions(Rename[] options) {
+      this.options = options;
+      return this;
+    }
+
+    RenameMPOp setOffset(long start, long end) {
+      this.start = start;
+      this.end = end;
+      return this;
+    }
+
+    @Override
+    public 
+    void writeFields(DataOutputStream out) throws IOException {
+      FSImageSerialization.writeString(src, out);
+      FSImageSerialization.writeString(dst, out);
+      FSImageSerialization.writeLong(timestamp, out);
+      FSImageSerialization.writeLong(start, out);
+      FSImageSerialization.writeLong(end, out);
+      toBytesWritable(options).write(out);
+      writeRpcIds(rpcClientId, rpcCallId, out);
+    }
+
+    @Override
+    void readFields(DataInputStream in, int logVersion)
+        throws IOException {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+        this.length = in.readInt();
+        if (this.length != 3) {
+          throw new IOException("Incorrect data format. " + "Rename operation.");
+        }
+      }
+      this.src = FSImageSerialization.readString(in);
+      this.dst = FSImageSerialization.readString(in);
+
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+        this.timestamp = FSImageSerialization.readLong(in);
+      } else {
+        this.timestamp = readLong(in);
+      }
+
+      this.start = FSImageSerialization.readLong(in);
+      this.end = FSImageSerialization.readLong(in);      
+      this.options = readRenameOptions(in);
+      
+      // read RPC ids if necessary
+      readRpcIds(in, logVersion);
+    }
+
+    private static Rename[] readRenameOptions(DataInputStream in) throws IOException {
+      BytesWritable writable = new BytesWritable();
+      writable.readFields(in);
+
+      byte[] bytes = writable.getBytes();
+      int len = writable.getLength();
+      Rename[] options = new Rename[len];
+
+      for (int i = 0; i < len; i++) {
+        options[i] = Rename.valueOf(bytes[i]);
+      }
+      return options;
+    }
+
+    static BytesWritable toBytesWritable(Rename... options) {
+      byte[] bytes = new byte[options.length];
+      for (int i = 0; i < options.length; i++) {
+        bytes[i] = options[i].value();
+      }
+      return new BytesWritable(bytes);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      builder.append("RenameMPOp [length=");
+      builder.append(length);
+      builder.append(", src=");
+      builder.append(src);
+      builder.append(", dst=");
+      builder.append(dst);
+      builder.append(", timestamp=");
+      builder.append(timestamp);
+      builder.append(", start=");
+      builder.append(start);
+      builder.append(", end=");
+      builder.append(end);
+      builder.append(", options=");
+      builder.append(Arrays.toString(options));
+      appendRpcIdsToString(builder, rpcClientId, rpcCallId);
+      builder.append(", opCode=");
+      builder.append(opCode);
+      builder.append(", txid=");
+      builder.append(txid);
+      builder.append("]");
+      return builder.toString();
+    }
+    
+    @Override
+    protected void toXml(ContentHandler contentHandler) throws SAXException {
+      XMLUtils.addSaxString(contentHandler, "LENGTH",
+          Integer.toString(length));
+      XMLUtils.addSaxString(contentHandler, "SRC", src);
+      XMLUtils.addSaxString(contentHandler, "DST", dst);
+      XMLUtils.addSaxString(contentHandler, "TIMESTAMP",
+          Long.toString(timestamp));
+      XMLUtils.addSaxString(contentHandler, "START",
+          Long.toString(start));
+      XMLUtils.addSaxString(contentHandler, "END",
+          Long.toString(end));
+      StringBuilder bld = new StringBuilder();
+      String prefix = "";
+      for (Rename r : options) {
+        bld.append(prefix).append(r.toString());
+        prefix = "|";
+      }
+      XMLUtils.addSaxString(contentHandler, "OPTIONS", bld.toString());
+      appendRpcIdsToXml(contentHandler, rpcClientId, rpcCallId);
+    }
+    
+    @Override void fromXml(Stanza st) throws InvalidXmlException {
+      this.length = Integer.parseInt(st.getValue("LENGTH"));
+      this.src = st.getValue("SRC");
+      this.dst = st.getValue("DST");
+      this.timestamp = Long.parseLong(st.getValue("TIMESTAMP"));
+      this.start = Long.parseLong(st.getValue("START"));
+      this.end = Long.parseLong(st.getValue("END"));
+
       String opts = st.getValue("OPTIONS");
       String o[] = opts.split("\\|");
       this.options = new Rename[o.length];

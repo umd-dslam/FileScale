@@ -38,6 +38,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.fs.PathIsNotDirectoryException;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.fs.XAttr;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
@@ -980,11 +981,20 @@ public class INodeDirectory extends INodeWithAdditionalFields
         // update_subtree_v2(renameSet, address);
       }
 
-      // CompletableFuture.runAsync(() -> {
-        // stored procedure:
-        // update subtree IDs and parent fields
-        DatabaseINode.updateSubtree(old_id, 40000000, oldParent, "/nnThroughputBenchmark/rename", node.getParentId());
-      // }, Database.getInstance().getExecutorService());
+      long start = INodeKeyedObjects.getTxnId();
+      INodeKeyedObjects.setTxnId(DatabaseINode.updateSubtree(old_id, 40000000,
+        oldParent, "/nnThroughputBenchmark/rename", node.getParentId())
+      );
+      try{
+        Thread.sleep(2); // 2 ms
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      long end = INodeKeyedObjects.getTxnId();
+      FSDirectory.getInstance()
+        .getEditLog()
+        .logRenameMP("/nnThroughputBenchmark/create", "/nnThroughputBenchmark/rename",
+        getModificationTime(), false, start, end);
     } else {
       // log: delete old file
       FSDirectory.getInstance()

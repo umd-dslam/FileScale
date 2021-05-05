@@ -78,6 +78,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveCachePoolOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveXAttrOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOldOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameSnapshotOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenewDelegationTokenOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RollingUpgradeOp;
@@ -723,6 +724,19 @@ public class FSEditLogLoader {
       
       if (toAddRetryCache) {
         fsNamesys.addCacheEntry(renameOp.rpcClientId, renameOp.rpcCallId);
+      }
+      break;
+    }
+    case OP_RENAME_MP: {
+      // TODO: parse the command log and exec all txns.
+      RenameMPOp renameMPOp = (RenameMPOp)op;
+      FSDirRenameOp.renameForEditLog(fsDir,
+          renameReservedPathsOnUpgrade(renameMPOp.src, logVersion),
+          renameReservedPathsOnUpgrade(renameMPOp.dst, logVersion),
+          renameMPOp.timestamp, renameMPOp.options);
+      
+      if (toAddRetryCache) {
+        fsNamesys.addCacheEntry(renameMPOp.rpcClientId, renameMPOp.rpcCallId);
       }
       break;
     }
