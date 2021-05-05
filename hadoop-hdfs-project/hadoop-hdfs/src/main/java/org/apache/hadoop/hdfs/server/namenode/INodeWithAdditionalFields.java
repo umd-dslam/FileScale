@@ -503,7 +503,18 @@ public abstract class INodeWithAdditionalFields extends INode {
 
     // 2. execute distributed txn
     LOG.info("Execute dist txn for chmod");
+
+    long start = INodeKeyedObjects.getTxnId();
     INodeKeyedObjects.setTxnId(DatabaseINode.setPermissions(parents, names, this.permission));
+    try{
+      Thread.sleep(2); // 2 ms
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    long end = INodeKeyedObjects.getTxnId();
+    FSDirectory.getInstance()
+      .getEditLog()
+      .logSetPermissionsMP(getPath(), new FsPermission(getFsPermissionShort()), start, end);
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {

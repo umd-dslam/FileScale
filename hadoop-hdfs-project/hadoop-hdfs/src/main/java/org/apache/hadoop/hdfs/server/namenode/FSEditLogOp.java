@@ -58,6 +58,7 @@ import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_GEN
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_NS_QUOTA;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_OWNER;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_PERMISSIONS;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_PERMISSIONS_MP;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_QUOTA;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_REPLICATION;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_XATTR;
@@ -1978,6 +1979,99 @@ public abstract class FSEditLogOp {
 
     @Override void fromXml(Stanza st) throws InvalidXmlException {
       this.blockId = Long.parseLong(st.getValue("BLOCK_ID"));
+    }
+  }
+
+  static class SetPermissionsMPOp extends FSEditLogOp {
+    String src;
+    FsPermission permissions;
+    long start;
+    long end;
+
+    SetPermissionsMPOp() {
+      super(OP_SET_PERMISSIONS_MP);
+    }
+
+    static SetPermissionsMPOp getInstance(OpInstanceCache cache) {
+      return (SetPermissionsMPOp)cache.get(OP_SET_PERMISSIONS_MP);
+    }
+
+    @Override
+    void resetSubFields() {
+      src = null;
+      permissions = null;
+      start = -1;
+      end = -1;
+    }
+
+    SetPermissionsMPOp setSource(String src) {
+      this.src = src;
+      return this;
+    }
+
+    SetPermissionsMPOp setPermissions(FsPermission permissions) {
+      this.permissions = permissions;
+      return this;
+    }
+
+    SetPermissionsMPOp setOffset(long start, long end) {
+      this.start = start;
+      this.end = end;
+      return this;
+    }
+
+    @Override
+    public 
+    void writeFields(DataOutputStream out) throws IOException {
+      FSImageSerialization.writeString(src, out);
+      permissions.write(out);
+      FSImageSerialization.writeLong(start, out); 
+      FSImageSerialization.writeLong(end, out); 
+    }
+ 
+    @Override
+    void readFields(DataInputStream in, int logVersion)
+        throws IOException {
+      this.src = FSImageSerialization.readString(in);
+      this.permissions = FsPermission.read(in);
+      this.start = FSImageSerialization.readLong(in);
+      this.end = FSImageSerialization.readLong(in); 
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      builder.append("SetPermissionsMPOp [src=");
+      builder.append(src);
+      builder.append(", permissions=");
+      builder.append(permissions);
+      builder.append(", start=");
+      builder.append(start);
+      builder.append(", end=");
+      builder.append(end);
+      builder.append(", opCode=");
+      builder.append(opCode);
+      builder.append(", txid=");
+      builder.append(txid);
+      builder.append("]");
+      return builder.toString();
+    }
+    
+    @Override
+    protected void toXml(ContentHandler contentHandler) throws SAXException {
+      XMLUtils.addSaxString(contentHandler, "SRC", src);
+      XMLUtils.addSaxString(contentHandler, "MODE",
+          Short.toString(permissions.toShort()));
+      XMLUtils.addSaxString(contentHandler, "START", String.valueOf(start));
+      XMLUtils.addSaxString(contentHandler, "END", String.valueOf(end));
+    }
+    
+    @Override void fromXml(Stanza st) throws InvalidXmlException {
+      this.src = st.getValue("SRC");
+      this.permissions = new FsPermission(
+          Short.parseShort(st.getValue("MODE")));
+      this.start = Long.parseLong(st.getValue("START"));
+      this.end = Long.parseLong(st.getValue("END"));
     }
   }
 

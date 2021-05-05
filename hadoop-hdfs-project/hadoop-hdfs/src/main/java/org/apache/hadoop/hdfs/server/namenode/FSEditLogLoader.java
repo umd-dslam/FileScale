@@ -87,6 +87,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV2Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetNSQuotaOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetOwnerOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetReplicationOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetStoragePolicyOp;
@@ -626,6 +627,16 @@ public class FSEditLogLoader {
       final INodesInPath iip = fsDir.getINodesInPath(src, DirOp.WRITE);
       FSDirAttrOp.unprotectedSetPermission(fsDir, iip,
           setPermissionsOp.permissions);
+      break;
+    }
+    case OP_SET_PERMISSIONS_MP: {
+      // TODO: locate the command log and parse it and execute all txns
+      SetPermissionsMPOp setPermissionsMPOp = (SetPermissionsMPOp)op;
+      final String src =
+          renameReservedPathsOnUpgrade(setPermissionsMPOp.src, logVersion);
+      final INodesInPath iip = fsDir.getINodesInPath(src, DirOp.WRITE);
+      FSDirAttrOp.unprotectedSetPermission(fsDir, iip,
+          setPermissionsMPOp.permissions);
       break;
     }
     case OP_SET_OWNER: {

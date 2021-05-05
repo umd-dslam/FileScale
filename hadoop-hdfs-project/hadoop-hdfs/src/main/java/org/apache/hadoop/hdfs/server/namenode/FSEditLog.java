@@ -87,6 +87,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV1Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV2Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetOwnerOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaByStorageTypeOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetReplicationOp;
@@ -1091,6 +1092,15 @@ public class FSEditLog implements LogsPurgeable {
     SetPermissionsOp op = SetPermissionsOp.getInstance(cache.get())
       .setSource(src)
       .setPermissions(permissions);
+    logEdit(op);
+  }
+
+  /**  Add set permissions (multi-partition request) record to edit log */
+  void logSetPermissionsMP(String src, FsPermission permissions, long start, long end) {
+    SetPermissionsMPOp op = SetPermissionsMPOp.getInstance(cache.get())
+      .setSource(src)
+      .setPermissions(permissions)
+      .setOffset(start, end);
     logEdit(op);
   }
 
