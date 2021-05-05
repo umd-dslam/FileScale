@@ -77,6 +77,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveCachePoolOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveXAttrOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOldOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameSnapshotOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenewDelegationTokenOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RollingUpgradeFinalizeOp;
@@ -87,6 +88,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV1Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV2Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetOwnerOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaByStorageTypeOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetReplicationOp;
@@ -1044,6 +1046,23 @@ public class FSEditLog implements LogsPurgeable {
     logRpcIds(op, toLogRpcIds);
     logEdit(op);
   }
+
+  /** 
+   * Add rename record to edit log (multi-partition request).
+   *
+   * The destination should be the file name, not the destination directory.
+   */
+  void logRenameMP(String src, String dst, long timestamp, boolean toLogRpcIds,
+      long start, long end, Options.Rename... options) {
+    RenameMPOp op = RenameMPOp.getInstance(cache.get())
+      .setSource(src)
+      .setDestination(dst)
+      .setTimestamp(timestamp)
+      .setOffset(start, end)
+      .setOptions(options);
+    logRpcIds(op, toLogRpcIds);
+    logEdit(op);
+  }
   
   /** 
    * Add set replication record to edit log
@@ -1091,6 +1110,15 @@ public class FSEditLog implements LogsPurgeable {
     SetPermissionsOp op = SetPermissionsOp.getInstance(cache.get())
       .setSource(src)
       .setPermissions(permissions);
+    logEdit(op);
+  }
+
+  /**  Add set permissions (multi-partition request) record to edit log */
+  void logSetPermissionsMP(String src, FsPermission permissions, long start, long end) {
+    SetPermissionsMPOp op = SetPermissionsMPOp.getInstance(cache.get())
+      .setSource(src)
+      .setPermissions(permissions)
+      .setOffset(start, end);
     logEdit(op);
   }
 

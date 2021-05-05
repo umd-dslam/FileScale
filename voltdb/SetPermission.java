@@ -8,6 +8,6 @@ public class SetPermissions extends VoltProcedure {
   public long run(final long id, final long permission) throws VoltAbortException {
     voltQueueSQL(sql, permission, id);
     voltExecuteSQL();
-    return 1;
+    return getTxnId();
   }
 }

@@ -10,6 +10,6 @@ public class SetPermissions extends VoltProcedure {
       voltQueueSQL(sql, permission, parents[i], names[i]);
     }
     voltExecuteSQL();
-    return 1;
+    return getTxnId();
   }
 }
