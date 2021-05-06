@@ -38,6 +38,6 @@ public class BatchUpdateINodes extends VoltProcedure {
     }
 
     voltExecuteSQL();
-    return getTxnId();
+    return getUniqueId();
   }
 }
