@@ -902,7 +902,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
     }
     try {
       if (strAttr.size() > 0) {
-        INodeKeyedObjects.setTxnId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+        INodeKeyedObjects.setUniqueId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -981,8 +981,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
         // update_subtree_v2(renameSet, address);
       }
 
-      long start = INodeKeyedObjects.getTxnId();
-      INodeKeyedObjects.setTxnId(DatabaseINode.updateSubtree(old_id, 40000000,
+      long start = INodeKeyedObjects.getUniqueId();
+      INodeKeyedObjects.setUniqueId(DatabaseINode.updateSubtree(old_id, 40000000,
         oldParent, "/nnThroughputBenchmark/rename", node.getParentId())
       );
       try{
@@ -990,7 +990,7 @@ public class INodeDirectory extends INodeWithAdditionalFields
       } catch (Exception e) {
         e.printStackTrace();
       }
-      long end = INodeKeyedObjects.getTxnId();
+      long end = INodeKeyedObjects.getUniqueId();
       FSDirectory.getInstance()
         .getEditLog()
         .logRenameMP("/nnThroughputBenchmark/create", "/nnThroughputBenchmark/rename",

@@ -28,8 +28,8 @@ public class INodeKeyedObjects {
   private static long preRenameSize = 0;
   private static long preUpdateSize = 0;
 
-  // gloabal transaction ID (VoltDB)
-  private static AtomicLong txnId = new AtomicLong();;
+  // gloabal unique ID (VoltDB)
+  private static AtomicLong uniqueId = new AtomicLong();
 
   private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -37,12 +37,12 @@ public class INodeKeyedObjects {
 
   INodeKeyedObjects() {}
 
-  public static long getTxnId() {
-    return txnId.longValue();
+  public static long getUniqueId() {
+    return uniqueId.longValue();
   }
 
-  public static void setTxnId(long id) {
-    txnId.set(id);
+  public static void setUniqueId(long id) {
+    uniqueId.set(id);
   }
 
   public static Set<String> getUpdateSet() {
@@ -117,7 +117,7 @@ public class INodeKeyedObjects {
       }
       try {
         if (strAttr.size() > 0) {
-          INodeKeyedObjects.setTxnId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+          INodeKeyedObjects.setUniqueId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -161,7 +161,7 @@ public class INodeKeyedObjects {
             iterator.remove();             
           }
           if (strAttr.size() > 0) {
-            INodeKeyedObjects.setTxnId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+            INodeKeyedObjects.setUniqueId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
           }
         } catch (Exception e) {
           e.printStackTrace();
