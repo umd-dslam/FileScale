@@ -12,7 +12,8 @@ else
     IP=$1
 fi
 
-javac HdfsMetaInfoSchema.java && java HdfsMetaInfoSchema
+mvn compile
+mvn exec:java -Dexec.mainClass=HdfsMetaInfoSchema  -DIGNITE_REST_START_ON_CLIENT=true
 
 # restart hadoop hdfs
 cd $HADOOP_HOME
