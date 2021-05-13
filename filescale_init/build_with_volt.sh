@@ -13,9 +13,9 @@ else
 fi
 
 # compile stored procedures
-cd ~/hadoop/voltdb && bash clean_procedures.sh $IP
+cd ~/hadoop/filescale_init/voltdb && bash clean_procedures.sh $IP
 cd .. && javac HdfsMetaInfoSchema.java && java HdfsMetaInfoSchema
-cd ~/hadoop/voltdb && bash create_procedures.sh $IP
+cd ~/hadoop/filescale_init/voltdb && bash create_procedures.sh $IP
 
 # restart hadoop hdfs
 cd $HADOOP_HOME

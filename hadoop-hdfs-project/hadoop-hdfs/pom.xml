@@ -35,9 +35,25 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <is.hadoop.component>true</is.hadoop.component>
     <curator.version>4.2.0</curator.version>
     <zookeeper.version>3.4.13</zookeeper.version>
+    <ignite.version>2.10.0</ignite.version>
   </properties>
 
   <dependencies>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j2</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
         <dependency>	
             <groupId>org.apache.curator</groupId>	
             <artifactId>curator-recipes</artifactId>	
