@@ -16,6 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
 import org.voltdb.client.*;
+import org.apache.ignite.*;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 
 public class DatabaseINode {
   static final Logger LOG = LoggerFactory.getLogger(DatabaseINode.class);
@@ -230,6 +233,24 @@ public class DatabaseINode {
         } catch (Exception e) {
           e.printStackTrace();
         }
+      } else if (env.equals("IGNITE")) {
+        IgniteCache<BinaryObject, BinaryObject> inodesBinary = obj.getIgniteClient()
+          .cache("inodes").withKeepBinary();
+        BinaryObjectBuilder inodeKeyBuilder = obj.getIgniteClient().binary().builder("InodeKey");
+        BinaryObject inodeKey = inodeKeyBuilder
+          .setField("parentName", parentName)
+          .setField("name", childName)
+          .build();
+        BinaryObject inode = inodesBinary.get(inodeKey);
+        res = new LoadINode(
+          inode.field("parent"),
+          inode.field("parentName"),
+          inode.field("id"),
+          inode.field("name"),
+          inode.field("permission"),
+          inode.field("modificationTime"),
+          inode.field("accessTime"),
+          inode.field("header"));
       } else {
         Connection conn = obj.getConnection();
         String sql =
@@ -411,6 +432,26 @@ public class DatabaseINode {
         } catch (Exception e) {
           e.printStackTrace();
         }
+      } else if (env.equals("IGNITE")) {
+        IgniteCache<BinaryObject, BinaryObject> inodesBinary = obj.getIgniteClient()
+          .cache("inodes").withKeepBinary();
+        BinaryObjectBuilder inodeKeyBuilder = obj.getIgniteClient().binary().builder("InodeKey");
+        BinaryObject inodeKey = inodeKeyBuilder
+          .setField("parentName", parentName)
+          .setField("name", name)
+          .build();
+        BinaryObjectBuilder inodeBuilder = obj.getIgniteClient().binary().builder("INode");
+        BinaryObject inode = inodeBuilder
+          .setField("id", id, Long.class)
+          .setField("parent", pid, Long.class)
+          .setField("parentName", parentName)
+          .setField("name", name)
+          .setField("accessTime", accessTime, Long.class)
+          .setField("modificationTime", modificationTime, Long.class)
+          .setField("header", header, Long.class)
+          .setField("permission", permission, Long.class)
+          .build();
+        inodesBinary.put(inodeKey, inode);
       } else {
         String sql =
             "INSERT INTO inodes("
@@ -456,6 +497,7 @@ public class DatabaseINode {
     }
   }
 
+  // TODO: ignite
   public static void renameInode(
       final long id,
       final long pid,
@@ -607,6 +649,18 @@ public class DatabaseINode {
         } catch (Exception e) {
           e.printStackTrace();
         }
+      } else if (env.equals("IGNITE")) {
+        Connection conn = obj.getConnection();
+        String perm = String.valueOf(permission);
+        String sql = "UPDATE inodes SET permission = " + perm + " WHERE parentName = ? and name = ?;";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        for (int i = 0; i < parents.size(); ++i) {
+          pst.setString(1, parents.get(i));
+          pst.setString(2, names.get(i));
+          pst.addBatch();
+        }
+        pst.executeBatch();
+        pst.close();
       } else {
         throw new SQLException("[UNSUPPORT] Invalid operation ...");
       }
@@ -1115,6 +1169,7 @@ public class DatabaseINode {
     return res;
   }
 
+  // todo: ignite
   public static void removeChild(final long id) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
@@ -1912,18 +1967,16 @@ public class DatabaseINode {
       } else {
         DatabaseConnection obj = Database.getInstance().getConnection();
         Connection conn = obj.getConnection();
-        String sql = "";
-        for (int i = 0; i < ns.size(); ++i) {
-          sql += "INSERT INTO inodexattrs(id, namespace, name, value) VALUES(?, ?, ?, ?);";
-        }
+        String sql = "INSERT INTO inodexattrs(id, namespace, name, value) VALUES(?, ?, ?, ?);";
         PreparedStatement pst = conn.prepareStatement(sql);
         for (int i = 0; i < ns.size(); ++i) {
           pst.setLong(i * 4 + 1, id);
           pst.setInt(i * 4 + 2, ns.get(i));
           pst.setString(i * 4 + 3, namevals.get(i * 2));
           pst.setString(i * 4 + 4, namevals.get(i * 2 + 1));
+          pst.addBatch();
         }
-        pst.executeUpdate();
+        pst.executeBatch();
         pst.close();
         Database.getInstance().retConnection(obj);
       }
@@ -1935,6 +1988,7 @@ public class DatabaseINode {
     }
   }
 
+  // todo: ignite
   public static void batchRemoveINodes(final List<Long> ids) throws SQLException {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
@@ -1964,6 +2018,7 @@ public class DatabaseINode {
     }
   }
 
+  // todo: ignite
   public static void batchRenameINodes(
       final List<Long> longAttr,
       final List<String> strAttr)
@@ -1993,6 +2048,7 @@ public class DatabaseINode {
     }
   }
 
+  // todo: ignite
   public static long batchUpdateINodes(
       final List<Long> longAttr,
       final List<String> strAttr,
@@ -2039,6 +2095,7 @@ public class DatabaseINode {
     return res;
   }
 
+  // todo: ignite
   public static long updateSubtree(final long dir_id, final long dest_id, final String old_parent_name,
     final String new_parent_name, final long new_parent) {
     long res = 0;
@@ -2071,6 +2128,7 @@ public class DatabaseINode {
     return res;
   }
 
+  // todo: ignite
   public static void setId(final long old_id, final long new_id, final String new_parent_name, final long new_parent) {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();

@@ -29,7 +29,26 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <name>Apache Hadoop HDFS-DB</name>
   <packaging>jar</packaging>
 
+  <properties>
+    <ignite.version>2.10.0</ignite.version>
+  </properties>
+
   <dependencies>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-core</artifactId>
+        <version>${ignite.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-indexing</artifactId>
+        <version>${ignite.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-log4j2</artifactId>
+        <version>${ignite.version}</version>
+    </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>

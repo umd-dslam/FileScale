@@ -9,10 +9,14 @@ import java.util.Collections;
 import org.apache.ignite.*;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 
 public class HdfsMetaInfoSchema {
   private static HdfsMetaInfoSchema instance;
@@ -23,6 +27,7 @@ public class HdfsMetaInfoSchema {
   private String ignite = "jdbc:ignite:thin://localhost:10800";
   private String username = "docker";
   private String password = "docker";
+  private IgniteEx ignite_client = null;
 
   private HdfsMetaInfoSchema() throws SQLException {
     String env = System.getenv("DATABASE");
@@ -40,6 +45,21 @@ public class HdfsMetaInfoSchema {
         }
         this.connection = DriverManager.getConnection(url);
       } else if (env.equals("IGNITE")) {
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+        ipFinder.setAddresses(Collections.singletonList("localhost:47500..49112"));
+        discoverySpi.setIpFinder(ipFinder);
+    
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setDiscoverySpi(discoverySpi).setPeerClassLoadingEnabled(true);
+        //data storage configuration
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        cfg.setDataStorageConfiguration(storageCfg);
+
+        Ignition.setClientMode(true);
+        ignite_client = (IgniteEx)Ignition.start(cfg);
+
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
         url = System.getenv("IGNITE_SERVER");
         if (url == null) {
@@ -240,26 +260,20 @@ public class HdfsMetaInfoSchema {
     }
 
     // key-value API test
-    TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-    TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-    ipFinder.setAddresses(Collections.singletonList("localhost:47500..47501"));
-    discoverySpi.setIpFinder(ipFinder);
-
-    IgniteConfiguration cfg = new IgniteConfiguration();
-    cfg.setDiscoverySpi(discoverySpi);
-           
-    Ignition.setClientMode(true);
-    Ignite ignite = Ignition.start(cfg);
-    
-    Collection<String> collection = ignite.cacheNames();
+		IgniteCluster cluster = ignite_client.cluster();
+    cluster.active(true);
+    cluster.enableWal("inodes");
+		cluster.baselineAutoAdjustEnabled(false);
+ 
+    Collection<String> collection = ignite_client.cacheNames();
     System.out.println("cache names = " + collection);
-    
-    IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
+
+    IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite_client.cache("inodes").withKeepBinary();
     System.out.println(">> Updating inode record:");
 
-    BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
+    BinaryObjectBuilder inodeKeyBuilder = ignite_client.binary().builder("InodeKey");
     BinaryObject inodeKey = inodeKeyBuilder.setField("parentName", "/").setField("name", "hello").build();
-    BinaryObjectBuilder inodeBuilder = ignite.binary().builder("INode");
+    BinaryObjectBuilder inodeBuilder = ignite_client.binary().builder("INode");
     BinaryObject inode = inodeBuilder
       .setField("id", 11111L, Long.class)
       .setField("parent", 0L, Long.class)
@@ -272,10 +286,14 @@ public class HdfsMetaInfoSchema {
       .build();
     System.out.printf("The dir: %s, id: %s \n", inode.field("parentName"), inode.field("name"), inode.field("id"));
     inodesBinary.put(inodeKey, inode);
-    ignite.close();
+
+    // FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)(ignite_client.context().cache().context().wal());
+    // System.out.printf("Last Wal pointer: " + walMgr.lastWritePointer().toString());
+    
+    ignite_client.close();
 
     // SQL test
-    try{
+    try {
       Statement st = connection.createStatement();
       st.execute("delete from inodes where id = 11111;");
       st.close();
