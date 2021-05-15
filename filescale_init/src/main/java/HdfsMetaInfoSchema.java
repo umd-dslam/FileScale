@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.*;
@@ -287,9 +288,11 @@ public class HdfsMetaInfoSchema {
     System.out.printf("The dir: %s, id: %s \n", inode.field("parentName"), inode.field("name"), inode.field("id"));
     inodesBinary.put(inodeKey, inode);
 
-    // FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)(ignite_client.context().cache().context().wal());
-    // System.out.printf("Last Wal pointer: " + walMgr.lastWritePointer().toString());
-    
+    IgniteCompute compute = ignite_client.compute();
+    // Execute closure on all cluster nodes.
+    IgniteCallable<String> call = new WalPointerTask(); 
+    String res = compute.call(call);
+    System.out.printf("Last Wal pointer: " + res);
     ignite_client.close();
 
     // SQL test
