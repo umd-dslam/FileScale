@@ -9,13 +9,22 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.*;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.db.Database;
 import org.apache.hadoop.hdfs.db.DatabaseINode;
+import org.apache.hadoop.hdfs.db.DatabaseConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.ignite.*;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 
 public class INodeKeyedObjects {
   private static IndexedCache<String, INode> cache;
@@ -76,6 +85,8 @@ public class INodeKeyedObjects {
     int i = 0;
     final int num = 1024;
     long updateSize = concurrentUpdateSet.size();
+    String env = System.getenv("DATABASE");
+    DatabaseConnection conn = Database.getInstance().getConnection();
     if (updateSize >= num) {
       Iterator<String> iterator = concurrentUpdateSet.iterator();
       if (LOG.isInfoEnabled()) {
@@ -87,37 +98,66 @@ public class INodeKeyedObjects {
 
       List<Long> fileIds = new ArrayList<>();
       List<String> fileAttr = new ArrayList<>();
+      Map<BinaryObject, BinaryObject> map = new TreeMap<>();
       while (iterator.hasNext()) {
         INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
         if (inode == null) continue;
-        strAttr.add(inode.getLocalName());
-        if (inode.getId() == 16385) {
-          strAttr.add(" ");
-        } else {
-          strAttr.add(inode.getParentName());
-        }
-        longAttr.add(inode.getParentId());
-        longAttr.add(inode.getId());
-        longAttr.add(inode.getModificationTime());
-        longAttr.add(inode.getAccessTime());
-        longAttr.add(inode.getPermissionLong());
-        if (inode.isDirectory()) {
-          longAttr.add(0L);
-        } else {
-          longAttr.add(inode.asFile().getHeaderLong());
-          FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
-          if (uc != null) {
-            fileIds.add(inode.getId());
-            fileAttr.add(uc.getClientName(inode.getId()));
-            fileAttr.add(uc.getClientMachine(inode.getId()));
+        if (env.equals("VOLT")) {
+          strAttr.add(inode.getLocalName());
+          if (inode.getId() == 16385) {
+            strAttr.add(" ");
+          } else {
+            strAttr.add(inode.getParentName());
           }
+          longAttr.add(inode.getParentId());
+          longAttr.add(inode.getId());
+          longAttr.add(inode.getModificationTime());
+          longAttr.add(inode.getAccessTime());
+          longAttr.add(inode.getPermissionLong());
+          if (inode.isDirectory()) {
+            longAttr.add(0L);
+          } else {
+            longAttr.add(inode.asFile().getHeaderLong());
+            FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+            if (uc != null) {
+              fileIds.add(inode.getId());
+              fileAttr.add(uc.getClientName(inode.getId()));
+              fileAttr.add(uc.getClientMachine(inode.getId()));
+            }
+          }
+        } else if (env.equals("IGNITE")) {
+          BinaryObjectBuilder inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+          BinaryObject inodeKey = inodeKeyBuilder.setField("parentName", inode.getParentName()).setField("name", inode.getLocalName()).build();
+          BinaryObjectBuilder inodeBuilder = conn.getIgniteClient().binary().builder("INode");
+          long header = 0L;
+          if (inode.isFile()) {
+            header = inode.asFile().getHeaderLong();
+          } 
+          String parentName = " ";
+          if (inode.getId() != 16385) {
+            parentName = inode.getParentName();
+          }
+          BinaryObject inodeValue = inodeBuilder
+            .setField("id", inode.getId(), Long.class)
+            .setField("parent", inode.getParentId(), Long.class)
+            .setField("parentName", parentName)
+            .setField("name", inode.getLocalName())
+            .setField("accessTime", inode.getAccessTime(), Long.class)
+            .setField("modificationTime", inode.getModificationTime(), Long.class)
+            .setField("header", header, Long.class)
+            .setField("permission", inode.getPermissionLong(), Long.class)
+            .build();
+          map.put(inodeKey, inodeValue);
         }
         iterator.remove();
         if (++i >= num) break;
       }
       try {
-        if (strAttr.size() > 0) {
+        if (env.equals("VOLT") && strAttr.size() > 0) {          
           INodeKeyedObjects.setUniqueId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+        } else if (env.equals("IGNITE") && map.size() > 0) {
+          IgniteCache<BinaryObject, BinaryObject> inodesBinary = conn.getIgniteClient().cache("inodes").withKeepBinary();
+          inodesBinary.putAll(map);
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -133,35 +173,64 @@ public class INodeKeyedObjects {
           List<String> strAttr = new ArrayList<>();
           List<Long> fileIds = new ArrayList<>();
           List<String> fileAttr = new ArrayList<>();
+          Map<BinaryObject, BinaryObject> map = new TreeMap<>();
           while (iterator.hasNext()) {
             INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
             if (inode == null) continue;
-            strAttr.add(inode.getLocalName());
-            if (inode.getId() == 16385) {
-              strAttr.add(" ");
-            } else {
-              strAttr.add(inode.getParentName());
-            }
-            longAttr.add(inode.getParentId());
-            longAttr.add(inode.getId());
-            longAttr.add(inode.getModificationTime());
-            longAttr.add(inode.getAccessTime());
-            longAttr.add(inode.getPermissionLong());
-            if (inode.isDirectory()) {
-              longAttr.add(0L);
-            } else {
-              longAttr.add(inode.asFile().getHeaderLong());
-              FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
-              if (uc != null) {
-                fileIds.add(inode.getId());
-                fileAttr.add(uc.getClientName(inode.getId()));
-                fileAttr.add(uc.getClientMachine(inode.getId()));
+            if (env.equals("VOLT")) {
+              strAttr.add(inode.getLocalName());
+              if (inode.getId() == 16385) {
+                strAttr.add(" ");
+              } else {
+                strAttr.add(inode.getParentName());
               }
+              longAttr.add(inode.getParentId());
+              longAttr.add(inode.getId());
+              longAttr.add(inode.getModificationTime());
+              longAttr.add(inode.getAccessTime());
+              longAttr.add(inode.getPermissionLong());
+              if (inode.isDirectory()) {
+                longAttr.add(0L);
+              } else {
+                longAttr.add(inode.asFile().getHeaderLong());
+                FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+                if (uc != null) {
+                  fileIds.add(inode.getId());
+                  fileAttr.add(uc.getClientName(inode.getId()));
+                  fileAttr.add(uc.getClientMachine(inode.getId()));
+                }
+              }
+            } else if (env.equals("IGNITE")) {
+              BinaryObjectBuilder inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+              BinaryObject inodeKey = inodeKeyBuilder.setField("parentName", inode.getParentName()).setField("name", inode.getLocalName()).build();
+              BinaryObjectBuilder inodeBuilder = conn.getIgniteClient().binary().builder("INode");
+              long header = 0L;
+              if (inode.isFile()) {
+                header = inode.asFile().getHeaderLong();
+              } 
+              String parentName = " ";
+              if (inode.getId() != 16385) {
+                parentName = inode.getParentName();
+              }
+              BinaryObject inodeValue = inodeBuilder
+                .setField("id", inode.getId(), Long.class)
+                .setField("parent", inode.getParentId(), Long.class)
+                .setField("parentName", parentName)
+                .setField("name", inode.getLocalName())
+                .setField("accessTime", inode.getAccessTime(), Long.class)
+                .setField("modificationTime", inode.getModificationTime(), Long.class)
+                .setField("header", header, Long.class)
+                .setField("permission", inode.getPermissionLong(), Long.class)
+                .build();
+              map.put(inodeKey, inodeValue);             
             }
             iterator.remove();             
           }
-          if (strAttr.size() > 0) {
+          if (env.equals("VOLT") && strAttr.size() > 0) {          
             INodeKeyedObjects.setUniqueId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+          } else if (env.equals("IGNITE") && map.size() > 0) {
+            IgniteCache<BinaryObject, BinaryObject> inodesBinary = conn.getIgniteClient().cache("inodes").withKeepBinary();
+            inodesBinary.putAll(map);
           }
         } catch (Exception e) {
           e.printStackTrace();
@@ -169,6 +238,7 @@ public class INodeKeyedObjects {
       }
     }
     preUpdateSize = concurrentUpdateSet.size();
+    Database.getInstance().retConnection(conn);
   }
 
   private static void removeToDB() {
@@ -178,7 +248,10 @@ public class INodeKeyedObjects {
     int i = 0;
     final int num = 1024;
     List<Long> removeIds = new ArrayList<>();
+    Set<BinaryObject> removeKeys = new HashSet<>();
     long removeSize = concurrentRemoveSet.size();
+    String env = System.getenv("DATABASE");
+    DatabaseConnection conn = Database.getInstance().getConnection();
     if (removeSize >= num) {
       if (LOG.isInfoEnabled()) {
         LOG.info("Propagate removed files/directories from cache to database.");
@@ -186,14 +259,30 @@ public class INodeKeyedObjects {
       i = 0;
       Iterator<Long> iterator = concurrentRemoveSet.iterator();
       while (iterator.hasNext()) {
-        removeIds.add(iterator.next());
+        long id = iterator.next();
+        if (env.equals("VOLT")) { 
+          removeIds.add(id);
+        } else if (env.equals("IGNITE")) {
+          INode inode = INodeKeyedObjects.getCache().getIfPresent(id);
+          BinaryObjectBuilder inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+          BinaryObject inodeKey = inodeKeyBuilder
+            .setField("parentName", inode.getParentName())
+            .setField("name", inode.getLocalName())
+            .build(); 
+          removeKeys.add(inodeKey);
+        }
         iterator.remove();
         if (++i >= num) break;
       }
 
       try {
         if (removeIds.size() > 0) {
-          DatabaseINode.batchRemoveINodes(removeIds);
+          if (env.equals("VOLT")) {
+            DatabaseINode.batchRemoveINodes(removeIds);
+          } else if (env.equals("IGNITE")) {
+            IgniteCache<BinaryObject, BinaryObject> inodesBinary = conn.getIgniteClient().cache("inodes").withKeepBinary();
+            inodesBinary.removeAll(removeKeys);
+          }
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -207,16 +296,31 @@ public class INodeKeyedObjects {
           removeIds = new ArrayList<Long>(concurrentRemoveSet);
           Iterator<Long> iterator = concurrentRemoveSet.iterator();
           while (iterator.hasNext()) {
-            iterator.next();
+            long id = iterator.next();
+            if (env.equals("IGNITE")) {
+              INode inode = INodeKeyedObjects.getCache().getIfPresent(id);
+              BinaryObjectBuilder inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+              BinaryObject inodeKey = inodeKeyBuilder
+                .setField("parentName", inode.getParentName())
+                .setField("name", inode.getLocalName())
+                .build(); 
+              removeKeys.add(inodeKey); 
+            }
             iterator.remove();
           }
-          DatabaseINode.batchRemoveINodes(removeIds);
+          if (env.equals("VOLT")) {
+            DatabaseINode.batchRemoveINodes(removeIds);
+          } else if (env.equals("IGNITE")) {
+            IgniteCache<BinaryObject, BinaryObject> inodesBinary = conn.getIgniteClient().cache("inodes").withKeepBinary();
+            inodesBinary.removeAll(removeKeys); 
+          }
         } catch (Exception e) {
           e.printStackTrace();
         }
       }
     }
     preRemoveSize = concurrentRemoveSet.size();
+    Database.getInstance().retConnection(conn);
   }
 
   private static void renameToDB() {
