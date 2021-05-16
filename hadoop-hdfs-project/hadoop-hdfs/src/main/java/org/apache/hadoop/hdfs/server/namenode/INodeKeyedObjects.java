@@ -9,7 +9,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
@@ -20,6 +20,7 @@ import org.apache.hadoop.hdfs.db.DatabaseINode;
 import org.apache.hadoop.hdfs.db.DatabaseConnection;
 import org.apache.hadoop.hdfs.db.ignite.BatchRenameINodes;
 import org.apache.hadoop.hdfs.db.ignite.BatchRemoveINodes;
+import org.apache.hadoop.hdfs.db.ignite.BatchUpdateINodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicLong;
@@ -106,7 +107,7 @@ public class INodeKeyedObjects {
 
       List<Long> fileIds = new ArrayList<>();
       List<String> fileAttr = new ArrayList<>();
-      Map<BinaryObject, BinaryObject> map = new HashMap<>();
+      Map<BinaryObject, BinaryObject> map = new TreeMap<>();
       while (iterator.hasNext()) {
         INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
         if (inode == null) continue;
@@ -164,8 +165,10 @@ public class INodeKeyedObjects {
         if (env.equals("VOLT") && strAttr.size() > 0) {          
           INodeKeyedObjects.setWalOffset(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
         } else if (env.equals("IGNITE") && map.size() > 0) {
-          IgniteCache<BinaryObject, BinaryObject> inodesBinary = conn.getIgniteClient().cache("inodes").withKeepBinary();
-          inodesBinary.putAll(map);
+          IgniteCompute compute = conn.getIgniteClient().compute();
+          INodeKeyedObjects.setWalOffset(
+            compute.apply(new BatchUpdateINodes(), map)
+          );
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -181,7 +184,7 @@ public class INodeKeyedObjects {
           List<String> strAttr = new ArrayList<>();
           List<Long> fileIds = new ArrayList<>();
           List<String> fileAttr = new ArrayList<>();
-          Map<BinaryObject, BinaryObject> map = new HashMap<>();
+          Map<BinaryObject, BinaryObject> map = new TreeMap<>();
           while (iterator.hasNext()) {
             INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
             if (inode == null) continue;
@@ -237,8 +240,10 @@ public class INodeKeyedObjects {
           if (env.equals("VOLT") && strAttr.size() > 0) {          
             INodeKeyedObjects.setWalOffset(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
           } else if (env.equals("IGNITE") && map.size() > 0) {
-            IgniteCache<BinaryObject, BinaryObject> inodesBinary = conn.getIgniteClient().cache("inodes").withKeepBinary();
-            inodesBinary.putAll(map);
+            IgniteCompute compute = conn.getIgniteClient().compute();
+            INodeKeyedObjects.setWalOffset(
+              compute.apply(new BatchUpdateINodes(), map)
+            );
           }
         } catch (Exception e) {
           e.printStackTrace();

@@ -1,7 +1,7 @@
 package org.apache.hadoop.hdfs.db.ignite;
 
 import java.util.List;
-import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignite;
@@ -20,7 +20,7 @@ public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, Stri
 
     @Override
     public String apply(List<BinaryObject> inodes) {
-        Map<BinaryObject, BinaryObject> map = new HashMap<>();
+        Map<BinaryObject, BinaryObject> map = new TreeMap<>();
         BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
         
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();

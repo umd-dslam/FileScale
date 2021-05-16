@@ -14,15 +14,15 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 
-public class BatchRemoveINodes implements IgniteClosure<Set<BinaryObject>, String> {
+public class BatchUpdateINodes implements IgniteClosure<Map<BinaryObject, BinaryObject>, String> {
 
     @IgniteInstanceResource
     private Ignite ignite;
 
     @Override
-    public String apply(Set<BinaryObject> keys) {
+    public String apply(Map<BinaryObject, BinaryObject> map) {
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
-        inodesBinary.removeAll(keys);
+        inodesBinary.putAll(map);
 
         FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)(
             ((IgniteEx)ignite).context().cache().context().wal());
