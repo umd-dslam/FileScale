@@ -90,6 +90,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.hadoop.hdfs.db.ignite.BatchUpdateINodes;
+import org.apache.hadoop.hdfs.db.ignite.RenamePayload;
+import org.apache.hadoop.hdfs.db.ignite.RenameSubtreeINodes;
 
 /**
  * Directory INode class.
@@ -1027,14 +1029,24 @@ public class INodeDirectory extends INodeWithAdditionalFields
       }
 
       String start = INodeKeyedObjects.getWalOffset();
-      INodeKeyedObjects.setWalOffset(DatabaseINode.updateSubtree(old_id, 40000000,
-        oldParent, "/nnThroughputBenchmark/rename", node.getParentId())
-      );
-      try{
-        Thread.sleep(2); // 2 ms
-      } catch (Exception e) {
-        e.printStackTrace();
+      if (database.equals("VOLT")) {
+        INodeKeyedObjects.setWalOffset(DatabaseINode.updateSubtree(old_id, 40000000,
+          oldParent, "/nnThroughputBenchmark/rename", node.getParentId())
+        );
+      } else if (database.equals("IGNITE")) {
+        DatabaseConnection conn = Database.getInstance().getConnection();
+        IgniteCompute compute = conn.getIgniteClient().compute();
+        INodeKeyedObjects.setWalOffset(
+          compute.apply(new RenameSubtreeINodes(), new RenamePayload(old_id, 40000000,
+            oldParent, "/nnThroughputBenchmark/rename", node.getParentId()))
+        );
+        Database.getInstance().retConnection(conn);
       }
+      // try{
+      //   Thread.sleep(2); // 2 ms
+      // } catch (Exception e) {
+      //   e.printStackTrace();
+      // }
       String end = INodeKeyedObjects.getWalOffset();
       FSDirectory.getInstance()
         .getEditLog()

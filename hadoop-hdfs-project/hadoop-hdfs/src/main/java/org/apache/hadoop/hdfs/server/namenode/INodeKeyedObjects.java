@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.HashSet;
 import java.util.concurrent.*;
 import org.apache.commons.lang3.tuple.Pair;
@@ -261,7 +262,7 @@ public class INodeKeyedObjects {
     int i = 0;
     final int num = 1024;
     List<String> removePaths = new ArrayList<>();
-    Set<BinaryObject> removeKeys = new HashSet<>();
+    Set<BinaryObject> removeKeys = new TreeSet<>();
     long removeSize = concurrentRemoveSet.size();
     String env = System.getenv("DATABASE");
     DatabaseConnection conn = Database.getInstance().getConnection();

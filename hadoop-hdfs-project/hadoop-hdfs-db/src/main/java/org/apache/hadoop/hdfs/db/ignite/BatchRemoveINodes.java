@@ -1,7 +1,7 @@
 package org.apache.hadoop.hdfs.db.ignite;
 
 import java.util.List;
-import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Set;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
