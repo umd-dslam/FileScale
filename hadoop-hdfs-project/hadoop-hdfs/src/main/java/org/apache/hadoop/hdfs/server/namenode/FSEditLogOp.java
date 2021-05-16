@@ -1986,8 +1986,8 @@ public abstract class FSEditLogOp {
   static class SetPermissionsMPOp extends FSEditLogOp {
     String src;
     FsPermission permissions;
-    long start;
-    long end;
+    String start;
+    String end;
 
     SetPermissionsMPOp() {
       super(OP_SET_PERMISSIONS_MP);
@@ -2001,8 +2001,8 @@ public abstract class FSEditLogOp {
     void resetSubFields() {
       src = null;
       permissions = null;
-      start = -1;
-      end = -1;
+      start = null;
+      end = null;
     }
 
     SetPermissionsMPOp setSource(String src) {
@@ -2015,7 +2015,7 @@ public abstract class FSEditLogOp {
       return this;
     }
 
-    SetPermissionsMPOp setOffset(long start, long end) {
+    SetPermissionsMPOp setOffset(String start, String end) {
       this.start = start;
       this.end = end;
       return this;
@@ -2026,8 +2026,8 @@ public abstract class FSEditLogOp {
     void writeFields(DataOutputStream out) throws IOException {
       FSImageSerialization.writeString(src, out);
       permissions.write(out);
-      FSImageSerialization.writeLong(start, out); 
-      FSImageSerialization.writeLong(end, out); 
+      FSImageSerialization.writeString(start, out); 
+      FSImageSerialization.writeString(end, out); 
     }
  
     @Override
@@ -2035,8 +2035,8 @@ public abstract class FSEditLogOp {
         throws IOException {
       this.src = FSImageSerialization.readString(in);
       this.permissions = FsPermission.read(in);
-      this.start = FSImageSerialization.readLong(in);
-      this.end = FSImageSerialization.readLong(in); 
+      this.start = FSImageSerialization.readString(in);
+      this.end = FSImageSerialization.readString(in); 
     }
 
     @Override
@@ -2063,16 +2063,16 @@ public abstract class FSEditLogOp {
       XMLUtils.addSaxString(contentHandler, "SRC", src);
       XMLUtils.addSaxString(contentHandler, "MODE",
           Short.toString(permissions.toShort()));
-      XMLUtils.addSaxString(contentHandler, "START", String.valueOf(start));
-      XMLUtils.addSaxString(contentHandler, "END", String.valueOf(end));
+      XMLUtils.addSaxString(contentHandler, "START", start);
+      XMLUtils.addSaxString(contentHandler, "END", end);
     }
     
     @Override void fromXml(Stanza st) throws InvalidXmlException {
       this.src = st.getValue("SRC");
       this.permissions = new FsPermission(
           Short.parseShort(st.getValue("MODE")));
-      this.start = Long.parseLong(st.getValue("START"));
-      this.end = Long.parseLong(st.getValue("END"));
+      this.start = st.getValue("START");
+      this.end = st.getValue("END");
     }
   }
 
@@ -2952,8 +2952,8 @@ public abstract class FSEditLogOp {
     String src;
     String dst;
     long timestamp;
-    long start;
-    long end;
+    String start;
+    String end;
     Rename[] options;
 
     RenameMPOp() {
@@ -2971,8 +2971,8 @@ public abstract class FSEditLogOp {
       dst = null;
       timestamp = 0L;
       options = null;
-      start = -1;
-      end = -1;
+      start = null;
+      end = null;
     }
 
     RenameMPOp setSource(String src) {
@@ -2995,7 +2995,7 @@ public abstract class FSEditLogOp {
       return this;
     }
 
-    RenameMPOp setOffset(long start, long end) {
+    RenameMPOp setOffset(String start, String end) {
       this.start = start;
       this.end = end;
       return this;
@@ -3007,8 +3007,8 @@ public abstract class FSEditLogOp {
       FSImageSerialization.writeString(src, out);
       FSImageSerialization.writeString(dst, out);
       FSImageSerialization.writeLong(timestamp, out);
-      FSImageSerialization.writeLong(start, out);
-      FSImageSerialization.writeLong(end, out);
+      FSImageSerialization.writeString(start, out);
+      FSImageSerialization.writeString(end, out);
       toBytesWritable(options).write(out);
       writeRpcIds(rpcClientId, rpcCallId, out);
     }
@@ -3033,8 +3033,8 @@ public abstract class FSEditLogOp {
         this.timestamp = readLong(in);
       }
 
-      this.start = FSImageSerialization.readLong(in);
-      this.end = FSImageSerialization.readLong(in);      
+      this.start = FSImageSerialization.readString(in);
+      this.end = FSImageSerialization.readString(in);      
       this.options = readRenameOptions(in);
       
       // read RPC ids if necessary
@@ -3097,10 +3097,8 @@ public abstract class FSEditLogOp {
       XMLUtils.addSaxString(contentHandler, "DST", dst);
       XMLUtils.addSaxString(contentHandler, "TIMESTAMP",
           Long.toString(timestamp));
-      XMLUtils.addSaxString(contentHandler, "START",
-          Long.toString(start));
-      XMLUtils.addSaxString(contentHandler, "END",
-          Long.toString(end));
+      XMLUtils.addSaxString(contentHandler, "START", start);
+      XMLUtils.addSaxString(contentHandler, "END", end);
       StringBuilder bld = new StringBuilder();
       String prefix = "";
       for (Rename r : options) {
@@ -3116,8 +3114,8 @@ public abstract class FSEditLogOp {
       this.src = st.getValue("SRC");
       this.dst = st.getValue("DST");
       this.timestamp = Long.parseLong(st.getValue("TIMESTAMP"));
-      this.start = Long.parseLong(st.getValue("START"));
-      this.end = Long.parseLong(st.getValue("END"));
+      this.start = st.getValue("START");
+      this.end = st.getValue("END");
 
       String opts = st.getValue("OPTIONS");
       String o[] = opts.split("\\|");

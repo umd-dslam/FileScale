@@ -1988,15 +1988,22 @@ public class DatabaseINode {
     }
   }
 
-  // todo: ignite
-  public static void batchRemoveINodes(final List<Long> ids) throws SQLException {
+  public static long batchRemoveINodes(final List<String> paths) throws SQLException {
+    long res = 0;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          long[] list = ids.stream().mapToLong(l -> l).toArray();
-          obj.getVoltClient().callProcedure("BatchRemoveINodes", list);
+          VoltTable[] results = obj.getVoltClient()
+            .callProcedure(
+              "BatchRemoveINodes",
+              paths.toArray(new String[paths.size()])).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -2014,25 +2021,31 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("batchRemoveINodes [UPDATE]");
+      LOG.info("batchRemoveINodes [UPDATE] -- txnID: " + res);
     }
+    return res;
   }
 
-  // todo: ignite
-  public static void batchRenameINodes(
+  public static long batchRenameINodes(
       final List<Long> longAttr,
       final List<String> strAttr)
       throws SQLException {
+    long res = 0;
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         try {
-          obj.getVoltClient()
-              .callProcedure(
-                  "BatchRenameINodes",
-                  longAttr.toArray(new Long[longAttr.size()]),
-                  strAttr.toArray(new String[strAttr.size()]));
+          VoltTable[] results = obj.getVoltClient()
+            .callProcedure(
+                "BatchRenameINodes",
+                longAttr.toArray(new Long[longAttr.size()]),
+                strAttr.toArray(new String[strAttr.size()])).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          }
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -2044,8 +2057,9 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("BatchRenameINodes [UPDATE]");
+      LOG.info("BatchRenameINodes [UPDATE] -- txnID: " + res);
     }
+    return res;
   }
 
   // todo: ignite

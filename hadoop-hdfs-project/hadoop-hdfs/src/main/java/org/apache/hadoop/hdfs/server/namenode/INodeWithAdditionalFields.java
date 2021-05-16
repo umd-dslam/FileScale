@@ -407,7 +407,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     }
     try {
       if (strAttr.size() > 0) {
-        INodeKeyedObjects.setUniqueId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+        INodeKeyedObjects.setWalOffset(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -504,14 +504,14 @@ public abstract class INodeWithAdditionalFields extends INode {
     // 2. execute distributed txn
     LOG.info("Execute dist txn for chmod");
 
-    long start = INodeKeyedObjects.getUniqueId();
-    INodeKeyedObjects.setUniqueId(DatabaseINode.setPermissions(parents, names, this.permission));
+    String start = INodeKeyedObjects.getWalOffset();
+    INodeKeyedObjects.setWalOffset(DatabaseINode.setPermissions(parents, names, this.permission));
     try{
       Thread.sleep(2); // 2 ms
     } catch (Exception e) {
       e.printStackTrace();
     }
-    long end = INodeKeyedObjects.getUniqueId();
+    String end = INodeKeyedObjects.getWalOffset();
     FSDirectory.getInstance()
       .getEditLog()
       .logSetPermissionsMP(getPath(), new FsPermission(getFsPermissionShort()), start, end);
@@ -530,7 +530,7 @@ public abstract class INodeWithAdditionalFields extends INode {
         e.printStackTrace();
       }
     } else {
-      INodeKeyedObjects.setUniqueId(DatabaseINode.setPermission(getId(), this.permission));
+      INodeKeyedObjects.setWalOffset(DatabaseINode.setPermission(getId(), this.permission));
     }
   }
 

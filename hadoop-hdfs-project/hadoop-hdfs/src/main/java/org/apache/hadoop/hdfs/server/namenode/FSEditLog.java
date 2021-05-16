@@ -1053,7 +1053,7 @@ public class FSEditLog implements LogsPurgeable {
    * The destination should be the file name, not the destination directory.
    */
   void logRenameMP(String src, String dst, long timestamp, boolean toLogRpcIds,
-      long start, long end, Options.Rename... options) {
+    String start, String end, Options.Rename... options) {
     RenameMPOp op = RenameMPOp.getInstance(cache.get())
       .setSource(src)
       .setDestination(dst)
@@ -1114,7 +1114,7 @@ public class FSEditLog implements LogsPurgeable {
   }
 
   /**  Add set permissions (multi-partition request) record to edit log */
-  void logSetPermissionsMP(String src, FsPermission permissions, long start, long end) {
+  void logSetPermissionsMP(String src, FsPermission permissions, String start, String end) {
     SetPermissionsMPOp op = SetPermissionsMPOp.getInstance(cache.get())
       .setSource(src)
       .setPermissions(permissions)
