@@ -17,6 +17,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.transactions.Transaction;
 
 public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String> {
 
@@ -26,7 +27,9 @@ public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String>
     @Override
     public String apply(RenamePayload payload) {
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
-
+        
+        Transaction tx = ignite.transactions().txStart();
+        
         // 1. query subtree inodes
         List<Cache.Entry<BinaryObject, BinaryObject>> result;
         ScanQuery<BinaryObject, BinaryObject> scanAddress = new ScanQuery<>(
@@ -71,6 +74,9 @@ public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String>
         // 3. write new inodes to DB
         inodesBinary.removeAll(keys);
         inodesBinary.putAll(map);
+
+        tx.commit();
+        tx.close();
 
         // return WAL pointer
         FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)(

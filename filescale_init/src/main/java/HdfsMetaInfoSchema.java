@@ -110,7 +110,7 @@ public class HdfsMetaInfoSchema {
       "   currentId int, tokenSequenceNumber int, numKeys int, numTokens int" +
       ")";
       if (env.equals("IGNITE")) {
-        sql2 += " with \"template=replicated,backups=1, cache_name=hdfs, key_type=HDFSKey, value_type=HDFS\";";
+        sql2 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=hdfs, key_type=HDFSKey, value_type=HDFS\";";
       }
 
       String sql3 =
@@ -121,7 +121,7 @@ public class HdfsMetaInfoSchema {
       + "   lastAllocatedStripedBlockId bigint"
       + ")";
       if (env.equals("IGNITE")) {
-        sql3 += " with \"template=replicated,backups=1, cache_name=namespace, key_type=NamespaceKey, value_type=Namespace\";";
+        sql3 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=namespace, key_type=NamespaceKey, value_type=Namespace\";";
       }
 
       String sql4 =
@@ -130,7 +130,7 @@ public class HdfsMetaInfoSchema {
       + "   PRIMARY KEY(namenode, path)"
       + ")";
       if (env.equals("IGNITE")) {
-        sql4 += " with \"template=replicated,backups=1, cache_name=mount, key_type=MountKey, value_type=Mount\";";
+        sql4 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=mount, key_type=MountKey, value_type=Mount\";";
       }
 
       String sql5 =
@@ -138,7 +138,7 @@ public class HdfsMetaInfoSchema {
       + "   id int primary key, str varchar"
       + ")";
       if (env.equals("IGNITE")) {
-        sql5 += " with \"template=replicated,backups=1, cache_name=stringtable, key_type=StringTableKey, value_type=StringTable\";";
+        sql5 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=stringtable, key_type=StringTableKey, value_type=StringTable\";";
       }
 
       String sql6 =
@@ -146,7 +146,7 @@ public class HdfsMetaInfoSchema {
       + "   id int primary key, expiryDate bigint, key varchar"
       + ")";
       if (env.equals("IGNITE")) {
-        sql6 += " with \"template=replicated,backups=1, cache_name=delegationkeys, key_type=Delegationkey, value_type=DelegationKeys\";";
+        sql6 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=delegationkeys, key_type=Delegationkey, value_type=DelegationKeys\";";
       }
     
       String sql7 =
@@ -155,7 +155,7 @@ public class HdfsMetaInfoSchema {
       + "   maxDate bigint, sequenceNumber int primary key, masterKeyId int, expiryDate bigint"
       + ")";
       if (env.equals("IGNITE")) {
-        sql7 += " with \"template=replicated,backups=1, cache_name=persisttokens, key_type=PersistTokensKey, value_type=PersistTokens\";";
+        sql7 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=persisttokens, key_type=PersistTokensKey, value_type=PersistTokens\";";
       }
 
       String sql8 =
@@ -166,7 +166,7 @@ public class HdfsMetaInfoSchema {
       + "   PRIMARY KEY (parentName, name)"
       + ")";
       if (env.equals("IGNITE")) {
-        sql8 += " with \"template=partitioned,backups=1,affinityKey=parentName,cache_name=inodes,key_type=InodeKey,value_type=Inode\";";
+        sql8 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=partitioned,affinityKey=parentName,cache_name=inodes,key_type=InodeKey,value_type=Inode\";";
         sql8 += "CREATE INDEX inode_idx ON inodes (id) inline_size 9;";
       } else if (env.equals("VOLT")) {
         sql8 += "; PARTITION TABLE inodes ON COLUMN parentName;";
@@ -178,7 +178,7 @@ public class HdfsMetaInfoSchema {
       + "   id bigint primary key, namespace smallint, name varchar, value varchar"
       + ")";
       if (env.equals("IGNITE")) {
-        sql9 += " with \"template=replicated,backups=1, cache_name=inodexattrs, key_type=InodeXattrsKey, value_type=InodeXattrs\";";
+        sql9 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=inodexattrs, key_type=InodeXattrsKey, value_type=InodeXattrs\";";
       }
 
       String sql10 =
@@ -186,7 +186,7 @@ public class HdfsMetaInfoSchema {
       + "   id bigint primary key, clientName varchar, clientMachine varchar"
       + ")";
       if (env.equals("IGNITE")) {
-        sql10 += " with \"template=replicated,backups=1, cache_name=inodeuc, key_type=InodeUcKey, value_type=InodeUc\";";
+        sql10 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=inodeuc, key_type=InodeUcKey, value_type=InodeUc\";";
       }
 
       String sql11 =
@@ -194,7 +194,7 @@ public class HdfsMetaInfoSchema {
       + "   blockId bigint primary key, id bigint, idx int"
       + ")";
       if (env.equals("IGNITE")) {
-        sql11 += " with \"template=replicated,backups=1, cache_name=inode2block, key_type=Inode2blockKey, value_type=Inode2block\";";
+        sql11 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=inode2block, key_type=Inode2blockKey, value_type=Inode2block\";";
       }
 
       String sql12 =
@@ -203,7 +203,7 @@ public class HdfsMetaInfoSchema {
       + "   replication int, ecPolicyId int"
       + ")";
       if (env.equals("IGNITE")) {
-        sql12 += " with \"template=replicated,backups=1, cache_name=datablocks, key_type=DatablocksKey, value_type=Datablocks\";";
+        sql12 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=datablocks, key_type=DatablocksKey, value_type=Datablocks\";";
       }
 
       String sql13 =
@@ -212,7 +212,7 @@ public class HdfsMetaInfoSchema {
       + "   PRIMARY KEY(blockId, idx)"
       + ")";
       if (env.equals("IGNITE")) {
-        sql13 += " with \"template=replicated,backups=1, cache_name=blockstripes, key_type=BlockstripesKey, value_type=Blockstripes\";";
+        sql13 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=blockstripes, key_type=BlockstripesKey, value_type=Blockstripes\";";
       }
 
       String sql14 =
@@ -221,7 +221,7 @@ public class HdfsMetaInfoSchema {
       + "   PRIMARY KEY(blockId, idx)"
       + ")";
       if (env.equals("IGNITE")) {
-        sql14 += " with \"template=replicated,backups=1, cache_name=block2storage, key_type=Block2storageKey, value_type=Block2storage\";";
+        sql14 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=block2storage, key_type=Block2storageKey, value_type=Block2storage\";";
       }
 
       String sql15 =
@@ -232,7 +232,7 @@ public class HdfsMetaInfoSchema {
       + "   blockContentsStale smallint, datanodeUuid varchar"
       + ")";
       if (env.equals("IGNITE")) {
-        sql15 += " with \"template=replicated,backups=1, cache_name=storage, key_type=StorageKey, value_type=Storage\";";
+        sql15 += " with \"atomicity=TRANSACTIONAL_SNAPSHOT,template=replicated, cache_name=storage, key_type=StorageKey, value_type=Storage\";";
       }
 
       // + "CREATE VIEW namenodes("

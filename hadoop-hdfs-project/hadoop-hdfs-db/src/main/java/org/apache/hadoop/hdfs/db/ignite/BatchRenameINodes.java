@@ -12,6 +12,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.transactions.Transaction;
 
 public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, String> {
 
@@ -22,7 +23,9 @@ public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, Stri
     public String apply(List<BinaryObject> inodes) {
         Map<BinaryObject, BinaryObject> map = new TreeMap<>();
         BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
-        
+
+        Transaction tx = ignite.transactions().txStart();
+
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
         for (int i = 0; i < inodes.size(); ++i) {
             BinaryObject inodeKey = inodeKeyBuilder
@@ -34,6 +37,9 @@ public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, Stri
                 .setArgs(inodes.get(i).field("id")));
         }
         inodesBinary.putAll(map);
+
+        tx.commit();
+        tx.close();
 
         FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)(
             ((IgniteEx)ignite).context().cache().context().wal());
