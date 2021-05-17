@@ -877,6 +877,12 @@ public class INodeDirectory extends INodeWithAdditionalFields
 
   void update_subtree(Set<INode> renameSet) {
     String database = System.getenv("DATABASE");
+    DatabaseConnection conn = Database.getInstance().getConnection();
+    BinaryObjectBuilder inodeKeyBuilder = null;
+    if (database.equals("IGNITE")) {
+      inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+    }
+
     List<Long> longAttr = new ArrayList<>();
     List<String> strAttr = new ArrayList<>();
 
@@ -884,7 +890,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
     List<String> fileAttr = new ArrayList<>();
 
     Map<BinaryObject, BinaryObject> map = new TreeMap<>();
-    DatabaseConnection conn = Database.getInstance().getConnection();
     Iterator<INode> iterator = renameSet.iterator();
     while (iterator.hasNext()) {
       INode inode = iterator.next();
@@ -913,7 +918,6 @@ public class INodeDirectory extends INodeWithAdditionalFields
           }
         }
       } else if (database.equals("IGNITE")) {
-        BinaryObjectBuilder inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
         BinaryObject inodeKey = inodeKeyBuilder.setField("parentName", inode.getParentName()).setField("name", inode.getLocalName()).build();
         BinaryObjectBuilder inodeBuilder = conn.getIgniteClient().binary().builder("INode");
         long header = 0L;
