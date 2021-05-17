@@ -13,6 +13,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, String> {
 
@@ -24,7 +26,8 @@ public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, Stri
         Map<BinaryObject, BinaryObject> map = new TreeMap<>();
         BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
 
-        Transaction tx = ignite.transactions().txStart();
+        Transaction tx = ignite.transactions().txStart(
+            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
 
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
         for (int i = 0; i < inodes.size(); ++i) {

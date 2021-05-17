@@ -71,27 +71,23 @@ public class DatabaseINode2Block {
         proc.close();
         Database.getInstance().retConnection(obj);
       } else {
-        int idx = index;
-        int size = blockIds.size();
-        String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES ";
-        for (int i = 0; i < size; ++i) {
-          idx += 1;
-          sql +=
-              "("
-                  + String.valueOf(id)
-                  + ","
-                  + String.valueOf(blockIds.get(i))
-                  + ","
-                  + String.valueOf(idx)
-                  + "),";
-        }
-        sql = sql.substring(0, sql.length() - 1) + ";";
-
         DatabaseConnection obj = Database.getInstance().getConnection();
         Connection conn = obj.getConnection();
-        Statement st = conn.createStatement();
-        st.executeUpdate(sql);
-        st.close();
+        String sql = "INSERT INTO inode2block(id, blockId, idx) VALUES (?, ?, ?);";
+        PreparedStatement pst = conn.prepareStatement(sql);
+
+        int idx = index;
+        int size = blockIds.size();
+        for (int i = 0; i < size; ++i) {
+          idx += 1;
+          pst.setLong(1, id);
+          pst.setLong(2, blockIds.get(i));
+          pst.setLong(3, idx);
+          pst.addBatch();
+        }
+        pst.executeBatch();
+        pst.close();
+
         Database.getInstance().retConnection(obj);
         if (LOG.isInfoEnabled()) {
           LOG.info("INode2Block [insert]: (" + sql + ")");

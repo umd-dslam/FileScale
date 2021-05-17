@@ -18,6 +18,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String> {
 
@@ -28,7 +30,8 @@ public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String>
     public String apply(RenamePayload payload) {
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
         
-        Transaction tx = ignite.transactions().txStart();
+        Transaction tx = ignite.transactions().txStart(
+            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
         
         // 1. query subtree inodes
         List<Cache.Entry<BinaryObject, BinaryObject>> result;
