@@ -28,6 +28,9 @@ public class DatabaseNDExtraInfo {
       if (env.equals("VOLT")) {
         sql =
             "UPSERT INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?);";
+      } else if (env.equals("IGNITE")) {
+        sql =
+            "MERGE INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?);";
       } else {
         sql =
             "INSERT INTO hdfs(id, currentId, tokenSequenceNumber, numKeys, numTokens) VALUES(0, ?, ?, ?, ?) "
@@ -63,6 +66,8 @@ public class DatabaseNDExtraInfo {
       String env = System.getenv("DATABASE");
       if (env.equals("VOLT")) {
         sql = "UPSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?);";
+      } else if (env.equals("IGNITE")) {
+        sql = "MERGE INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?);";
       } else {
         sql =
             "INSERT INTO hdfs(id, numEntry, maskBits) VALUES(0, ?, ?) "
@@ -156,6 +161,21 @@ public class DatabaseNDExtraInfo {
         }
         rs.close();
         proc.close();
+        Database.getInstance().retConnection(obj);
+      } else if (env.equals("IGNITE")) {
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
+        String sql = "MERGE INTO stringtable(id, str) VALUES (?, ?);";
+        PreparedStatement pst = conn.prepareStatement(sql);
+
+        for (int i = 0; i < ids.length; ++i) {
+          pst.setLong(1, ids[i]);
+          pst.setString(2, strs[i]);
+          pst.addBatch();
+        }
+        pst.executeBatch();
+        pst.close();
+
         Database.getInstance().retConnection(obj);
       } else {
         String sql = "";
@@ -262,12 +282,28 @@ public class DatabaseNDExtraInfo {
         rs.close();
         proc.close();
         Database.getInstance().retConnection(obj);
+      } else if (env.equals("IGNITE")) {
+        DatabaseConnection obj = Database.getInstance().getConnection();
+        Connection conn = obj.getConnection();
+        String sql = "MERGE INTO delegationkeys(id, expiryDate, key) VALUES (?, ?, ?);";
+        PreparedStatement pst = conn.prepareStatement(sql);
+
+        for (int i = 0; i < ids.length; ++i) {
+          pst.setLong(1, ids[i]);
+          pst.setLong(2, dates[i]);
+          pst.setString(3, keys[i]);
+          pst.addBatch();
+        }
+        pst.executeBatch();
+        pst.close();
+
+        Database.getInstance().retConnection(obj);      
       } else {
         String sql = "";
         for (int i = 0; i < ids.length; ++i) {
           String idStr = "'" + String.valueOf(ids[i]) + "'";
           String dateStr = "'" + String.valueOf(dates[i]) + "'";
-          String keyStr = "'" + String.valueOf(keys[i]) + "'";
+          String keyStr = "'" + keys[i] + "'";
           sql +=
               "INSERT INTO delegationkeys(id, expiryDate, key) "
                   + "VALUES ("

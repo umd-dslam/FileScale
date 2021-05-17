@@ -266,7 +266,7 @@ class FSDirDeleteOp {
       targetNode.cleanSubtree(reclaimContext, CURRENT_STATE_ID, latestSnapshot);
     }
 
-    INodeKeyedObjects.getRemoveSet().add(targetNode.getId());
+    INodeKeyedObjects.getRemoveSet().add(targetNode.getPath());
     INodeKeyedObjects.getCache().invalidate(targetNode.getPath());
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {

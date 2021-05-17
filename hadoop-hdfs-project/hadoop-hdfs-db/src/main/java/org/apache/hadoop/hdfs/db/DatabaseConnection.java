@@ -4,20 +4,37 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
 import org.voltdb.client.*;
 
+import org.apache.ignite.*;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+
 public class DatabaseConnection {
   private static String postgres = "jdbc:postgresql://localhost:5432/docker";
   private static String cockroach = "jdbc:postgresql://localhost:26257/docker";
   private static String volt = "jdbc:voltdb://localhost:21212";
+  private static String ignite = "jdbc:ignite:thin://localhost:10800";
   private static String username = "docker";
   private static String password = "docker";
 
   private Connection connection;
-  private Client client = null;
+  private Client volt_client = null;
+  private IgniteEx ignite_client = null;
 
   static final Logger LOG = LoggerFactory.getLogger(DatabaseConnection.class);
 
@@ -41,8 +58,36 @@ public class DatabaseConnection {
         this.connection = DriverManager.getConnection(url);
         ClientConfig config = new ClientConfig();
         config.setTopologyChangeAware(true);
-        this.client = ClientFactory.createClient(config);
-        this.client.createConnection(host, 21212);
+        this.volt_client = ClientFactory.createClient(config);
+        this.volt_client.createConnection(host, 21212);
+      } else if (env.equals("IGNITE")) {
+        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        url = System.getenv("IGNITE_SERVER");
+        String ip = null;
+        if (url == null) {
+          ip = "localhost";
+          url = ignite;
+        } else {
+          ip = url;
+          url = "jdbc:ignite:thin://" + url + ":10800"; 
+        }
+        this.connection = DriverManager.getConnection(url);
+
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+        ipFinder.setAddresses(Collections.singletonList(ip + ":47500..47507"));
+        discoverySpi.setIpFinder(ipFinder);
+    
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setDiscoverySpi(discoverySpi).setPeerClassLoadingEnabled(true);
+        //data storage configuration
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        cfg.setDataStorageConfiguration(storageCfg);
+        cfg.setIgniteInstanceName(UUID.randomUUID().toString());
+
+        Ignition.setClientMode(true);
+        this.ignite_client = (IgniteEx)Ignition.start(cfg);
       } else if (env.equals("COCKROACH")) {
         Class.forName("org.postgresql.Driver");
         props.setProperty("user", username);
@@ -71,6 +116,10 @@ public class DatabaseConnection {
   }
 
   public Client getVoltClient() {
-    return client;
+    return volt_client;
+  }
+
+  public IgniteEx getIgniteClient() {
+    return ignite_client;
   }
 }

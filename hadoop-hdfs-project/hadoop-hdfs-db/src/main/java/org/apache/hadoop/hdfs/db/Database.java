@@ -65,13 +65,13 @@ public class Database {
       pool = new GenericObjectPool<DatabaseConnection>(new DatabaseFactory());
       String num = System.getenv("MAX_CONNECTION_NUM");
       if (num == null) {
-        pool.setMaxTotal(2000);
+        pool.setMaxTotal(100);
       } else {
         pool.setMaxTotal(Integer.parseInt(num));
       }
 
-      pool.setMinIdle(64);
-      pool.setMaxIdle(500);
+      pool.setMinIdle(8);
+      pool.setMaxIdle(16);
       pool.setBlockWhenExhausted(true);
       pool.setMaxWaitMillis(30 * 1000);
       pool.preparePool();

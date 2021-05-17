@@ -35,6 +35,6 @@ public class BatchRenameINodes extends VoltProcedure {
           strAttrs[idy + 1]);
     }
     voltExecuteSQL();
-    return 1;
+    return getUniqueId();
   }
 }

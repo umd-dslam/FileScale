@@ -34,6 +34,16 @@ import java.net.InetSocketAddress;
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.conf.Configuration;
 
+import org.apache.ignite.*;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.hadoop.hdfs.db.ignite.BatchUpdateINodes;
+import org.apache.hadoop.hdfs.db.ignite.RenamePayload;
+import org.apache.hadoop.hdfs.db.ignite.RenameSubtreeINodes;
+import org.apache.hadoop.hdfs.db.ignite.SetPermissions;
+import org.apache.hadoop.hdfs.db.ignite.PermissionsPayload;
+
 /**
  * {@link INode} with additional fields including id, name, permission, access time and modification
  * time.
@@ -372,52 +382,93 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   private static void update_subtree(Set<INode> inodes) {
+    String database = System.getenv("DATABASE");
+    DatabaseConnection conn = Database.getInstance().getConnection();
+    BinaryObjectBuilder inodeKeyBuilder = null;
+    BinaryObjectBuilder inodeBuilder = null;
+    if (database.equals("IGNITE")) {
+      inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+      inodeBuilder = conn.getIgniteClient().binary().builder("INode");
+    }
+
     List<Long> longAttr = new ArrayList<>();
     List<String> strAttr = new ArrayList<>();
 
     List<Long> fileIds = new ArrayList<>();
     List<String> fileAttr = new ArrayList<>();
+
+    Map<BinaryObject, BinaryObject> map = new HashMap<>();
     Iterator<INode> iterator = inodes.iterator();
     while (iterator.hasNext()) {
       INode inode = iterator.next();
       if (inode == null) continue;
-      strAttr.add(inode.getLocalName());
-      if (inode.getId() == 16385) {
-        strAttr.add(" ");
-      } else {
-        strAttr.add(inode.getParentName());
-      }
-      longAttr.add(inode.getParentId());
-      longAttr.add(inode.getId());
-      longAttr.add(inode.getModificationTime());
-      longAttr.add(inode.getAccessTime());
-      longAttr.add(inode.getPermissionLong());
-      if (inode.isDirectory()) {
-        longAttr.add(0L);
-      } else {
-        longAttr.add(inode.asFile().getHeaderLong());
-        FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
-        if (uc != null) {
-          fileIds.add(inode.getId());
-          fileAttr.add(uc.getClientName(inode.getId()));
-          fileAttr.add(uc.getClientMachine(inode.getId()));
+      if (database.equals("VOLT")) {
+        strAttr.add(inode.getLocalName());
+        if (inode.getId() == 16385) {
+          strAttr.add(" ");
+        } else {
+          strAttr.add(inode.getParentName());
         }
+        longAttr.add(inode.getParentId());
+        longAttr.add(inode.getId());
+        longAttr.add(inode.getModificationTime());
+        longAttr.add(inode.getAccessTime());
+        longAttr.add(inode.getPermissionLong());
+        if (inode.isDirectory()) {
+          longAttr.add(0L);
+        } else {
+          longAttr.add(inode.asFile().getHeaderLong());
+          FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+          if (uc != null) {
+            fileIds.add(inode.getId());
+            fileAttr.add(uc.getClientName(inode.getId()));
+            fileAttr.add(uc.getClientMachine(inode.getId()));
+          }
+        }
+      } else if (database.equals("IGNITE")) {
+        BinaryObject inodeKey = inodeKeyBuilder.setField("parentName", inode.getParentName()).setField("name", inode.getLocalName()).build();
+        long header = 0L;
+        if (inode.isFile()) {
+          header = inode.asFile().getHeaderLong();
+        } 
+        String parentName = " ";
+        if (inode.getId() != 16385) {
+          parentName = inode.getParentName();
+        }
+        BinaryObject inodeValue = inodeBuilder
+          .setField("id", inode.getId(), Long.class)
+          .setField("parent", inode.getParentId(), Long.class)
+          .setField("parentName", parentName)
+          .setField("name", inode.getLocalName())
+          .setField("accessTime", inode.getAccessTime(), Long.class)
+          .setField("modificationTime", inode.getModificationTime(), Long.class)
+          .setField("header", header, Long.class)
+          .setField("permission", inode.getPermissionLong(), Long.class)
+          .build();
+        map.put(inodeKey, inodeValue);
       }
       iterator.remove();
     }
     try {
-      if (strAttr.size() > 0) {
-        INodeKeyedObjects.setUniqueId(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+      if (database.equals("VOLT") && strAttr.size() > 0) {
+        INodeKeyedObjects.setWalOffset(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+      } else if (database.equals("IGNITE") && map.size() > 0) {
+        IgniteCompute compute = conn.getIgniteClient().compute();
+        INodeKeyedObjects.setWalOffset(
+          compute.apply(new BatchUpdateINodes(), map)
+        );
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
+    Database.getInstance().retConnection(conn);
   }
 
   public static final void invalidateAndWriteBackDB(String parent, String name) {
     LOG.info("invalidate dirty data under " + parent + " " + name);
     long dirtyCount = 100000;
     String dirtyCountStr = System.getenv("FILESCALE_DIRTY_OBJECT_NUM");
+    String database = System.getenv("DATABASE");
     if (dirtyCountStr != null) {
       dirtyCount = Long.parseLong(dirtyCountStr);
     }
@@ -447,9 +498,11 @@ public abstract class INodeWithAdditionalFields extends INode {
           update_subtree(inodes);
           break;
         }
-        if (inodes.size() >= 5120) {
-          // write back to db
-          update_subtree(inodes);
+        if (database.equals("VOLT")) {
+          if (inodes.size() >= 5120) {
+            // write back to db
+            update_subtree(inodes);
+          }
         }
       }
     }
@@ -460,9 +513,17 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
 
   private final void remoteChmod(Set<Pair<String, String>> mpoints) {
+    String database = System.getenv("DATABASE");
+    DatabaseConnection conn = Database.getInstance().getConnection();
+    BinaryObjectBuilder inodeKeyBuilder = null;
+    if (database.equals("IGNITE")) {
+      inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+    }
+
     // 1. invalidate cache and write back dirty data
     List<String> parents = new ArrayList<>();
     List<String> names = new ArrayList<>();
+    Set<BinaryObject> keys = new HashSet<>();
     List<CompletableFuture<Void>> list = new ArrayList<>();
     for (Pair<String, String> pair : mpoints) {
       File file = new File(pair.getLeft());
@@ -496,25 +557,34 @@ public abstract class INodeWithAdditionalFields extends INode {
         e.printStackTrace();
       }
 
-      parents.add(parent);
-      names.add(name);
+      if (database.equals("VOLT")) {
+        parents.add(parent);
+        names.add(name);
+      } else if (database.equals("IGNITE")) {
+        keys.add(inodeKeyBuilder.setField("parentName", parent).setField("name", name).build());
+      }
     }
     CompletableFuture.allOf(list.toArray(new CompletableFuture[list.size()])).join();
 
     // 2. execute distributed txn
     LOG.info("Execute dist txn for chmod");
 
-    long start = INodeKeyedObjects.getUniqueId();
-    INodeKeyedObjects.setUniqueId(DatabaseINode.setPermissions(parents, names, this.permission));
-    try{
-      Thread.sleep(2); // 2 ms
-    } catch (Exception e) {
-      e.printStackTrace();
+    if (parents.size() > 0 || keys.size() > 0) {
+      String start = INodeKeyedObjects.getWalOffset();
+      if (database.equals("VOLT")) {
+        INodeKeyedObjects.setWalOffset(DatabaseINode.setPermissions(parents, names, this.permission));
+      } else if (database.equals("IGNITE")) {
+        IgniteCompute compute = conn.getIgniteClient().compute();
+        INodeKeyedObjects.setWalOffset(
+          compute.apply(new SetPermissions(), new PermissionsPayload(keys, this.permission))
+        );
+      }
+      String end = INodeKeyedObjects.getWalOffset();
+      FSDirectory.getInstance()
+        .getEditLog()
+        .logSetPermissionsMP(getPath(), new FsPermission(getFsPermissionShort()), start, end);
     }
-    long end = INodeKeyedObjects.getUniqueId();
-    FSDirectory.getInstance()
-      .getEditLog()
-      .logSetPermissionsMP(getPath(), new FsPermission(getFsPermissionShort()), start, end);
+    Database.getInstance().retConnection(conn);
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
@@ -530,7 +600,7 @@ public abstract class INodeWithAdditionalFields extends INode {
         e.printStackTrace();
       }
     } else {
-      INodeKeyedObjects.setUniqueId(DatabaseINode.setPermission(getId(), this.permission));
+      INodeKeyedObjects.setWalOffset(DatabaseINode.setPermission(getId(), this.permission));
     }
   }
 
