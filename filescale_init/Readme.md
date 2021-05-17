@@ -5,4 +5,6 @@ docker run -d -p 10800:10800 -p 47500:47500 -p 49112:49112 -p 11211:11211 -v ${P
 mvn compile
 export DATABASE="IGNITE"
 mvn exec:java -Dexec.mainClass=HdfsMetaInfoSchema -DIGNITE_REST_START_ON_CLIENT=true
+
+# ./bin/sqlline.sh --verbose=true -u jdbc:ignite:thin://127.0.0.1/
 ```

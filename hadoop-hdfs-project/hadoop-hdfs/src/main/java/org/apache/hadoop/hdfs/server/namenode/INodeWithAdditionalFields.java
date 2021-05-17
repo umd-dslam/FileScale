@@ -397,7 +397,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     List<Long> fileIds = new ArrayList<>();
     List<String> fileAttr = new ArrayList<>();
 
-    Map<BinaryObject, BinaryObject> map = new TreeMap<>();
+    Map<BinaryObject, BinaryObject> map = new HashMap<>();
     Iterator<INode> iterator = inodes.iterator();
     while (iterator.hasNext()) {
       INode inode = iterator.next();
@@ -523,7 +523,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     // 1. invalidate cache and write back dirty data
     List<String> parents = new ArrayList<>();
     List<String> names = new ArrayList<>();
-    Set<BinaryObject> keys = new TreeSet<>();
+    Set<BinaryObject> keys = new HashSet<>();
     List<CompletableFuture<Void>> list = new ArrayList<>();
     for (Pair<String, String> pair : mpoints) {
       File file = new File(pair.getLeft());

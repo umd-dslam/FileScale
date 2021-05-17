@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.voltdb.*;
@@ -83,6 +84,7 @@ public class DatabaseConnection {
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
         storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
         cfg.setDataStorageConfiguration(storageCfg);
+        cfg.setIgniteInstanceName(UUID.randomUUID().toString());
 
         Ignition.setClientMode(true);
         this.ignite_client = (IgniteEx)Ignition.start(cfg);

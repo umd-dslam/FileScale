@@ -328,7 +328,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.LoggerFactory;
-
+import org.apache.hadoop.hdfs.db.*;
 /**
  * FSNamesystem is a container of both transient
  * and persisted name-space state, and does all the book-keeping
@@ -937,6 +937,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       close();
       throw re;
     }
+
+    Database.init();
   }
 
   @VisibleForTesting

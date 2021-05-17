@@ -9,7 +9,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -108,7 +108,7 @@ public class INodeKeyedObjects {
 
       List<Long> fileIds = new ArrayList<>();
       List<String> fileAttr = new ArrayList<>();
-      Map<BinaryObject, BinaryObject> map = new TreeMap<>();
+      Map<BinaryObject, BinaryObject> map = new HashMap<>();
       while (iterator.hasNext()) {
         INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
         if (inode == null) continue;
@@ -185,7 +185,7 @@ public class INodeKeyedObjects {
           List<String> strAttr = new ArrayList<>();
           List<Long> fileIds = new ArrayList<>();
           List<String> fileAttr = new ArrayList<>();
-          Map<BinaryObject, BinaryObject> map = new TreeMap<>();
+          Map<BinaryObject, BinaryObject> map = new HashMap<>();
           while (iterator.hasNext()) {
             INode inode = INodeKeyedObjects.getCache().getIfPresent(iterator.next());
             if (inode == null) continue;
@@ -262,7 +262,7 @@ public class INodeKeyedObjects {
     int i = 0;
     final int num = 1024;
     List<String> removePaths = new ArrayList<>();
-    Set<BinaryObject> removeKeys = new TreeSet<>();
+    Set<BinaryObject> removeKeys = new HashSet<>();
     long removeSize = concurrentRemoveSet.size();
     String env = System.getenv("DATABASE");
     DatabaseConnection conn = Database.getInstance().getConnection();
@@ -418,7 +418,7 @@ public class INodeKeyedObjects {
       if (renameSize > 0 && preRenameSize == renameSize) {
         Iterator<String> iterator = concurrentRenameSet.iterator();
         if (LOG.isInfoEnabled()) {
-          LOG.info("Propagate updated files/directories from cache to database.");
+          LOG.info("Propagate renamed files/directories from cache to database.");
         }
         try {
           List<Long> longAttr = new ArrayList<>();
