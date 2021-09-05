@@ -5,6 +5,7 @@ cd $HADOOP_HOME
 ./sbin/stop-dfs.sh
 
 export DATABASE="IGNITE"
+export IGNITE_SERVER="172.31.32.188"
 
 if [ -z "$1" ]
 then
