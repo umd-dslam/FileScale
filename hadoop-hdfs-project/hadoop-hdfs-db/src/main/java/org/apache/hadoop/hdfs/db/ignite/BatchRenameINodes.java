@@ -32,8 +32,8 @@ public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, Stri
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
         for (int i = 0; i < inodes.size(); ++i) {
             BinaryObject inodeKey = inodeKeyBuilder
-                .setField("parentName", inodes.get(i).field("parentName"))
-                .setField("name", inodes.get(i).field("name"))
+                .setField("parentName", (String)inodes.get(i).field("parentName"))
+                .setField("name", (String)inodes.get(i).field("name"))
                 .build();
             map.put(inodeKey, inodes.get(i));
             inodesBinary.query(new SqlFieldsQuery("delete from inodes where id = ?")
