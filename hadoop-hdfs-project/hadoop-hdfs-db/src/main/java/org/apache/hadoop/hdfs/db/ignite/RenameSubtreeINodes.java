@@ -68,8 +68,8 @@ public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String>
             }
 
             BinaryObject inodeNewKey = inodeKeyBuilder
-                .setField("parentName", inodeValue.field("parentName"))
-                .setField("name", inodeValue.field("name"))
+                .setField("parentName", (String)inodeValue.field("parentName"))
+                .setField("name", (String)inodeValue.field("name"))
                 .build();
             keys.add(entry.getKey());
             map.put(inodeNewKey, inodeValue);

@@ -46,9 +46,21 @@ public class HdfsMetaInfoSchema {
         }
         this.connection = DriverManager.getConnection(url);
       } else if (env.equals("IGNITE")) {
+        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        url = System.getenv("IGNITE_SERVER");
+        String ip = null;
+        if (url == null) {
+          ip = "localhost";
+          url = ignite;
+        } else {
+          ip = url;
+          url = "jdbc:ignite:thin://" + url + ":10800"; 
+        }
+        // print url
+        System.out.println("url: " + url);
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
         TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-        ipFinder.setAddresses(Collections.singletonList("localhost:47500..49112"));
+        ipFinder.setAddresses(Collections.singletonList(ip + ":47500..47507"));
         discoverySpi.setIpFinder(ipFinder);
     
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -61,13 +73,6 @@ public class HdfsMetaInfoSchema {
         Ignition.setClientMode(true);
         ignite_client = (IgniteEx)Ignition.start(cfg);
 
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
-        url = System.getenv("IGNITE_SERVER");
-        if (url == null) {
-          url = ignite;
-        } else {
-          url = "jdbc:ignite:thin://" + url + ":10800"; 
-        }
         this.connection = DriverManager.getConnection(url);
       } else if (env.equals("COCKROACH")) {
         Class.forName("org.postgresql.Driver");

@@ -82,3 +82,8 @@ storedprocs.jar
 bench/hdfs
 bench/voltfs
 ignite/*
+
+ignite
+*.pem
+
+work_dir
