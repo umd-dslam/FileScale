@@ -7,6 +7,7 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.voltdb.*;
 import org.voltdb.client.*;
+import org.apache.ignite.internal.IgniteEx;
 
 public class DatabaseFactory extends BasePooledObjectFactory<DatabaseConnection> {
 
@@ -39,7 +40,7 @@ public class DatabaseFactory extends BasePooledObjectFactory<DatabaseConnection>
   public boolean validateObject(PooledObject<DatabaseConnection> pooledObject) {
     final DatabaseConnection dbconn = pooledObject.getObject();
     try {
-      if (!dbconn.getConnection().isClosed() || dbconn.getVoltClient() != null) {
+      if (!dbconn.getConnection().isClosed() || dbconn.getVoltClient() != null || dbconn.getIgniteClient() != null) {
         return true;
       }
     } catch (SQLException e) {
@@ -60,6 +61,16 @@ public class DatabaseFactory extends BasePooledObjectFactory<DatabaseConnection>
           e.printStackTrace();
         }
       }
+
+      IgniteEx ignite_client = dbconn.getIgniteClient();
+      if (ignite_client != null) {
+        try {
+          ignite_client.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+
       Client client = dbconn.getVoltClient();
       if (client != null) {
         try {
