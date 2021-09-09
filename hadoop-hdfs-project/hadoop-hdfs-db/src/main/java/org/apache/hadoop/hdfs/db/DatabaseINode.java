@@ -2119,7 +2119,7 @@ public class DatabaseINode {
       if (env.equals("VOLT")) {
         try {
           VoltTable[] results = obj.getVoltClient()
-              .callProcedure("UpdateSubtree", dir_id, dest_id, old_parent_name,
+              .callProcedure("UpdateSubtreeV2", dir_id, dest_id, old_parent_name,
               new_parent_name, new_parent).getResults();
               VoltTable result = results[0];
               result.resetRowPosition();
@@ -2137,7 +2137,7 @@ public class DatabaseINode {
       System.err.println(ex.getMessage());
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("txnId: " + res + " updateSubtree [UPDATE]: " + dir_id);
+      LOG.info("txnId: " + res + " updateSubtree v2 [UPDATE]: " + dir_id);
     }
     return res;
   }
