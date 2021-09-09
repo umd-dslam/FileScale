@@ -1,8 +1,8 @@
 package org.apache.hadoop.hdfs.db.ignite;
 
 import java.util.List;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.Map;
 import javax.cache.Cache;
@@ -31,7 +31,7 @@ public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String>
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
         
         Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
         
         // 1. query subtree inodes
         List<Cache.Entry<BinaryObject, BinaryObject>> result;
@@ -46,8 +46,8 @@ public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String>
         result = inodesBinary.query(scanAddress).getAll();
 
         // 2. update subtree inodes
-        Set<BinaryObject> keys = new TreeSet<>();
-        Map<BinaryObject, BinaryObject> map = new TreeMap<>();
+        Set<BinaryObject> keys = new HashSet<>();
+        Map<BinaryObject, BinaryObject> map = new HashMap<>();
         BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
         for (Cache.Entry<BinaryObject, BinaryObject> entry : result) {
             BinaryObject inodeValue = entry.getValue();

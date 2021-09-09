@@ -27,7 +27,7 @@ public class BatchRenameINodes implements IgniteClosure<List<BinaryObject>, Stri
         BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
 
         Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
 
         IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite.cache("inodes").withKeepBinary();
         for (int i = 0; i < inodes.size(); ++i) {
