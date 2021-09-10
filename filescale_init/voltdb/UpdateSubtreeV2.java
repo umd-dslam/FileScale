@@ -29,7 +29,7 @@ public class UpdateSubtreeV2 extends VoltProcedure {
     Long parent = null;
     String parentName = null;
     for (int j = 0; j < res.length; ++j) {
-      for (i = 0; i < res[j].getRowCount(); ++i) {
+      for (int i = 0; i < res[j].getRowCount(); ++i) {
         VoltTableRow row = res[j].fetchRow(i);
         id = row.getLong(0);
         name = row.getString(1);
@@ -49,7 +49,7 @@ public class UpdateSubtreeV2 extends VoltProcedure {
           parent += dest_id;
           parentName = new_parent_name + parentName.substring(old_parent_name.length());
         }
-        voltQueueSQL(sql3,
+        voltQueueSQL(sql2,
           id,
           name,
           accessTime,

@@ -1,9 +1,11 @@
 # copy the following command lines into test.sh
 set -xe
 
+cd $HADOOP_HOME
 ./sbin/stop-dfs.sh
 
 export DATABASE="VOLT"
+export VOLT_SERVER="localhost"
 
 if [ -z "$1" ]
 then
@@ -14,7 +16,7 @@ fi
 
 # compile stored procedures
 cd ~/hadoop/filescale_init/voltdb && bash clean_procedures.sh $IP
-cd .. && javac HdfsMetaInfoSchema.java && java HdfsMetaInfoSchema
+cd ../src/main/java && javac HdfsMetaInfoSchema.java && java HdfsMetaInfoSchema
 cd ~/hadoop/filescale_init/voltdb && bash create_procedures.sh $IP
 
 # restart hadoop hdfs

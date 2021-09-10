@@ -42,3 +42,6 @@ os.execv("/root/voltdb-ent/bin/voltdb",
           "create",
           "--deployment=/root/voltdb-ent/deployment.xml",
           "--host=" + sys.argv[3]])
+
+# run voltdb
+# ./deploy.py 1 0 0.0.0.0 &
