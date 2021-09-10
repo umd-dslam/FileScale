@@ -264,50 +264,6 @@ public class HdfsMetaInfoSchema {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
-
-    // key-value API test
-		IgniteCluster cluster = ignite_client.cluster();
-    cluster.active(true);
-    cluster.enableWal("inodes");
-		cluster.baselineAutoAdjustEnabled(false);
- 
-    Collection<String> collection = ignite_client.cacheNames();
-    System.out.println("cache names = " + collection);
-
-    IgniteCache<BinaryObject, BinaryObject> inodesBinary = ignite_client.cache("inodes").withKeepBinary();
-    System.out.println(">> Updating inode record:");
-
-    BinaryObjectBuilder inodeKeyBuilder = ignite_client.binary().builder("InodeKey");
-    BinaryObject inodeKey = inodeKeyBuilder.setField("parentName", "/").setField("name", "hello").build();
-    BinaryObjectBuilder inodeBuilder = ignite_client.binary().builder("INode");
-    BinaryObject inode = inodeBuilder
-      .setField("id", 11111L, Long.class)
-      .setField("parent", 0L, Long.class)
-      .setField("parentName", "/")
-      .setField("name", "hello")
-      .setField("accessTime", 22222L, Long.class)
-      .setField("modificationTime", 33333L, Long.class)
-      .setField("header", 0L, Long.class)
-      .setField("permission", 777L, Long.class)
-      .build();
-    System.out.printf("The dir: %s, id: %s \n", inode.field("parentName"), inode.field("name"), inode.field("id"));
-    inodesBinary.put(inodeKey, inode);
-
-    IgniteCompute compute = ignite_client.compute();
-    // Execute closure on all cluster nodes.
-    IgniteCallable<String> call = new WalPointerTask(); 
-    String res = compute.call(call);
-    System.out.printf("Last Wal pointer: " + res);
-    ignite_client.close();
-
-    // SQL test
-    try {
-      Statement st = connection.createStatement();
-      st.execute("delete from inodes where id = 11111;");
-      st.close();
-    } catch (SQLException ex) {
-      System.err.println(ex.getMessage());
-    } 
   }
 
   public Connection getConnection() {

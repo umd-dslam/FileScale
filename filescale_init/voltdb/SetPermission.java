@@ -1,7 +1,7 @@
 import org.voltdb.*;
 
 // https://docs.voltdb.com/tutorial/Part5.php
-public class SetPermissions extends VoltProcedure {
+public class SetPermission extends VoltProcedure {
 
   public final SQLStmt sql = new SQLStmt("UPDATE inodes SET permission = ? WHERE id = ?;");
 
