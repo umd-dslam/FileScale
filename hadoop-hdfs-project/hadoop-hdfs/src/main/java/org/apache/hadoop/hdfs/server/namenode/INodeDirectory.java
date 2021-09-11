@@ -994,36 +994,15 @@ public class INodeDirectory extends INodeWithAdditionalFields
             }
           }
 
-          // if (child.getId() != old_id) {
-          //   child.setParent(child.getParentId() + 40000000);
-          //   child.setParentName(newParent + child.getParentName().substring(skip_id));
-          // }
-          // child.setId(child.getId() + 40000000);
-
-          // if (child.isDirectory()) {
-          //   // log: create new diretory
-          //   FSDirectory.getInstance()
-          //     .getEditLog()
-          //     .logMkDir(null, (INodeDirectory)child);
-          // } else {
-          //   // log: create new file
-          //   FSDirectory.getInstance()
-          //     .getEditLog()
-          //     .logOpenFile(null, (INodeFile)child, true, true);
-          // }
-
-          renameSet.add(child);
+          if (child.getId() != old_id) {
+            renameSet.add(child);
+          }
           count++;
           INodeKeyedObjects.getCache().invalidate(child.getPath());
           if (count == dirtyCount) {
             // write back to db
             update_subtree(renameSet);
             break;
-          }
-          if (database.equals("VOLT")) {
-            if (renameSet.size() >= 5120) {
-              update_subtree(renameSet);
-            }
           }
         }
       }
