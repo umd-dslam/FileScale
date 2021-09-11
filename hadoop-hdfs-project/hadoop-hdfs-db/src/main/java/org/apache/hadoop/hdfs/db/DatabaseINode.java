@@ -674,6 +674,36 @@ public class DatabaseINode {
     return res;
   }
 
+  public static long setPermissions(final String path, final long permission) {
+    long res = 0;
+    try {
+      DatabaseConnection obj = Database.getInstance().getConnection();
+      String env = System.getenv("DATABASE");
+      if (env.equals("VOLT")) {
+        try {
+          VoltTable[] results = obj.getVoltClient().callProcedure("SetPermissionsV2",
+            path, permission).getResults();
+          VoltTable result = results[0];
+          result.resetRowPosition();
+          while (result.advanceRow()) {
+            res = result.getLong(0);
+          } 
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      } else {
+        throw new SQLException("[UNSUPPORT] Invalid operation ...");
+      }
+      Database.getInstance().retConnection(obj);
+    } catch (SQLException ex) {
+      System.err.println(ex.getMessage());
+    }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("txnId: " + res + " permissions [UPDATE v2]: (" + permission + ")");
+    } 
+    return res;
+  }
+
   public static long setPermission(final long id, final long permission) {
     long res = 0;
     try {
@@ -2073,32 +2103,47 @@ public class DatabaseINode {
     try {
       DatabaseConnection obj = Database.getInstance().getConnection();
       String env = System.getenv("DATABASE");
-      if (env.equals("VOLT")) {
-        try {
-          VoltTable[] results = obj.getVoltClient()
-              .callProcedure(
-                  "BatchUpdateINodes",
-                  longAttr.toArray(new Long[longAttr.size()]),
-                  strAttr.toArray(new String[strAttr.size()]),
-                  fileIds.toArray(new Long[fileIds.size()]),
-                  fileAttr.toArray(new String[fileAttr.size()])).getResults();
-          VoltTable result = results[0];
-          result.resetRowPosition();
-          while (result.advanceRow()) {
-            res = result.getLong(0);
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
+      // if (env.equals("VOLT")) {
+        // try {
+        //   VoltTable[] results = obj.getVoltClient()
+        //       .callProcedure(
+        //           "BatchUpdateINodes",
+        //           longAttr.toArray(new Long[longAttr.size()]),
+        //           strAttr.toArray(new String[strAttr.size()]),
+        //           fileIds.toArray(new Long[fileIds.size()]),
+        //           fileAttr.toArray(new String[fileAttr.size()])).getResults();
+        //   VoltTable result = results[0];
+        //   result.resetRowPosition();
+        //   while (result.advanceRow()) {
+        //     res = result.getLong(0);
+        //   }
+        // } catch (Exception e) {
+        //   e.printStackTrace();
+        // }
+      // } else {
+        int size = strAttr.size() / 2;
+        Connection conn = obj.getConnection();
+        String sql = "UPSERT INTO inodes("
+          + "parent, id, name, modificationTime, accessTime, permission, header, parentName"
+          + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+        PreparedStatement pst = conn.prepareStatement(sql);
+
+        for (int i = 0; i < size; ++i) {
+          int idx = i * 6;
+          int idy = i * 2;
+          pst.setLong(1, longAttr.get(idx));
+          pst.setLong(2, longAttr.get(idx + 1));
+          pst.setString(3, strAttr.get(idy));
+          pst.setLong(4, longAttr.get(idx + 2));
+          pst.setLong(5, longAttr.get(idx + 3));
+          pst.setLong(6, longAttr.get(idx + 4));
+          pst.setLong(7, longAttr.get(idx + 5));
+          pst.setString(8, strAttr.get(idy + 1));
+          pst.addBatch();
         }
-      } else {
-        // Connection conn = obj.getConnection();
-        // PreparedStatement pst = conn.prepareStatement(sql);
-        // pst.setLong(1, childId);
-        // pst.executeUpdate();
-        // pst.close();
-        // TODO: Support batch update in CockroachDB
-        throw new SQLException("[UNSUPPORT] Invalid operation ...");
-      }
+        pst.executeBatch();
+        pst.close();
+      // }
       Database.getInstance().retConnection(obj);
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());

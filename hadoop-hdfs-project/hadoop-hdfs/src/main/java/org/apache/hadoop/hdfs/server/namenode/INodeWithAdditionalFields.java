@@ -512,7 +512,7 @@ public abstract class INodeWithAdditionalFields extends INode {
     }
   }
 
-  private final void remoteChmod(Set<Pair<String, String>> mpoints) {
+  private final void remoteChmod(String path, Set<Pair<String, String>> mpoints) {
     String database = System.getenv("DATABASE");
     DatabaseConnection conn = Database.getInstance().getConnection();
     BinaryObjectBuilder inodeKeyBuilder = null;
@@ -521,8 +521,6 @@ public abstract class INodeWithAdditionalFields extends INode {
     }
 
     // 1. invalidate cache and write back dirty data
-    List<String> parents = new ArrayList<>();
-    List<String> names = new ArrayList<>();
     Set<BinaryObject> keys = new HashSet<>();
     List<CompletableFuture<Void>> list = new ArrayList<>();
     for (Pair<String, String> pair : mpoints) {
@@ -557,10 +555,7 @@ public abstract class INodeWithAdditionalFields extends INode {
         e.printStackTrace();
       }
 
-      if (database.equals("VOLT")) {
-        parents.add(parent);
-        names.add(name);
-      } else if (database.equals("IGNITE")) {
+      if (database.equals("IGNITE")) {
         keys.add(inodeKeyBuilder.setField("parentName", parent).setField("name", name).build());
       }
     }
@@ -569,10 +564,10 @@ public abstract class INodeWithAdditionalFields extends INode {
     // 2. execute distributed txn
     LOG.info("Execute dist txn for chmod");
 
-    if (parents.size() > 0 || keys.size() > 0) {
+    if (path != null) {
       String start = INodeKeyedObjects.getWalOffset();
       if (database.equals("VOLT")) {
-        INodeKeyedObjects.setWalOffset(DatabaseINode.setPermissions(parents, names, this.permission));
+        INodeKeyedObjects.setWalOffset(DatabaseINode.setPermissions(path, this.permission));
       } else if (database.equals("IGNITE")) {
         IgniteCompute compute = conn.getIgniteClient().compute();
         INodeKeyedObjects.setWalOffset(
@@ -595,7 +590,7 @@ public abstract class INodeWithAdditionalFields extends INode {
       try {
         Set<Pair<String, String>> mpoints = FSDirectory.getInstance().getMountsManager().resolveSubPaths(getPath());
         LOG.info(getPath() + " has sub-paths that are mounted into: " + mpoints);
-        remoteChmod(mpoints);
+        remoteChmod(getPath(), mpoints);
       } catch (Exception e) {
         e.printStackTrace();
       }

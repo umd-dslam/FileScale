@@ -19,7 +19,11 @@ public class UpdateSubtreeV2 extends VoltProcedure {
     voltQueueSQL(sql1, old_parent_name);
     VoltTable[] res = voltExecuteSQL();
 
-    // 2. update subtree records
+    // 2. delete old subtree records
+    voltQueueSQL(sql3, old_parent_name);
+    voltExecuteSQL();
+
+    // 3. update subtree records
     Long id = null;
     String name = null;
     Long accessTime = null;
@@ -60,10 +64,6 @@ public class UpdateSubtreeV2 extends VoltProcedure {
           parentName);
       }
     }
-    voltExecuteSQL();
-
-    // 3. delete old subtree records
-    voltQueueSQL(sql3, old_parent_name);
     voltExecuteSQL();
 
     return getUniqueId();
