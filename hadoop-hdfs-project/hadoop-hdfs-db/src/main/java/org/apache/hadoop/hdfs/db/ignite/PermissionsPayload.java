@@ -4,11 +4,11 @@ import java.util.Set;
 import org.apache.ignite.binary.BinaryObject;
 
 public class PermissionsPayload {
-    public Set<BinaryObject> keys;
+    public String path;
     public long permission;
 
-    public PermissionsPayload(Set<BinaryObject> keys, long permission) {
-        this.keys = keys;
+    public PermissionsPayload(String path, long permission) {
+        this.path = path;
         this.permission = permission;
     }
 }

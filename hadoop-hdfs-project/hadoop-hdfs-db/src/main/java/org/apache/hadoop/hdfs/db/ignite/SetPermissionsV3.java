@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -23,7 +24,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-public class SetPermissions implements IgniteClosure<PermissionsPayload, String> {
+public class SetPermissionsV3 implements IgniteClosure<PermissionsPayload, String> {
 
     @IgniteInstanceResource
     private Ignite ignite;
@@ -40,7 +41,6 @@ public class SetPermissions implements IgniteClosure<PermissionsPayload, String>
             TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
 
         // 1. query subtree inodes
-        List<Cache.Entry<BinaryObject, BinaryObject>> result;
         ScanQuery<BinaryObject, BinaryObject> scanAddress = new ScanQuery<>(
             new IgniteBiPredicate<BinaryObject, BinaryObject>() {
                 @Override
@@ -49,31 +49,29 @@ public class SetPermissions implements IgniteClosure<PermissionsPayload, String>
                 }
             }
         );
-        result = inodesBinary.query(scanAddress).getAll();
+        Iterator<Cache.Entry<BinaryObject, BinaryObject>> iterator = inodesBinary.
+            query(scanAddress).iterator();
 
         // 2. update subtree permission
-        Map<BinaryObject, BinaryObject> map = new HashMap<>();
-        BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
-        for (Cache.Entry<BinaryObject, BinaryObject> entry : result) {
-            BinaryObject inodeValue = entry.getValue();
-            inodeValue = inodeValue.toBuilder()
+        while (iterator.hasNext()) {
+            BinaryObject key = iterator.next().getKey();
+            BinaryObject value = inodesBinary.get(key);
+            value = value.toBuilder()
                 .setField("permission", payload.permission)
                 .build();
-            map.put(entry.getKey(), inodeValue);
+            inodesBinary.put(key, value);
         }
 
-        // 3. update subtree to DB
-        inodesBinary.putAll(map);
-
+        BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
         BinaryObject rootKey = inodeKeyBuilder
             .setField("parentName", parent)
             .setField("name", name)
             .build();
-        BinaryObject inodeValue = inodesBinary.get(rootKey);
-        inodeValue = inodeValue.toBuilder()
+        BinaryObject rootValue = inodesBinary.get(rootKey);
+        rootValue = rootValue.toBuilder()
             .setField("permission", payload.permission)
             .build();
-        inodesBinary.put(rootKey, inodeValue);
+        inodesBinary.put(rootKey, rootValue);
 
         tx.commit();
         tx.close();

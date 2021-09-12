@@ -264,6 +264,14 @@ public class HdfsMetaInfoSchema {
     } catch (SQLException ex) {
       System.err.println(ex.getMessage());
     }
+
+    if (env.equals("IGNITE")) {
+      IgniteCluster cluster = ignite_client.cluster();
+      cluster.active(true);
+      cluster.enableWal("inodes");
+      cluster.baselineAutoAdjustEnabled(false);
+      ignite_client.close();
+    }
   }
 
   public Connection getConnection() {
