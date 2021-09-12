@@ -83,7 +83,7 @@ bench/hdfs
 bench/voltfs
 ignite/*
 
-ignite
+filescale_init/ignite/work
 *.pem
 
 work_dir

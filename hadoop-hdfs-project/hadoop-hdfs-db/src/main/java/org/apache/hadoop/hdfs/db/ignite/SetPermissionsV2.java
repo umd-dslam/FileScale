@@ -23,7 +23,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-public class SetPermissions implements IgniteClosure<PermissionsPayload, String> {
+
+public class SetPermissionsV2 implements IgniteClosure<PermissionsPayload, String> {
 
     @IgniteInstanceResource
     private Ignite ignite;
@@ -39,41 +40,10 @@ public class SetPermissions implements IgniteClosure<PermissionsPayload, String>
         Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
 
-        // 1. query subtree inodes
-        List<Cache.Entry<BinaryObject, BinaryObject>> result;
-        ScanQuery<BinaryObject, BinaryObject> scanAddress = new ScanQuery<>(
-            new IgniteBiPredicate<BinaryObject, BinaryObject>() {
-                @Override
-                public boolean apply(BinaryObject binaryKey, BinaryObject binaryObject) {
-                    return ((String)binaryKey.field("parentName")).startsWith(parent);
-                }
-            }
-        );
-        result = inodesBinary.query(scanAddress).getAll();
-
-        // 2. update subtree permission
-        Map<BinaryObject, BinaryObject> map = new HashMap<>();
-        BinaryObjectBuilder inodeKeyBuilder = ignite.binary().builder("InodeKey");
-        for (Cache.Entry<BinaryObject, BinaryObject> entry : result) {
-            BinaryObject inodeValue = entry.getValue();
-            inodeValue = inodeValue.toBuilder()
-                .setField("permission", payload.permission)
-                .build();
-            map.put(entry.getKey(), inodeValue);
-        }
-
-        // 3. update subtree to DB
-        inodesBinary.putAll(map);
-
-        BinaryObject rootKey = inodeKeyBuilder
-            .setField("parentName", parent)
-            .setField("name", name)
-            .build();
-        BinaryObject inodeValue = inodesBinary.get(rootKey);
-        inodeValue = inodeValue.toBuilder()
-            .setField("permission", payload.permission)
-            .build();
-        inodesBinary.put(rootKey, inodeValue);
+        inodesBinary.query(new SqlFieldsQuery("UPDATE inodes SET permission = ? WHERE parentName LIKE ?")
+            .setArgs(payload.permission, payload.path + "%")).getAll();
+        inodesBinary.query(new SqlFieldsQuery("UPDATE inodes SET permission = ? WHERE parentName = ? and name = ?")
+            .setArgs(payload.permission, parent, name)).getAll();
 
         tx.commit();
         tx.close();

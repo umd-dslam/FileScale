@@ -42,6 +42,7 @@ import org.apache.hadoop.hdfs.db.ignite.BatchUpdateINodes;
 import org.apache.hadoop.hdfs.db.ignite.RenamePayload;
 import org.apache.hadoop.hdfs.db.ignite.RenameSubtreeINodes;
 import org.apache.hadoop.hdfs.db.ignite.SetPermissions;
+import org.apache.hadoop.hdfs.db.ignite.SetPermissionsV2;
 import org.apache.hadoop.hdfs.db.ignite.PermissionsPayload;
 
 /**
@@ -571,7 +572,7 @@ public abstract class INodeWithAdditionalFields extends INode {
       } else if (database.equals("IGNITE")) {
         IgniteCompute compute = conn.getIgniteClient().compute();
         INodeKeyedObjects.setWalOffset(
-          compute.apply(new SetPermissions(), new PermissionsPayload(keys, this.permission))
+          compute.apply(new SetPermissionsV2(), new PermissionsPayload(path, this.permission))
         );
       }
       String end = INodeKeyedObjects.getWalOffset();

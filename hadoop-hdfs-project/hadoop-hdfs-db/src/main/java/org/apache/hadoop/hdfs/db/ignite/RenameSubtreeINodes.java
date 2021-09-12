@@ -21,6 +21,11 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+// Ignite does not allow updating a primary key because the latter defines a partition the key
+// and its value belong to statically. While the partition with all its data can change several
+// cluster owners, the key always belongs to a single partition. The partition is calculated
+// using a hash function applied to the key’s value.
+// Thus, if a key needs to be updated it has to be removed and then inserted.
 public class RenameSubtreeINodes implements IgniteClosure<RenamePayload, String> {
 
     @IgniteInstanceResource
