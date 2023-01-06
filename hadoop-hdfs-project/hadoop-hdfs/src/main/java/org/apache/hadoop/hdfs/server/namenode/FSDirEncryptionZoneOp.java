@@ -385,7 +385,7 @@ final class FSDirEncryptionZoneOp {
     assert !fsd.hasWriteLock();
     if (batch != null && !batch.isEmpty()) {
       for (FileEdekInfo entry : batch) {
-        final INode inode = fsd.getInode(entry.getInodeId());
+        final INode inode = fsd.getInode(entry.getParentName(), entry.getInodeName());
         // no dir lock, so inode could be removed. no-op if so.
         if (inode == null) {
           NameNode.LOG.info("Cannot find inode {}, skip saving xattr for"

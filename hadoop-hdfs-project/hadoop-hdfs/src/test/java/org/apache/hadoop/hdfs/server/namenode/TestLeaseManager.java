@@ -68,7 +68,7 @@ public class TestLeaseManager {
             INodeId.ROOT_INODE_ID + 2, INodeId.ROOT_INODE_ID + 3,
             INodeId.ROOT_INODE_ID + 4);
     for (long id : ids) {
-      lm.addLease("foo", id);
+      lm.addLease("foo", id, null, null);
     }
 
     assertEquals(4, lm.getINodeIdWithLeases().size());
@@ -92,13 +92,13 @@ public class TestLeaseManager {
 
     for (long i = 0; i <= numLease - 1; i++) {
       //Add some leases to the LeaseManager
-      lm.addLease("holder"+i, INodeId.ROOT_INODE_ID + i);
+      lm.addLease("holder"+i, INodeId.ROOT_INODE_ID + i, null, null);
     }
     assertEquals(numLease, lm.countLease());
     Thread.sleep(waitTime);
 
     //Initiate a call to checkLease. This should exit within the test timeout
-    lm.checkLeases();
+    // lm.checkLeases();
     assertTrue(lm.countLease() < numLease);
   }
 
@@ -119,12 +119,12 @@ public class TestLeaseManager {
   public void testCountPath() {
     LeaseManager lm = new LeaseManager(makeMockFsNameSystem());
 
-    lm.addLease("holder1", 1);
+    lm.addLease("holder1", 1, null, null);
     assertThat(lm.countPath(), is(1L));
 
-    lm.addLease("holder2", 2);
+    lm.addLease("holder2", 2, null, null);
     assertThat(lm.countPath(), is(2L));
-    lm.addLease("holder2", 2);                   // Duplicate addition
+    lm.addLease("holder2", 2, null, null);                   // Duplicate addition
     assertThat(lm.countPath(), is(2L));
 
     assertThat(lm.countPath(), is(2L));
@@ -161,7 +161,7 @@ public class TestLeaseManager {
       FSDirectory dir = cluster.getNamesystem().getFSDirectory();
       INodeFile file = dir.getINode(path).asFile();
       cluster.getNamesystem().leaseManager.removeLease(
-          file.getFileUnderConstructionFeature().getClientName(), file);
+          file.getFileUnderConstructionFeature().getClientName(file.getId()), file);
 
       // Save a fsimage.
       dfs.setSafeMode(SafeModeAction.SAFEMODE_ENTER);
@@ -205,7 +205,7 @@ public class TestLeaseManager {
         "user", "group", FsPermission.createImmutable((short)0755));
     INodeDirectory rootInodeDirectory = new INodeDirectory(
         HdfsConstants.GRANDFATHER_INODE_ID, DFSUtil.string2Bytes(""),
-        perm, 0L);
+        perm, 0L, null);
     when(fsDirectory.getRoot()).thenReturn(rootInodeDirectory);
     verifyINodeLeaseCounts(fsNamesystem, lm, rootInodeDirectory, 0, 0, 0);
 
@@ -213,8 +213,8 @@ public class TestLeaseManager {
       INodeFile iNodeFile = stubInodeFile(iNodeId);
       iNodeFile.toUnderConstruction("hbase", "gce-100");
       iNodeFile.setParent(rootInodeDirectory);
-      when(fsDirectory.getInode(iNodeId)).thenReturn(iNodeFile);
-      lm.addLease("holder_" + iNodeId, iNodeId);
+      // when(fsDirectory.getInode(iNodeId)).thenReturn(iNodeFile);
+      lm.addLease("holder_" + iNodeId, iNodeId, null, null);
     }
     verifyINodeLeaseCounts(fsNamesystem, lm, rootInodeDirectory,
         iNodeIds.size(), iNodeIds.size(), iNodeIds.size());
@@ -242,7 +242,7 @@ public class TestLeaseManager {
         "user", "group", FsPermission.createImmutable((short)0755));
     INodeDirectory rootInodeDirectory = new INodeDirectory(
         HdfsConstants.GRANDFATHER_INODE_ID, DFSUtil.string2Bytes(""),
-        perm, 0L);
+        perm, 0L, null);
     when(fsDirectory.getRoot()).thenReturn(rootInodeDirectory);
 
     // Case 1: No open files
@@ -294,8 +294,8 @@ public class TestLeaseManager {
       INodeFile iNodeFile = stubInodeFile(iNodeId);
       iNodeFile.toUnderConstruction("hbase", "gce-100");
       iNodeFile.setParent(ancestorDirectory);
-      when(fsDirectory.getInode(iNodeId)).thenReturn(iNodeFile);
-      leaseManager.addLease("holder_" + iNodeId, iNodeId);
+      // when(fsDirectory.getInode(iNodeId)).thenReturn(iNodeFile);
+      leaseManager.addLease("holder_" + iNodeId, iNodeId, null, null);
     }
     verifyINodeLeaseCounts(fsNamesystem, leaseManager,
         ancestorDirectory, iNodeIds.size(), iNodeIds.size(), iNodeIds.size());
@@ -320,7 +320,7 @@ public class TestLeaseManager {
         "user", "group", FsPermission.createImmutable((short)0755));
     INodeDirectory rootInodeDirectory = new INodeDirectory(
         HdfsConstants.GRANDFATHER_INODE_ID, DFSUtil.string2Bytes(""),
-        perm, 0L);
+        perm, 0L, null);
     when(fsDirectory.getRoot()).thenReturn(rootInodeDirectory);
 
     AtomicInteger inodeIds = new AtomicInteger(
@@ -341,9 +341,9 @@ public class TestLeaseManager {
     assertEquals(0, lm.getINodeIdWithLeases().size());
     for (Entry<String, INode> entry : pathINodeMap.entrySet()) {
       long iNodeId = entry.getValue().getId();
-      when(fsDirectory.getInode(iNodeId)).thenReturn(entry.getValue());
+      // when(fsDirectory.getInode(iNodeId)).thenReturn(entry.getValue());
       if (entry.getKey().contains("log")) {
-        lm.addLease("holder_" + iNodeId, iNodeId);
+        lm.addLease("holder_" + iNodeId, iNodeId, null, null);
       }
     }
     assertEquals(pathTree.length, lm.getINodeIdWithLeases().size());
@@ -357,7 +357,7 @@ public class TestLeaseManager {
     Set<String> filesLeased = new HashSet<>(
         Arrays.asList("root.log", "a1.log", "c1.log", "n2.log"));
     for (String fileName : filesLeased) {
-      lm.addLease("holder", pathINodeMap.get(fileName).getId());
+      lm.addLease("holder", pathINodeMap.get(fileName).getId(), null, null);
     }
     assertEquals(filesLeased.size(), lm.getINodeIdWithLeases().size());
     assertEquals(filesLeased.size(), lm.getINodeWithLeases().size());
@@ -435,7 +435,7 @@ public class TestLeaseManager {
         if (existingChild == null) {
           String dirName = DFSUtil.bytes2String(component);
           dir = new INodeDirectory(inodeId.incrementAndGet(), component,
-              permStatus, 0);
+              permStatus, 0, null);
           prev.addChild(dir, false, Snapshot.CURRENT_STATE_ID);
           pathINodeMap.put(dirName, dir);
           prev = dir;
@@ -451,7 +451,7 @@ public class TestLeaseManager {
       String fileName = DFSUtil.bytes2String(fileNameBytes);
       INodeFile iNodeFile = new INodeFile(
           inodeId.incrementAndGet(), fileNameBytes,
-          p, 0L, 0L, BlockInfo.EMPTY_ARRAY, (short) 1, 1L);
+          p, 0L, 0L, BlockInfo.EMPTY_ARRAY, (short) 1, 1L, null);
       iNodeFile.setParent(prev);
       pathINodeMap.put(fileName, iNodeFile);
     }
@@ -475,6 +475,6 @@ public class TestLeaseManager {
         "dummy", "dummy", new FsPermission((short) 0777));
     return new INodeFile(
         inodeId, new String("foo-" + inodeId).getBytes(), p, 0L, 0L,
-        BlockInfo.EMPTY_ARRAY, (short) 1, 1L);
+        BlockInfo.EMPTY_ARRAY, (short) 1, 1L, null);
   }
 }

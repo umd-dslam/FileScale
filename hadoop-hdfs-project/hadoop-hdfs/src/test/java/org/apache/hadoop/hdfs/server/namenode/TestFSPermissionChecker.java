@@ -431,7 +431,7 @@ public class TestFSPermissionChecker {
     PermissionStatus permStatus = PermissionStatus.createImmutable(owner, group,
       FsPermission.createImmutable(perm));
     INodeDirectory inodeDirectory = new INodeDirectory(
-      HdfsConstants.GRANDFATHER_INODE_ID, name.getBytes("UTF-8"), permStatus, 0L);
+      HdfsConstants.GRANDFATHER_INODE_ID, name.getBytes("UTF-8"), permStatus, 0L, null);
     parent.addChild(inodeDirectory);
     return inodeDirectory;
   }
@@ -442,7 +442,7 @@ public class TestFSPermissionChecker {
       FsPermission.createImmutable(perm));
     INodeFile inodeFile = new INodeFile(HdfsConstants.GRANDFATHER_INODE_ID,
       name.getBytes("UTF-8"), permStatus, 0L, 0L, null, REPLICATION,
-      PREFERRED_BLOCK_SIZE);
+      PREFERRED_BLOCK_SIZE, null);
     parent.addChild(inodeFile);
     return inodeFile;
   }

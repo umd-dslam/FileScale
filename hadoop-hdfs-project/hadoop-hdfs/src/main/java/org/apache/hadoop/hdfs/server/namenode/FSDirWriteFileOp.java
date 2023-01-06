@@ -69,6 +69,7 @@ import java.util.Set;
 
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
 import static org.apache.hadoop.util.Time.now;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 class FSDirWriteFileOp {
   private FSDirWriteFileOp() {}
@@ -188,7 +189,7 @@ class FSDirWriteFileOp {
     }
     blockSize = pendingFile.getPreferredBlockSize();
     clientMachine = pendingFile.getFileUnderConstructionFeature()
-        .getClientMachine();
+        .getClientMachine(pendingFile.getId());
     blockType = pendingFile.getBlockType();
     ErasureCodingPolicy ecPolicy = null;
     if (blockType == BlockType.STRIPED) {
@@ -403,8 +404,8 @@ class FSDirWriteFileOp {
       throw new IOException("Unable to add " + src +  " to namespace");
     }
     fsn.leaseManager.addLease(
-        newNode.getFileUnderConstructionFeature().getClientName(),
-        newNode.getId());
+        newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()),
+        newNode.getId(), newNode.getParentName(), newNode.getLocalName());
     if (feInfo != null) {
       FSDirEncryptionZoneOp.setFileEncryptionInfo(fsd, iip, feInfo,
           XAttrSetFlag.CREATE);
@@ -415,7 +416,7 @@ class FSDirWriteFileOp {
       NameNode.stateChangeLog.debug("DIR* NameSystem.startFile: added " +
           src + " inode " + newNode.getId() + " " + holder);
     }
-    return FSDirStatAndListingOp.getFileInfo(fsd, iip, false, false);
+    return FSDirectory.DOT_NORMAL_STATUS;
   }
 
   static INodeFile addFileForEditLog(
@@ -446,16 +447,15 @@ class FSDirWriteFileOp {
           BlockType.STRIPED : BlockType.CONTIGUOUS;
       final Short replicationFactor = (!isStriped ? replication : null);
       if (underConstruction) {
-        newNode = newINodeFile(id, permissions, modificationTime,
+        newNode = newINodeFile(id, localName, permissions, modificationTime,
             modificationTime, replicationFactor, ecPolicyID, preferredBlockSize,
-            storagePolicyId, blockType);
+            storagePolicyId, blockType, null, existing.getPath());
         newNode.toUnderConstruction(clientName, clientMachine);
       } else {
-        newNode = newINodeFile(id, permissions, modificationTime, atime,
+        newNode = newINodeFile(id, localName, permissions, modificationTime, atime,
             replicationFactor, ecPolicyID, preferredBlockSize,
-            storagePolicyId, blockType);
+            storagePolicyId, blockType, null, existing.getPath());
       }
-      newNode.setLocalName(localName);
       INodesInPath iip = fsd.addINode(existing, newNode,
           permissions.getPermission());
       if (iip != null) {
@@ -560,10 +560,9 @@ class FSDirWriteFileOp {
           BlockType.STRIPED : BlockType.CONTIGUOUS;
       final Short replicationFactor = (!isStriped ? replication : null);
       final Byte ecPolicyID = (isStriped ? ecPolicy.getId() : null);
-      INodeFile newNode = newINodeFile(fsd.allocateNewInodeId(), permissions,
+      INodeFile newNode = newINodeFile(fsd.allocateNewInodeId(), localName, permissions,
           modTime, modTime, replicationFactor, ecPolicyID, preferredBlockSize,
-          blockType);
-      newNode.setLocalName(localName);
+          blockType, existing.getINode(existing.length() - 1).asDirectory(), existing.getPath());
       newNode.toUnderConstruction(clientName, clientMachine);
       newiip = fsd.addINode(existing, newNode, permissions.getPermission());
     } finally {
@@ -692,8 +691,7 @@ class FSDirWriteFileOp {
       inode = iip.getLastINode();
       pendingFile = fsn.checkLease(iip, holder, fileId);
     } catch (LeaseExpiredException lee) {
-      if (inode != null && inode.isFile() &&
-          !inode.asFile().isUnderConstruction()) {
+      if (inode != null && inode.isFile() && !inode.asFile().isUnderConstruction()) {
         // This could be a retry RPC - i.e the client tried to close
         // the file, but missed the RPC response. Thus, it is trying
         // again to close the file. If the file still exists and
@@ -713,38 +711,41 @@ class FSDirWriteFileOp {
     }
     // Check the state of the penultimate block. It should be completed
     // before attempting to complete the last one.
-    if (!fsn.checkFileProgress(src, pendingFile, false)) {
-      return false;
-    }
+    // if (!fsn.checkFileProgress(src, pendingFile, false)) {
+    //   return false;
+    // }
 
     // commit the last block and complete it if it has minimum replicas
     fsn.commitOrCompleteLastBlock(pendingFile, iip, last);
 
-    if (!fsn.checkFileProgress(src, pendingFile, true)) {
-      return false;
-    }
+    // if (!fsn.checkFileProgress(src, pendingFile, true)) {
+    //   return false;
+    // }
 
     fsn.addCommittedBlocksToPending(pendingFile);
 
     fsn.finalizeINodeFileUnderConstruction(src, pendingFile,
         Snapshot.CURRENT_STATE_ID, true);
+    // iip.returnToPool();
     return true;
   }
 
   private static INodeFile newINodeFile(
-      long id, PermissionStatus permissions, long mtime, long atime,
+      long id, byte[] localName, PermissionStatus permissions, long mtime, long atime,
       Short replication, Byte ecPolicyID, long preferredBlockSize,
-      byte storagePolicyId, BlockType blockType) {
-    return new INodeFile(id, null, permissions, mtime, atime,
+      byte storagePolicyId, BlockType blockType, INodeDirectory parent, String parentName) {
+    INodeFile file = new INodeFile(id, localName, permissions, mtime, atime,
         BlockInfo.EMPTY_ARRAY, replication, ecPolicyID, preferredBlockSize,
-        storagePolicyId, blockType);
+        storagePolicyId, blockType, parent, parentName);
+    INodeKeyedObjects.getCache().put(file.getPath(), file);
+    return file;
   }
 
-  private static INodeFile newINodeFile(long id, PermissionStatus permissions,
+  private static INodeFile newINodeFile(long id, byte[] localName, PermissionStatus permissions,
       long mtime, long atime, Short replication, Byte ecPolicyID,
-      long preferredBlockSize, BlockType blockType) {
-    return newINodeFile(id, permissions, mtime, atime, replication, ecPolicyID,
-        preferredBlockSize, (byte)0, blockType);
+      long preferredBlockSize, BlockType blockType, INodeDirectory parent, String parentName) {
+    return newINodeFile(id, localName, permissions, mtime, atime, replication, ecPolicyID,
+        preferredBlockSize, (byte)0, blockType, parent, parentName);
   }
 
   /**
@@ -753,7 +754,6 @@ class FSDirWriteFileOp {
   private static void persistNewBlock(
       FSNamesystem fsn, String path, INodeFile file) {
     Preconditions.checkArgument(file.isUnderConstruction());
-    fsn.getEditLog().logAddBlock(path, file);
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("persistNewBlock: "
               + path + " with new block " + file.getLastBlock().toString()

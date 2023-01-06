@@ -77,6 +77,60 @@ message NameSystemSection {
 }
 
 /**
+ * Name: MountPartition
+ */
+message MountPartition {
+  optional string mountPoint = 1;
+  optional string oldUri = 2;
+  optional string newUri = 3;  
+}
+
+message CryptoProtocol {
+  optional string description = 1;
+  optional int32 version = 2;
+  optional int32 unknownValue = 3;
+}
+
+message Operation {
+
+  enum Flag {
+    CREATE = 0x01;
+    OVERWRITE = 0x02;
+    APPEND = 0x04;
+    SYNC_BLOCK = 0x08;
+    LAZY_PERSIST = 0x10;
+    NEW_BLOCK = 0x20;
+    NO_LOCAL_WRITE = 0x40;
+    SHOULD_REPLICATE = 0x80;
+    IGNORE_CLIENT_LOCALITY = 0x100;
+  }
+
+  message Create {
+    optional string src = 1;
+    optional int64 permissions = 2;
+    optional string holder = 3;
+    optional string clientMachine = 4;
+    optional bool createParent = 5;
+    optional int32 replication = 6;
+    optional int64 blockSize = 7;
+    optional string ecPolicyName = 8;
+    optional bool logRetryCache = 9;
+    repeated Flag flag = 10;
+    repeated CryptoProtocol supportedVersions = 11;
+  }
+}
+
+message MountPoint {
+  required string parent = 1;
+  required string name = 2;
+}
+
+// namespace subtree
+message NamespaceSubtree {
+  repeated INodeSection.INode inodes = 1;
+}
+
+/**
  * Permission is serialized as a 64-bit long. [0:24):[25:48):[48:64) (in Big Endian).
  * The first and the second parts are the string ids of the user and
  * group name, and the last 16 bits are the permission bits.
@@ -181,10 +235,11 @@ message INodeSection {
     required Type type = 1;
     required uint64 id = 2;
     optional bytes name = 3;
-
     optional INodeFile file = 4;
     optional INodeDirectory directory = 5;
     optional INodeSymlink symlink = 6;
+    optional uint64 parent = 7;
+    optional string parentName = 8;
   }
 
   optional uint64 lastInodeId = 1;

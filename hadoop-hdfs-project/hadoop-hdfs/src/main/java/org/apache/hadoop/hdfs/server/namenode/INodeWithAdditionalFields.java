@@ -1,38 +1,56 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.io.File;
+import java.util.*;
+import com.google.common.base.Preconditions;
+import java.util.concurrent.CompletableFuture;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
+import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.hdfs.util.LongBitFormat;
-import org.apache.hadoop.util.LightWeightGSet.LinkedElement;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.MountPoint;
+import org.apache.hadoop.ipc.RPC;
+import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
+import com.google.protobuf.ByteString;
+import org.apache.hadoop.conf.Configuration;
 
-import com.google.common.base.Preconditions;
+import org.apache.ignite.*;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.hadoop.hdfs.db.ignite.BatchUpdateINodes;
+import org.apache.hadoop.hdfs.db.ignite.RenamePayload;
+import org.apache.hadoop.hdfs.db.ignite.RenameSubtreeINodes;
+import org.apache.hadoop.hdfs.db.ignite.SetPermissions;
+import org.apache.hadoop.hdfs.db.ignite.SetPermissionsV2;
+import org.apache.hadoop.hdfs.db.ignite.PermissionsPayload;
 
 /**
- * {@link INode} with additional fields including id, name, permission,
- * access time and modification time.
+ * {@link INode} with additional fields including id, name, permission, access time and modification
+ * time.
  */
 @InterfaceAudience.Private
-public abstract class INodeWithAdditionalFields extends INode
-    implements LinkedElement {
+public abstract class INodeWithAdditionalFields extends INode {
   // Note: this format is used both in-memory and on-disk.  Changes will be
   // incompatible.
   enum PermissionStatusFormat implements LongBitFormat.Enum {
@@ -47,42 +65,40 @@ public abstract class INodeWithAdditionalFields extends INode
     }
 
     static String getUser(long permission) {
-      final int n = (int)USER.BITS.retrieve(permission);
+      final int n = (int) USER.BITS.retrieve(permission);
       String s = SerialNumberManager.USER.getString(n);
       assert s != null;
       return s;
     }
 
     static String getGroup(long permission) {
-      final int n = (int)GROUP.BITS.retrieve(permission);
+      final int n = (int) GROUP.BITS.retrieve(permission);
       return SerialNumberManager.GROUP.getString(n);
     }
-    
+
     static short getMode(long permission) {
-      return (short)MODE.BITS.retrieve(permission);
+      return (short) MODE.BITS.retrieve(permission);
     }
 
     /** Encode the {@link PermissionStatus} to a long. */
     static long toLong(PermissionStatus ps) {
       long permission = 0L;
-      final int user = SerialNumberManager.USER.getSerialNumber(
-          ps.getUserName());
+      final int user = SerialNumberManager.USER.getSerialNumber(ps.getUserName());
       assert user != 0;
       permission = USER.BITS.combine(user, permission);
       // ideally should assert on group but inodes are created with null
       // group and then updated only when added to a directory.
-      final int group = SerialNumberManager.GROUP.getSerialNumber(
-          ps.getGroupName());
+      final int group = SerialNumberManager.GROUP.getSerialNumber(ps.getGroupName());
       permission = GROUP.BITS.combine(group, permission);
       final int mode = ps.getPermission().toShort();
       permission = MODE.BITS.combine(mode, permission);
       return permission;
     }
 
-    static PermissionStatus toPermissionStatus(long id,
-        SerialNumberManager.StringTable stringTable) {
-      int uid = (int)USER.BITS.retrieve(id);
-      int gid = (int)GROUP.BITS.retrieve(id);
+    static PermissionStatus toPermissionStatus(
+        long id, SerialNumberManager.StringTable stringTable) {
+      int uid = (int) USER.BITS.retrieve(id);
+      int gid = (int) GROUP.BITS.retrieve(id);
       return new PermissionStatus(
           SerialNumberManager.USER.getString(uid, stringTable),
           SerialNumberManager.GROUP.getString(gid, stringTable),
@@ -96,36 +112,57 @@ public abstract class INodeWithAdditionalFields extends INode
   }
 
   /** The inode id. */
-  final private long id;
+  private long id;
   /**
-   *  The inode name is in java UTF8 encoding; 
-   *  The name in HdfsFileStatus should keep the same encoding as this.
-   *  if this encoding is changed, implicitly getFileInfo and listStatus in
-   *  clientProtocol are changed; The decoding at the client
-   *  side should change accordingly.
+   * The inode name is in java UTF8 encoding; The name in HdfsFileStatus should keep the same
+   * encoding as this. if this encoding is changed, implicitly getFileInfo and listStatus in
+   * clientProtocol are changed; The decoding at the client side should change accordingly.
    */
   private byte[] name = null;
-  /** 
-   * Permission encoded using {@link PermissionStatusFormat}.
-   * Codes other than {@link #clonePermissionStatus(INodeWithAdditionalFields)}
-   * and {@link #updatePermissionStatus(PermissionStatusFormat, long)}
-   * should not modify it.
+  /**
+   * Permission encoded using {@link PermissionStatusFormat}. Codes other than {@link
+   * #clonePermissionStatus(INodeWithAdditionalFields)} and {@link
+   * #updatePermissionStatus(PermissionStatusFormat, long)} should not modify it.
    */
-  private long permission = 0L;
-  /** The last modification time*/
-  private long modificationTime = 0L;
-  /** The last access time*/
-  private long accessTime = 0L;
+  private long permission = -1L;
 
-  /** For implementing {@link LinkedElement}. */
-  private LinkedElement next = null;
+  private long modificationTime = -1L;
+  private long accessTime = -1L;
+
   /** An array {@link Feature}s. */
   private static final Feature[] EMPTY_FEATURE = new Feature[0];
-  protected Feature[] features = EMPTY_FEATURE;
+  // protected Feature[] features = EMPTY_FEATURE;
 
-  private INodeWithAdditionalFields(INode parent, long id, byte[] name,
-      long permission, long modificationTime, long accessTime) {
-    super(parent);
+  private INodeWithAdditionalFields(
+      INode parent,
+      long id,
+      byte[] name,
+      long permission,
+      long modificationTime,
+      long accessTime,
+      long header,
+      String parentName) {
+    super(parent, parentName);
+    this.id = id;
+    this.name = name;
+    this.permission = permission;
+    this.modificationTime = modificationTime;
+    this.accessTime = accessTime;
+
+    INodeKeyedObjects.getUpdateSet().add(this.getPath());
+  }
+
+  public void InitINodeWithAdditionalFields(
+      long parent,
+      long id,
+      byte[] name,
+      long permission,
+      long modificationTime,
+      long accessTime,
+      long header,
+      String parentName) {
+    super.setParent(parent);
+    super.setParentName(parentName);
     this.id = id;
     this.name = name;
     this.permission = permission;
@@ -133,27 +170,155 @@ public abstract class INodeWithAdditionalFields extends INode
     this.accessTime = accessTime;
   }
 
-  INodeWithAdditionalFields(long id, byte[] name, PermissionStatus permissions,
-      long modificationTime, long accessTime) {
-    this(null, id, name, PermissionStatusFormat.toLong(permissions),
-        modificationTime, accessTime);
-  }
-  
-  /** @param other Other node to be copied */
-  INodeWithAdditionalFields(INodeWithAdditionalFields other) {
-    this(other.getParentReference() != null ? other.getParentReference()
-        : other.getParent(), other.getId(), other.getLocalNameBytes(),
-        other.permission, other.modificationTime, other.accessTime);
+  public void InitINodeWithAdditionalFields(
+      INode parent,
+      long id,
+      byte[] name,
+      long permission,
+      long modificationTime,
+      long accessTime,
+      long header,
+      String parentName) {
+    super.InitINode(parent);
+    super.setParentName(parentName);
+    this.id = id;
+    this.name = name;
+    this.permission = permission;
+    this.modificationTime = modificationTime;
+    this.accessTime = accessTime;
   }
 
-  @Override
-  public void setNext(LinkedElement next) {
-    this.next = next;
+  public void InitINodeWithAdditionalFields(
+      long id,
+      byte[] name,
+      PermissionStatus permissions,
+      long modificationTime,
+      long accessTime,
+      long header,
+      INodeDirectory parent,
+      String parentName) {
+    InitINodeWithAdditionalFields(
+        parent,
+        id,
+        name,
+        PermissionStatusFormat.toLong(permissions),
+        modificationTime,
+        accessTime,
+        header, parentName);
   }
-  
-  @Override
-  public LinkedElement getNext() {
-    return next;
+
+  public void updateINode(long header) {
+    CompletableFuture.runAsync(() -> {
+    DatabaseINode.insertInode(
+        id,
+        getParentId(),
+        name != null && name.length > 0 ? DFSUtil.bytes2String(name) : null,
+        accessTime,
+        modificationTime,
+        permission,
+        header,
+        getParentName());
+    }, Database.getInstance().getExecutorService());
+  }
+
+  INodeWithAdditionalFields(
+      long id,
+      byte[] name,
+      PermissionStatus permissions,
+      long modificationTime,
+      long accessTime,
+      long header,
+      String parentName) {
+    this(
+        null,
+        id,
+        name,
+        PermissionStatusFormat.toLong(permissions),
+        modificationTime,
+        accessTime,
+        header,
+        parentName);
+  }
+
+  INodeWithAdditionalFields(
+      long id,
+      byte[] name,
+      PermissionStatus permissions,
+      long modificationTime,
+      long accessTime,
+      long header,
+      INodeDirectory parent,
+      String parentName) {
+    this(
+        parent,
+        id,
+        name,
+        PermissionStatusFormat.toLong(permissions),
+        modificationTime,
+        accessTime,
+        header,
+        parentName);
+  }
+
+  public void InitINodeWithAdditionalFields(
+      INode parent,
+      long id,
+      byte[] name,
+      PermissionStatus permissions,
+      long modificationTime,
+      long accessTime,
+      String parentName) {
+    InitINodeWithAdditionalFields(
+        parent,
+        id,
+        name,
+        PermissionStatusFormat.toLong(permissions),
+        modificationTime,
+        accessTime,
+        0L,
+        parentName);
+  }
+
+  INodeWithAdditionalFields(
+      INode parent,
+      long id,
+      byte[] name,
+      PermissionStatus permissions,
+      long modificationTime,
+      long accessTime,
+      String parentName) {
+    this(
+        parent,
+        id,
+        name,
+        PermissionStatusFormat.toLong(permissions),
+        modificationTime,
+        accessTime,
+        0L,
+        parentName);
+  }
+
+  private INodeWithAdditionalFields(INode parent, long id) {
+    super(parent);
+    this.id = id;
+  }
+
+  // Note: only used by the loader of image file
+  INodeWithAdditionalFields(long id) {
+    this(null, id);
+  }
+
+  /** @param other Other node to be copied */
+  INodeWithAdditionalFields(INodeWithAdditionalFields other) {
+    this(
+        other.getParentReference() != null ? other.getParentReference() : other.getParent(),
+        other.getId(),
+        other.getLocalNameBytes(),
+        other.getPermissionLong(),
+        other.getModificationTime(),
+        other.getAccessTime(),
+        0L,
+        other.getParentName());
   }
 
   /** Get inode id */
@@ -162,29 +327,277 @@ public abstract class INodeWithAdditionalFields extends INode
     return this.id;
   }
 
+
+  @Override
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public final boolean isNameCached() {
+    return name != null;
+  }
+
+  @Override
+  public final String getPath() {
+    String path = null;
+    if (getParentName().equals("/")) {
+      path = getParentName() + getLocalName();
+    } else {
+      path = getParentName() + "/" + getLocalName();
+    }
+    return path;
+  }
+
   @Override
   public final byte[] getLocalNameBytes() {
+    if (name == null) {
+      String strName = DatabaseINode.getName(getId());
+      name = (strName != null) ? DFSUtil.string2Bytes(strName) : null;
+    }
     return name;
   }
-  
+
   @Override
   public final void setLocalName(byte[] name) {
-    this.name = name;
+    if (name != null) {
+      this.name = name;
+    } else {
+      this.name = null;
+    }
   }
 
   /** Clone the {@link PermissionStatus}. */
   final void clonePermissionStatus(INodeWithAdditionalFields that) {
-    this.permission = that.permission;
+    permission = that.getPermissionLong();
   }
 
   @Override
   final PermissionStatus getPermissionStatus(int snapshotId) {
-    return new PermissionStatus(getUserName(snapshotId), getGroupName(snapshotId),
-        getFsPermission(snapshotId));
+    return new PermissionStatus(
+        getUserName(snapshotId), getGroupName(snapshotId), getFsPermission(snapshotId));
+  }
+
+  private final void setPermission(long perm) {
+    permission = perm;
+    INodeKeyedObjects.getUpdateSet().add(getPath());
+  }
+
+  private static void update_subtree(Set<INode> inodes) {
+    String database = System.getenv("DATABASE");
+    DatabaseConnection conn = Database.getInstance().getConnection();
+    BinaryObjectBuilder inodeKeyBuilder = null;
+    BinaryObjectBuilder inodeBuilder = null;
+    if (database.equals("IGNITE")) {
+      inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+      inodeBuilder = conn.getIgniteClient().binary().builder("INode");
+    }
+
+    List<Long> longAttr = new ArrayList<>();
+    List<String> strAttr = new ArrayList<>();
+
+    List<Long> fileIds = new ArrayList<>();
+    List<String> fileAttr = new ArrayList<>();
+
+    Map<BinaryObject, BinaryObject> map = new HashMap<>();
+    Iterator<INode> iterator = inodes.iterator();
+    while (iterator.hasNext()) {
+      INode inode = iterator.next();
+      if (inode == null) continue;
+      if (database.equals("VOLT")) {
+        strAttr.add(inode.getLocalName());
+        if (inode.getId() == 16385) {
+          strAttr.add(" ");
+        } else {
+          strAttr.add(inode.getParentName());
+        }
+        longAttr.add(inode.getParentId());
+        longAttr.add(inode.getId());
+        longAttr.add(inode.getModificationTime());
+        longAttr.add(inode.getAccessTime());
+        longAttr.add(inode.getPermissionLong());
+        if (inode.isDirectory()) {
+          longAttr.add(0L);
+        } else {
+          longAttr.add(inode.asFile().getHeaderLong());
+          FileUnderConstructionFeature uc = inode.asFile().getFileUnderConstructionFeature();
+          if (uc != null) {
+            fileIds.add(inode.getId());
+            fileAttr.add(uc.getClientName(inode.getId()));
+            fileAttr.add(uc.getClientMachine(inode.getId()));
+          }
+        }
+      } else if (database.equals("IGNITE")) {
+        BinaryObject inodeKey = inodeKeyBuilder.setField("parentName", inode.getParentName()).setField("name", inode.getLocalName()).build();
+        long header = 0L;
+        if (inode.isFile()) {
+          header = inode.asFile().getHeaderLong();
+        } 
+        String parentName = " ";
+        if (inode.getId() != 16385) {
+          parentName = inode.getParentName();
+        }
+        BinaryObject inodeValue = inodeBuilder
+          .setField("id", inode.getId(), Long.class)
+          .setField("parent", inode.getParentId(), Long.class)
+          .setField("parentName", parentName)
+          .setField("name", inode.getLocalName())
+          .setField("accessTime", inode.getAccessTime(), Long.class)
+          .setField("modificationTime", inode.getModificationTime(), Long.class)
+          .setField("header", header, Long.class)
+          .setField("permission", inode.getPermissionLong(), Long.class)
+          .build();
+        map.put(inodeKey, inodeValue);
+      }
+      iterator.remove();
+    }
+    try {
+      if (database.equals("VOLT") && strAttr.size() > 0) {
+        INodeKeyedObjects.setWalOffset(DatabaseINode.batchUpdateINodes(longAttr, strAttr, fileIds, fileAttr));
+      } else if (database.equals("IGNITE") && map.size() > 0) {
+        IgniteCompute compute = conn.getIgniteClient().compute();
+        INodeKeyedObjects.setWalOffset(
+          compute.apply(new BatchUpdateINodes(), map)
+        );
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    Database.getInstance().retConnection(conn);
+  }
+
+  public static final void invalidateAndWriteBackDB(String parent, String name) {
+    LOG.info("invalidate dirty data under " + parent + " " + name);
+    long dirtyCount = 100000;
+    String dirtyCountStr = System.getenv("FILESCALE_DIRTY_OBJECT_NUM");
+    String database = System.getenv("DATABASE");
+    if (dirtyCountStr != null) {
+      dirtyCount = Long.parseLong(dirtyCountStr);
+    }
+    if (dirtyCount == 0) return;
+
+    Queue<ImmutablePair<String, String>> q = new LinkedList<>();
+    q.add(new ImmutablePair<>(parent, name));
+
+    ImmutablePair<String, String> id = null;
+    Set<INode> inodes = new HashSet<>();
+    long count = 0;
+    while ((id = q.poll()) != null) {
+      INode child = FSDirectory.getInstance().getInode(id.getLeft(), id.getRight());   
+      if (child != null) {
+        if (child.isDirectory()) {
+          HashSet<String> childNames = ((INodeDirectory)child).getCurrentChildrenList2();
+          for (String cname : childNames) {
+            q.add(new ImmutablePair<>(child.getPath(), cname));
+          }
+        }
+        inodes.add(child);
+        count++;
+        // invalidate inode
+        INodeKeyedObjects.getCache().invalidate(child.getPath());
+        if (count == dirtyCount) {
+          // write back to db
+          update_subtree(inodes);
+          break;
+        }
+        if (database.equals("VOLT")) {
+          if (inodes.size() >= 5120) {
+            // write back to db
+            update_subtree(inodes);
+          }
+        }
+      }
+    }
+    if (count < dirtyCount && inodes.size() > 0) {
+      // write back to db
+      update_subtree(inodes);
+    }
+  }
+
+  private final void remoteChmod(String path, Set<Pair<String, String>> mpoints) {
+    String database = System.getenv("DATABASE");
+    DatabaseConnection conn = Database.getInstance().getConnection();
+    BinaryObjectBuilder inodeKeyBuilder = null;
+    if (database.equals("IGNITE")) {
+      inodeKeyBuilder = conn.getIgniteClient().binary().builder("InodeKey");
+    }
+
+    // 1. invalidate cache and write back dirty data
+    Set<BinaryObject> keys = new HashSet<>();
+    List<CompletableFuture<Void>> list = new ArrayList<>();
+    for (Pair<String, String> pair : mpoints) {
+      File file = new File(pair.getLeft());
+      String parent = file.getParent();
+      String name = file.getName();
+      String url = pair.getRight();
+      try {
+        if (url == "localhost") {
+          list.add(CompletableFuture.runAsync(
+            () -> {
+              invalidateAndWriteBackDB(parent, name);
+            },
+            Database.getInstance().getExecutorService()));
+        } else {
+          list.add(CompletableFuture.runAsync(
+            () -> {
+              MountPoint.Builder b = MountPoint.newBuilder().setParent(parent).setName(name);
+              byte[] data = b.build().toByteArray();
+              try {
+                FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+                  FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+                  new InetSocketAddress(url, 10087), new Configuration());
+                proxy.invalidateAndWriteBackDB(data);
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+            },
+            Database.getInstance().getExecutorService()));
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+
+      if (database.equals("IGNITE")) {
+        keys.add(inodeKeyBuilder.setField("parentName", parent).setField("name", name).build());
+      }
+    }
+    CompletableFuture.allOf(list.toArray(new CompletableFuture[list.size()])).join();
+
+    // 2. execute distributed txn
+    LOG.info("Execute dist txn for chmod");
+
+    if (path != null) {
+      String start = INodeKeyedObjects.getWalOffset();
+      if (database.equals("VOLT")) {
+        INodeKeyedObjects.setWalOffset(DatabaseINode.setPermissions(path, this.permission));
+      } else if (database.equals("IGNITE")) {
+        IgniteCompute compute = conn.getIgniteClient().compute();
+        INodeKeyedObjects.setWalOffset(
+          compute.apply(new SetPermissionsV2(), new PermissionsPayload(path, this.permission))
+        );
+      }
+      String end = INodeKeyedObjects.getWalOffset();
+      FSDirectory.getInstance()
+        .getEditLog()
+        .logSetPermissionsMP(getPath(), new FsPermission(getFsPermissionShort()), start, end);
+    }
+    Database.getInstance().retConnection(conn);
   }
 
   private final void updatePermissionStatus(PermissionStatusFormat f, long n) {
-    this.permission = f.BITS.combine(n, permission);
+    this.permission = f.BITS.combine(n, getPermissionLong());
+    if (FSDirectory.getInstance().isLocalNN()) {
+      INodeKeyedObjects.getUpdateSet().add(getPath());
+    } else if (isDirectory()) {
+      try {
+        Set<Pair<String, String>> mpoints = FSDirectory.getInstance().getMountsManager().resolveSubPaths(getPath());
+        LOG.info(getPath() + " has sub-paths that are mounted into: " + mpoints);
+        remoteChmod(getPath(), mpoints);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      INodeKeyedObjects.setWalOffset(DatabaseINode.setPermission(getId(), this.permission));
+    }
   }
 
   @Override
@@ -192,7 +605,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getUserName();
     }
-    return PermissionStatusFormat.getUser(permission);
+    return PermissionStatusFormat.getUser(getPermissionLong());
   }
 
   @Override
@@ -206,7 +619,7 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getGroupName();
     }
-    return PermissionStatusFormat.getGroup(permission);
+    return PermissionStatusFormat.getGroup(getPermissionLong());
   }
 
   @Override
@@ -226,8 +639,9 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public final short getFsPermissionShort() {
-    return PermissionStatusFormat.getMode(permission);
+    return PermissionStatusFormat.getMode(getPermissionLong());
   }
+
   @Override
   void setPermission(FsPermission permission) {
     final short mode = permission.toShort();
@@ -236,6 +650,9 @@ public abstract class INodeWithAdditionalFields extends INode
 
   @Override
   public long getPermissionLong() {
+    if (permission == -1L) {
+      permission = DatabaseINode.getPermission(getId());
+    }
     return permission;
   }
 
@@ -254,27 +671,30 @@ public abstract class INodeWithAdditionalFields extends INode
       return getSnapshotINode(snapshotId).getModificationTime();
     }
 
-    return this.modificationTime;
+    if (modificationTime == -1L) {
+      modificationTime = DatabaseINode.getModificationTime(this.getId());
+    }
+    return modificationTime;
   }
-
 
   /** Update modification time if it is larger than the current value. */
   @Override
   public final INode updateModificationTime(long mtime, int latestSnapshotId) {
     Preconditions.checkState(isDirectory());
-    if (mtime <= modificationTime) {
+    if (mtime <= getModificationTime()) {
       return this;
     }
     return setModificationTime(mtime, latestSnapshotId);
   }
 
   final void cloneModificationTime(INodeWithAdditionalFields that) {
-    this.modificationTime = that.modificationTime;
+    modificationTime = that.getModificationTime();
   }
 
   @Override
   public final void setModificationTime(long modificationTime) {
     this.modificationTime = modificationTime;
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   @Override
@@ -282,77 +702,87 @@ public abstract class INodeWithAdditionalFields extends INode
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getAccessTime();
     }
+
+    if (accessTime == -1L) {
+      accessTime = DatabaseINode.getAccessTime(this.getId());
+    }
     return accessTime;
   }
 
-  /**
-   * Set last access time of inode.
-   */
+  /** Set last access time of inode. */
   @Override
   public final void setAccessTime(long accessTime) {
     this.accessTime = accessTime;
+    INodeKeyedObjects.getUpdateSet().add(getPath());
   }
 
   protected void addFeature(Feature f) {
-    int size = features.length;
-    Feature[] arr = new Feature[size + 1];
-    if (size != 0) {
-      System.arraycopy(features, 0, arr, 0, size);
-    }
-    arr[size] = f;
-    features = arr;
+    // int size = features.length;
+    // Feature[] arr = new Feature[size + 1];
+    // if (size != 0) {
+    //   System.arraycopy(features, 0, arr, 0, size);
+    // }
+    // arr[size] = f;
+    // features = arr;
+  }
+
+  protected void removeXAttrFeature(long id) {
+    CompletableFuture.runAsync(
+        () -> {
+          DatabaseINode.removeXAttr(id);
+        },
+        Database.getInstance().getExecutorService());
   }
 
   protected void removeFeature(Feature f) {
-    int size = features.length;
-    if (size == 0) {
-      throwFeatureNotFoundException(f);
-    }
+    // int size = features.length;
+    // if (size == 0) {
+    //   throwFeatureNotFoundException(f);
+    // }
 
-    if (size == 1) {
-      if (features[0] != f) {
-        throwFeatureNotFoundException(f);
-      }
-      features = EMPTY_FEATURE;
-      return;
-    }
+    // if (size == 1) {
+    //   if (features[0] != f) {
+    //     throwFeatureNotFoundException(f);
+    //   }
+    //   features = EMPTY_FEATURE;
+    //   return;
+    // }
 
-    Feature[] arr = new Feature[size - 1];
-    int j = 0;
-    boolean overflow = false;
-    for (Feature f1 : features) {
-      if (f1 != f) {
-        if (j == size - 1) {
-          overflow = true;
-          break;
-        } else {
-          arr[j++] = f1;
-        }
-      }
-    }
+    // Feature[] arr = new Feature[size - 1];
+    // int j = 0;
+    // boolean overflow = false;
+    // for (Feature f1 : features) {
+    //   if (f1 != f) {
+    //     if (j == size - 1) {
+    //       overflow = true;
+    //       break;
+    //     } else {
+    //       arr[j++] = f1;
+    //     }
+    //   }
+    // }
 
-    if (overflow || j != size - 1) {
-      throwFeatureNotFoundException(f);
-    }
-    features = arr;
+    // if (overflow || j != size - 1) {
+    //   throwFeatureNotFoundException(f);
+    // }
+    // features = arr;
   }
 
   private void throwFeatureNotFoundException(Feature f) {
-    throw new IllegalStateException(
-        "Feature " + f.getClass().getSimpleName() + " not found.");
+    throw new IllegalStateException("Feature " + f.getClass().getSimpleName() + " not found.");
   }
 
   protected <T extends Feature> T getFeature(Class<? extends Feature> clazz) {
     Preconditions.checkArgument(clazz != null);
-    final int size = features.length;
-    for (int i=0; i < size; i++) {
-      Feature f = features[i];
-      if (clazz.isAssignableFrom(f.getClass())) {
-        @SuppressWarnings("unchecked")
-        T ret = (T) f;
-        return ret;
-      }
-    }
+    // final int size = features.length;
+    // for (int i=0; i < size; i++) {
+    //   Feature f = features[i];
+    //   if (clazz.isAssignableFrom(f.getClass())) {
+    //     @SuppressWarnings("unchecked")
+    //     T ret = (T) f;
+    //     return ret;
+    //   }
+    // }
     return null;
   }
 
@@ -365,37 +795,40 @@ public abstract class INodeWithAdditionalFields extends INode
 
   public void addAclFeature(AclFeature f) {
     AclFeature f1 = getAclFeature();
-    if (f1 != null)
-      throw new IllegalStateException("Duplicated ACLFeature");
+    if (f1 != null) throw new IllegalStateException("Duplicated ACLFeature");
 
     addFeature(AclStorage.addAclFeature(f));
   }
-  
+
   @Override
   XAttrFeature getXAttrFeature(int snapshotId) {
     if (snapshotId != Snapshot.CURRENT_STATE_ID) {
       return getSnapshotINode(snapshotId).getXAttrFeature();
     }
+    // FIXME: disable XAttr
+    // if(!XAttrFeature.isFileXAttr(getId())) {
+    //   return null;
+    // }
+    // return new XAttrFeature(getId());
 
-    return getFeature(XAttrFeature.class);
+    return null;
   }
-  
+
   @Override
   public void removeXAttrFeature() {
-    XAttrFeature f = getXAttrFeature();
-    Preconditions.checkNotNull(f);
-    removeFeature(f);
+    removeXAttrFeature(getId());
   }
-  
+
   @Override
   public void addXAttrFeature(XAttrFeature f) {
-    XAttrFeature f1 = getXAttrFeature();
-    Preconditions.checkState(f1 == null, "Duplicated XAttrFeature");
-    
-    addFeature(f);
+    if (f.getId() != getId()) {
+      Preconditions.checkState(!XAttrFeature.isFileXAttr(getId()), "Duplicated XAttrFeature");
+      XAttrFeature.createXAttrFeature(getId(), f.getXAttrs());
+    }
   }
 
   public final Feature[] getFeatures() {
-    return features;
+    // return features;
+    return EMPTY_FEATURE;
   }
 }

@@ -109,6 +109,11 @@ public class TestINodeAttributeProvider {
         }
 
         @Override
+        public String getPath() {
+          return inode.getPath();
+        }
+
+        @Override
         public String getUserName() {
           return (useDefault) ? inode.getUserName() : "foo";
         }
@@ -159,7 +164,7 @@ public class TestINodeAttributeProvider {
           if (useDefault) {
             x = inode.getXAttrFeature();
           } else {
-            x = new XAttrFeature(ImmutableList.copyOf(
+            x = new XAttrFeature(1, ImmutableList.copyOf(
                     Lists.newArrayList(
                             new XAttr.Builder().setName("test")
                                     .setValue(new byte[] {1, 2})

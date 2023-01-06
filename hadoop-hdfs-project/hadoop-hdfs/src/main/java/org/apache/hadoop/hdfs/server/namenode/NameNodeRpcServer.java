@@ -259,7 +259,11 @@ public class NameNodeRpcServer implements NamenodeProtocols {
   /** The RPC server that listens to requests from clients */
   protected final RPC.Server clientRpcServer;
   protected final InetSocketAddress clientRpcAddress;
-  
+
+  /** The RPC server that listens to logging requests from other namenodes */
+  protected final RPC.Server mountRepartitionRpcServer;
+  protected final RPC.Server editLogRpcServer;
+
   private final String minimumDataNodeVersion;
 
   private final String defaultECPolicyName;
@@ -545,6 +549,26 @@ public class NameNodeRpcServer implements NamenodeProtocols {
         this.clientRpcServer.addAuxiliaryListener(auxiliaryPort);
       }
     }
+
+    // FSMountRepartition RPC Server
+    mountRepartitionRpcServer = new RPC.Builder(conf).setProtocol(FSMountRepartitionProtocol.class)
+      .setInstance(new FSMountRepartitionProtocolImpl())
+      .setBindAddress("0.0.0.0")
+      .setPort(10086)
+      .setNumHandlers(handlerCount)
+      .setVerbose(false)
+      .setSecretManager(namesystem.getDelegationTokenSecretManager())
+      .build();
+
+    // FSEditLog RPC Server
+    editLogRpcServer = new RPC.Builder(conf).setProtocol(FSEditLogProtocol.class)
+      .setInstance(new FSEditLogProtocolImpl())
+      .setBindAddress("0.0.0.0")
+      .setPort(10087)
+      .setNumHandlers(handlerCount)
+      .setVerbose(false)
+      .setSecretManager(namesystem.getDelegationTokenSecretManager())
+      .build();
   }
 
   /** Allow access to the lifeline RPC server for testing */
@@ -570,6 +594,8 @@ public class NameNodeRpcServer implements NamenodeProtocols {
    */
   void start() {
     clientRpcServer.start();
+    editLogRpcServer.start();
+    mountRepartitionRpcServer.start();
     if (serviceRpcServer != null) {
       serviceRpcServer.start();      
     }
@@ -583,6 +609,8 @@ public class NameNodeRpcServer implements NamenodeProtocols {
    */
   void join() throws InterruptedException {
     clientRpcServer.join();
+    editLogRpcServer.join();
+    mountRepartitionRpcServer.join();
     if (serviceRpcServer != null) {
       serviceRpcServer.join();      
     }
@@ -597,6 +625,12 @@ public class NameNodeRpcServer implements NamenodeProtocols {
   void stop() {
     if (clientRpcServer != null) {
       clientRpcServer.stop();
+    }
+    if (editLogRpcServer != null) {
+      editLogRpcServer.stop();
+    }
+    if (mountRepartitionRpcServer != null) {
+      mountRepartitionRpcServer.stop();
     }
     if (serviceRpcServer != null) {
       serviceRpcServer.stop();
@@ -1029,6 +1063,16 @@ public class NameNodeRpcServer implements NamenodeProtocols {
       metrics.incrFilesRenamed();
     }
     return ret;
+  }
+
+  @Override // ClientProtocol
+  public List<String> ls(String src) throws IOException {
+    checkNNStartup();
+    if(stateChangeLog.isDebugEnabled()) {
+      stateChangeLog.debug("*DIR* NameNode.ls: " + src);
+    }
+    namesystem.checkOperation(OperationCategory.READ);
+    return namesystem.ls(src);
   }
   
   @Override // ClientProtocol

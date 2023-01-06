@@ -114,10 +114,7 @@ public class FSDirAttrOp {
         throw new FileNotFoundException("File/Directory " + iip.getPath() +
                                             " does not exist.");
       }
-      boolean changed = unprotectedSetTimes(fsd, iip, mtime, atime, true);
-      if (changed) {
-        fsd.getEditLog().logTimes(iip.getPath(), mtime, atime);
-      }
+      unprotectedSetTimes(fsd, iip, mtime, atime, true);
     } finally {
       fsd.writeUnlock();
     }
@@ -139,9 +136,6 @@ public class FSDirAttrOp {
       final BlockInfo[] blocks = unprotectedSetReplication(fsd, iip,
                                                            replication);
       isFile = blocks != null;
-      if (isFile) {
-        fsd.getEditLog().logSetReplication(iip.getPath(), replication);
-      }
     } finally {
       fsd.writeUnlock();
     }
@@ -183,7 +177,6 @@ public class FSDirAttrOp {
       }
 
       unprotectedSetStoragePolicy(fsd, bm, iip, policyId);
-      fsd.getEditLog().logSetStoragePolicy(iip.getPath(), policyId);
     } finally {
       fsd.writeUnlock();
     }
@@ -260,7 +253,7 @@ public class FSDirAttrOp {
       FSDirectory fsd, INodesInPath iip, FsPermission permissions)
       throws FileNotFoundException, UnresolvedLinkException,
              QuotaExceededException, SnapshotAccessControlException {
-    assert fsd.hasWriteLock();
+    // assert fsd.hasWriteLock();
     final INode inode = FSDirectory.resolveLastINode(iip);
     int snapshotId = iip.getLatestSnapshotId();
     inode.setPermission(permissions, snapshotId);

@@ -131,7 +131,7 @@ public enum CreateFlag {
     this.mode = mode;
   }
 
-  short getMode() {
+  public short getMode() {
     return mode;
   }
   

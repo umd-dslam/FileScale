@@ -33,9 +33,77 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <hadoop.component>hdfs</hadoop.component>
     <kdc.resource.dir>../../hadoop-common-project/hadoop-common/src/test/resources/kdc</kdc.resource.dir>
     <is.hadoop.component>true</is.hadoop.component>
+    <curator.version>4.2.0</curator.version>
+    <zookeeper.version>3.4.13</zookeeper.version>
+    <ignite.version>2.10.0</ignite.version>
   </properties>
 
   <dependencies>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j2</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
+        <dependency>	
+            <groupId>org.apache.curator</groupId>	
+            <artifactId>curator-recipes</artifactId>	
+            <version>${curator.version}</version>	
+        </dependency>	
+        <dependency>	
+            <groupId>org.apache.curator</groupId>	
+            <artifactId>curator-framework</artifactId>	
+            <version>${curator.version}</version>	
+        </dependency>	
+        <dependency>	
+            <groupId>org.apache.curator</groupId>	
+            <artifactId>curator-client</artifactId>	
+            <version>${curator.version}</version>	
+        </dependency>
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>${zookeeper.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.10</version>
+        </dependency>
+        <dependency>
+            <groupId>com.massisframework</groupId>
+            <artifactId>j-text-utils</artifactId>
+            <version>0.3.4</version>
+        </dependency>
+    <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>commons-pool2</artifactId>
+        <version>2.6.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>2.7.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-annotations</artifactId>
@@ -68,11 +136,11 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <scope>compile</scope>
-    </dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+      <version>19.0</version>
+		</dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>

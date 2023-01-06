@@ -244,7 +244,7 @@ public class TestDiff {
 
   static INode newINode(int n, int width) {
     byte[] name = DFSUtil.string2Bytes(String.format("n%0" + width + "d", n));
-    return new INodeDirectory(n, name, PERM, 0L);
+    return new INodeDirectory(n, name, PERM, 0L, null);
   }
 
   static void create(INode inode, final List<INode> current,

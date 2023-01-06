@@ -402,8 +402,7 @@ public class CacheReplicationMonitor extends Thread implements Closeable {
         );
         continue;
       }
-      Block block = new Block(blockInfo.getBlockId());
-      CachedBlock ncblock = new CachedBlock(block.getBlockId(),
+      CachedBlock ncblock = new CachedBlock(blockInfo.getBlockId(),
           directive.getReplication(), mark);
       CachedBlock ocblock = cachedBlocks.get(ncblock);
       if (ocblock == null) {

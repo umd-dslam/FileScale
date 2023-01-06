@@ -224,6 +224,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <scope>compile</scope>
+      <version>19.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

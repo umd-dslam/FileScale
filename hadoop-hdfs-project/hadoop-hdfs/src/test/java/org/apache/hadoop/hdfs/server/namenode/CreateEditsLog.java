@@ -65,25 +65,23 @@ public class CreateEditsLog {
                                       new FsPermission((short)0777));
     INodeId inodeId = new INodeId();
     INodeDirectory dirInode = new INodeDirectory(inodeId.nextValue(), null, p,
-      0L);
+      0L, null);
     editLog.logMkDir(BASE_PATH, dirInode);
     BlockInfo[] blocks = new BlockInfo[blocksPerFile];
-    for (int iB = 0; iB < blocksPerFile; ++iB) {
-      blocks[iB] = 
-       new BlockInfoContiguous(new Block(0, blockSize, BLOCK_GENERATION_STAMP),
-           replication);
-    }
     
     long currentBlockId = startingBlockId;
     long bidAtSync = startingBlockId;
 
     for (int iF = 0; iF < numFiles; iF++) {
       for (int iB = 0; iB < blocksPerFile; ++iB) {
-         blocks[iB].setBlockId(currentBlockId++);
+        blocks[iB] = 
+          new BlockInfoContiguous(new Block(currentBlockId++, blockSize, BLOCK_GENERATION_STAMP),
+            replication);          
+
       }
 
       final INodeFile inode = new INodeFile(inodeId.nextValue(), null,
-          p, 0L, 0L, blocks, replication, blockSize);
+          p, 0L, 0L, blocks, replication, blockSize, null);
       inode.toUnderConstruction("", "");
 
      // Append path to filename with information about blockIDs 
@@ -94,11 +92,11 @@ public class CreateEditsLog {
       // Log the new sub directory in edits
       if ((iF % nameGenerator.getFilesPerDirectory())  == 0) {
         String currentDir = nameGenerator.getCurrentDir();
-        dirInode = new INodeDirectory(inodeId.nextValue(), null, p, 0L);
+        dirInode = new INodeDirectory(inodeId.nextValue(), null, p, 0L, null);
         editLog.logMkDir(currentDir, dirInode);
       }
       INodeFile fileUc = new INodeFile(inodeId.nextValue(), null,
-          p, 0L, 0L, BlockInfo.EMPTY_ARRAY, replication, blockSize);
+          p, 0L, 0L, BlockInfo.EMPTY_ARRAY, replication, blockSize, null);
       fileUc.toUnderConstruction("", "");
       editLog.logOpenFile(filePath, fileUc, false, false);
       editLog.logCloseFile(filePath, inode);

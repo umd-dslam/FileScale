@@ -30,6 +30,7 @@ import org.apache.hadoop.hdfs.protocol.BlockType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.util.LightWeightGSet;
 
+import org.apache.hadoop.hdfs.db.*;
 import static org.apache.hadoop.hdfs.server.namenode.INodeId.INVALID_INODE_ID;
 
 /**
@@ -39,83 +40,70 @@ import static org.apache.hadoop.hdfs.server.namenode.INodeId.INVALID_INODE_ID;
  * block group, are stored.
  */
 @InterfaceAudience.Private
-public abstract class BlockInfo extends Block
-    implements LightWeightGSet.LinkedElement {
+public abstract class BlockInfo extends Block {
 
   public static final BlockInfo[] EMPTY_ARRAY = {};
 
-  /**
-   * Replication factor.
-   */
-  private short replication;
-
-  /**
-   * Block collection ID.
-   */
-  private volatile long bcId;
-
-  /** For implementing {@link LightWeightGSet.LinkedElement} interface. */
-  private LightWeightGSet.LinkedElement nextLinkedElement;
-
-
-  // Storages this block is replicated on
-  protected DatanodeStorageInfo[] storages;
-
-  private BlockUnderConstructionFeature uc;
+  public BlockInfo(Block blk) {
+    super(blk);
+  }
 
   /**
    * Construct an entry for blocksmap
    * @param size the block's replication factor, or the total number of blocks
    *             in the block group
    */
+  // FIXME: I don't think this function still be used!
   public BlockInfo(short size) {
-    this.storages = new DatanodeStorageInfo[size];
-    this.bcId = INVALID_INODE_ID;
-    this.replication = isStriped() ? 0 : size;
+    super(0, 0, 0);
+    DatabaseDatablock.setReplication(0, isStriped() ? 0 : size);
   }
 
   public BlockInfo(Block blk, short size) {
     super(blk);
-    this.storages = new DatanodeStorageInfo[size];
-    this.bcId = INVALID_INODE_ID;
-    this.replication = isStriped() ? 0 : size;
+    DatabaseDatablock.setReplication(blk.getBlockId(), isStriped() ? 0 : size);
+  }
+
+  public BlockInfo(long bid, long num, long stamp, short size) {
+    super(bid, num, stamp);
+    DatabaseDatablock.setReplication(bid, isStriped() ? 0 : size);    
   }
 
   public short getReplication() {
-    return replication;
+    return DatabaseDatablock.getReplication(getBlockId());
   }
 
   public void setReplication(short repl) {
-    this.replication = repl;
+    DatabaseDatablock.setReplication(getBlockId(), repl);
   }
 
   public long getBlockCollectionId() {
-    return bcId;
+    return DatabaseINode2Block.getBcId(getBlockId());
   }
 
   public void setBlockCollectionId(long id) {
-    this.bcId = id;
+    DatabaseINode2Block.setBcIdViaBlkId(getBlockId(), id);
   }
 
   public void delete() {
-    setBlockCollectionId(INVALID_INODE_ID);
+    DatabaseINode2Block.deleteViaBlkId(getBlockId());
   }
 
   public boolean isDeleted() {
-    return bcId == INVALID_INODE_ID;
+    return DatabaseINode2Block.getBcId(getBlockId()) == 0;
   }
 
   public Iterator<DatanodeStorageInfo> getStorageInfos() {
     return new Iterator<DatanodeStorageInfo>() {
 
       private int index = 0;
-
+      private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBlockId());
       @Override
       public boolean hasNext() {
-        while (index < storages.length && storages[index] == null) {
+        while (index < storages.size() && storages.get(index) == null) {
           index++;
         }
-        return index < storages.length;
+        return index < storages.size();
       }
 
       @Override
@@ -123,7 +111,7 @@ public abstract class BlockInfo extends Block
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
-        return storages[index++];
+        return storages.get(index++);
       }
 
       @Override
@@ -139,18 +127,30 @@ public abstract class BlockInfo extends Block
   }
 
   DatanodeStorageInfo getStorageInfo(int index) {
-    assert this.storages != null : "BlockInfo is not initialized";
-    return storages[index];
+    String storageId = DatabaseStorage.getStorageId(getBlockId(), index);
+    if (storageId == null) {
+      return null;
+    }
+    return BlockManager.getInstance().getBlockStorage(storageId); 
   }
 
   void setStorageInfo(int index, DatanodeStorageInfo storage) {
-    assert this.storages != null : "BlockInfo is not initialized";
-    this.storages[index] = storage;
+    int size = DatabaseStorage.getNumStorages(getBlockId());
+    String storageId = null;
+    if (storage != null) {
+      storageId = storage.getStorageID();
+      BlockManager.getInstance().setBlockStorage(storageId, storage);
+    } 
+    if (index < size) {
+      DatabaseStorage.setStorage(getBlockId(), index, storageId);
+    } else {
+      assert index == size : "Expand one storage for BlockInfo"; 
+      DatabaseStorage.insertStorage(getBlockId(), index, storageId);
+    }
   }
 
   public int getCapacity() {
-    assert this.storages != null : "BlockInfo is not initialized";
-    return storages.length;
+    return DatabaseStorage.getNumStorages(getBlockId());
   }
 
   /**
@@ -233,23 +233,14 @@ public abstract class BlockInfo extends Block
     return (this == obj) || super.equals(obj);
   }
 
-  @Override
-  public LightWeightGSet.LinkedElement getNext() {
-    return nextLinkedElement;
-  }
-
-  @Override
-  public void setNext(LightWeightGSet.LinkedElement next) {
-    this.nextLinkedElement = next;
-  }
-
   /* UnderConstruction Feature related */
 
   public BlockUnderConstructionFeature getUnderConstructionFeature() {
-    return uc;
+    return BlockManager.getInstance().getBlockUC(getBlockId());
   }
 
   public BlockUCState getBlockUCState() {
+    BlockUnderConstructionFeature uc = getUnderConstructionFeature();
     return uc == null ? BlockUCState.COMPLETE : uc.getBlockUCState();
   }
 
@@ -278,10 +269,12 @@ public abstract class BlockInfo extends Block
   public void convertToBlockUnderConstruction(BlockUCState s,
       DatanodeStorageInfo[] targets) {
     if (isComplete()) {
-      uc = new BlockUnderConstructionFeature(this, s, targets,
-          this.getBlockType());
+      BlockUnderConstructionFeature uc = new BlockUnderConstructionFeature(
+        this, s, targets, this.getBlockType());
+      BlockManager.getInstance().setBlockUC(getBlockId(), uc);
     } else {
       // the block is already under construction
+      BlockUnderConstructionFeature uc = getUnderConstructionFeature();
       uc.setBlockUCState(s);
       uc.setExpectedLocations(this, targets, this.getBlockType());
     }
@@ -293,7 +286,7 @@ public abstract class BlockInfo extends Block
   void convertToCompleteBlock() {
     assert getBlockUCState() != BlockUCState.COMPLETE :
         "Trying to convert a COMPLETE block";
-    uc = null;
+    BlockManager.getInstance().removeBlockUC(getBlockId());
   }
 
   /**
@@ -304,6 +297,7 @@ public abstract class BlockInfo extends Block
    */
   public List<ReplicaUnderConstruction> setGenerationStampAndVerifyReplicas(
       long genStamp) {
+    BlockUnderConstructionFeature uc = getUnderConstructionFeature();
     Preconditions.checkState(uc != null && !isComplete());
     // Set the generation stamp for the block.
     setGenerationStamp(genStamp);
@@ -324,6 +318,7 @@ public abstract class BlockInfo extends Block
           + block.getBlockId() + ", expected id = " + getBlockId());
     }
     Preconditions.checkState(!isComplete());
+    BlockUnderConstructionFeature uc = getUnderConstructionFeature();
     uc.commit();
     this.setNumBytes(block.getNumBytes());
     // Sort out invalid replicas.

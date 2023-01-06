@@ -56,18 +56,18 @@ public class TestEncryptionZoneManager {
       new FsPermission((short) 755));
     this.rootINode =
         new INodeDirectory(0L, "".getBytes(), defaultPermission,
-          System.currentTimeMillis());
+          System.currentTimeMillis(), null);
     this.firstINode =
         new INodeDirectory(1L, "first".getBytes(), defaultPermission,
-          System.currentTimeMillis());
+          System.currentTimeMillis(), null);
     this.secondINode =
         new INodeDirectory(2L, "second".getBytes(), defaultPermission,
-          System.currentTimeMillis());
+          System.currentTimeMillis(), null);
     when(this.mockedDir.hasReadLock()).thenReturn(true);
     when(this.mockedDir.hasWriteLock()).thenReturn(true);
-    when(this.mockedDir.getInode(0L)).thenReturn(rootINode);
-    when(this.mockedDir.getInode(1L)).thenReturn(firstINode);
-    when(this.mockedDir.getInode(2L)).thenReturn(secondINode);
+    // when(this.mockedDir.getInode(0L)).thenReturn(rootINode);
+    // when(this.mockedDir.getInode(1L)).thenReturn(firstINode);
+    // when(this.mockedDir.getInode(2L)).thenReturn(secondINode);
   }
 
   @Test
@@ -139,8 +139,8 @@ public class TestEncryptionZoneManager {
   @Test
   public void testListEncryptionZonesSubDirInvalid() throws Exception{
     INodeDirectory thirdINode = new INodeDirectory(3L, "third".getBytes(),
-        defaultPermission, System.currentTimeMillis());
-    when(this.mockedDir.getInode(3L)).thenReturn(thirdINode);
+        defaultPermission, System.currentTimeMillis(), null);
+    // when(this.mockedDir.getInode(3L)).thenReturn(thirdINode);
     //sets "second" as parent
     thirdINode.setParent(this.secondINode);
     this.ezManager = new EncryptionZoneManager(mockedDir, new Configuration());

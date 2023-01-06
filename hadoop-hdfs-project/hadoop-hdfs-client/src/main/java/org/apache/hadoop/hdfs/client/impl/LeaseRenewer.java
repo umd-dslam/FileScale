@@ -255,7 +255,7 @@ public class LeaseRenewer {
   }
 
   /** Set the grace period and adjust the sleep period accordingly. */
-  synchronized void setGraceSleepPeriod(final long gracePeriod) {
+  public synchronized void setGraceSleepPeriod(final long gracePeriod) {
     unsyncSetGraceSleepPeriod(gracePeriod);
   }
 
@@ -271,7 +271,7 @@ public class LeaseRenewer {
   }
 
   /** Is the daemon running? */
-  synchronized boolean isRunning() {
+  public synchronized boolean isRunning() {
     return daemon != null && daemon.isAlive();
   }
 

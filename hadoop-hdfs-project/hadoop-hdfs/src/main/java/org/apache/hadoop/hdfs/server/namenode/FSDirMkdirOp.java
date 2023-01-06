@@ -32,6 +32,7 @@ import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import org.apache.hadoop.hdfs.server.namenode.FSDirectory.DirOp;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.security.AccessControlException;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
 import java.util.List;
@@ -208,11 +209,13 @@ class FSDirMkdirOp {
       throw new FileAlreadyExistsException("Parent path is not a directory: " +
           parent.getPath() + " " + DFSUtil.bytes2String(name));
     }
-    final INodeDirectory dir = new INodeDirectory(inodeId, name, permission,
-        timestamp);
+
+    INodeDirectory dir = new INodeDirectory(parent.getLastINode(), inodeId, name,
+      permission, timestamp, parent.getPath());
+    INodeKeyedObjects.getCache().put(dir.getPath(), dir);
 
     INodesInPath iip =
-        fsd.addLastINode(parent, dir, permission.getPermission(), true);
+        fsd.addLastINode(parent, dir, DFSUtil.bytes2String(name), permission.getPermission(), true);
     if (iip != null && aclEntries != null) {
       AclStorage.updateINodeAcl(dir, aclEntries, Snapshot.CURRENT_STATE_ID);
     }

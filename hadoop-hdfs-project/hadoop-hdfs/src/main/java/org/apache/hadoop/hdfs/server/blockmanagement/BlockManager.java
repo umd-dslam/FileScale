@@ -109,6 +109,7 @@ import org.apache.hadoop.hdfs.server.protocol.VolumeFailureSummary;
 import org.apache.hadoop.hdfs.util.FoldedTreeSet;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
 import org.apache.hadoop.hdfs.server.namenode.CacheManager;
+import org.apache.hadoop.hdfs.db.*;
 
 import static org.apache.hadoop.hdfs.util.StripedBlockUtil.getInternalBlockLength;
 
@@ -309,6 +310,9 @@ public class BlockManager implements BlockStatsMXBean {
    */
   final BlocksMap blocksMap;
 
+  final Map<Long, BlockUnderConstructionFeature> blockUcMap = new HashMap<Long, BlockUnderConstructionFeature>();
+  final Map<String, DatanodeStorageInfo> storageMap = new HashMap<String, DatanodeStorageInfo>();
+
   /** Redundancy thread. */
   private final Daemon redundancyThread = new Daemon(new RedundancyMonitor());
 
@@ -443,6 +447,8 @@ public class BlockManager implements BlockStatsMXBean {
   /** Storages accessible from multiple DNs. */
   private final ProvidedStorageMap providedStorageMap;
 
+  private static BlockManager instance;
+
   public BlockManager(final Namesystem namesystem, boolean haEnabled,
       final Configuration conf) throws IOException {
     this.namesystem = namesystem;
@@ -461,9 +467,7 @@ public class BlockManager implements BlockStatsMXBean {
         startupDelayBlockDeletionInMs,
         blockIdManager);
 
-    // Compute the map capacity by allocating 2% of total memory
-    blocksMap = new BlocksMap(
-        LightWeightGSet.computeCapacity(2.0, "BlocksMap"));
+    blocksMap = new BlocksMap();
     placementPolicies = new BlockPlacementPolicies(
       conf, datanodeManager.getFSClusterStats(),
       datanodeManager.getNetworkTopology(),
@@ -583,6 +587,24 @@ public class BlockManager implements BlockStatsMXBean {
     LOG.info("maxNumBlocksToLog          = {}", maxNumBlocksToLog);
   }
 
+  public static BlockManager getInstance(final Namesystem namesystem, boolean haEnabled,
+      final Configuration conf) {
+    if (instance == null) {
+      try {
+        instance = new BlockManager(namesystem, haEnabled, conf);
+      } catch (IOException ex) {
+        System.out.println(ex.toString());
+      }
+    }
+    return instance;
+  }
+
+  // Preconditions ensure getInstance(ns, haEnabled, conf) will be invoked first in BlockManager 
+  public static BlockManager getInstance() {
+    Preconditions.checkArgument(instance != null);
+    return instance;
+  }
+
   private static BlockTokenSecretManager createBlockTokenSecretManager(
       final Configuration conf) throws IOException {
     final boolean isEnabled = conf.getBoolean(
@@ -659,6 +681,39 @@ public class BlockManager implements BlockStatsMXBean {
     if (isBlockTokenEnabled()) {
       blockTokenSecretManager.setBlockPoolId(blockPoolId);
     }
+  }
+
+  public Map<String, DatanodeStorageInfo> getStorageMap() {
+    return storageMap;
+  }
+
+  public DatanodeStorageInfo getBlockStorage(String storageId) {
+    return storageMap.get(storageId);
+  }
+
+  public List<DatanodeStorageInfo> getBlockStorages(long blockId) {
+    List<String> storageIds = DatabaseStorage.getStorageIds(blockId);
+    List<DatanodeStorageInfo> storages = new ArrayList<DatanodeStorageInfo>();
+    for (String storageId : storageIds) {
+      storages.add(storageMap.get(storageId));  
+    }   
+    return storages;
+  }
+
+  public void setBlockStorage(String storageId, DatanodeStorageInfo storage) {
+    storageMap.put(storageId, storage);
+  }
+
+  public BlockUnderConstructionFeature getBlockUC(long blockId) {
+    return blockUcMap.get(blockId);
+  }
+
+  public void setBlockUC(long blockId, BlockUnderConstructionFeature uc) {
+    blockUcMap.put(blockId, uc);
+  }
+
+  public void removeBlockUC(long blockId) {
+    blockUcMap.remove(blockId);
   }
 
   public String getBlockPoolId() {
@@ -1692,9 +1747,13 @@ public class BlockManager implements BlockStatsMXBean {
 
     // Add this replica to corruptReplicas Map. For striped blocks, we always
     // use the id of whole striped block group when adding to corruptReplicas
-    Block corrupted = new Block(b.getCorrupted());
+    Block corrupted;
     if (b.getStored().isStriped()) {
-      corrupted.setBlockId(b.getStored().getBlockId());
+      long bid = b.getCorrupted().getBlockId();
+      Long[] res = DatabaseDatablock.getNumBytesAndStamp(bid);
+      corrupted = new Block(b.getStored().getBlockId(), res[0], res[1]);
+    } else {
+      corrupted = new Block(b.getCorrupted());
     }
     corruptReplicas.addToCorruptReplicasMap(corrupted, node, b.getReason(),
         b.getReasonCode(), b.getStored().isStriped());
@@ -3434,7 +3493,7 @@ public class BlockManager implements BlockStatsMXBean {
     long nrInvalid = 0, nrOverReplicated = 0;
     long nrUnderReplicated = 0, nrPostponed = 0, nrUnderConstruction = 0;
     long startTimeMisReplicatedScan = Time.monotonicNow();
-    Iterator<BlockInfo> blocksItr = blocksMap.getBlocks().iterator();
+    Iterator<Long> blocksItr = DatabaseINode2Block.getAllBlockIds().iterator();
     long totalBlocks = blocksMap.size();
     reconstructionQueuesInitProgress = 0;
     long totalProcessed = 0;
@@ -3446,7 +3505,14 @@ public class BlockManager implements BlockStatsMXBean {
       namesystem.writeLockInterruptibly();
       try {
         while (processed < numBlocksPerIteration && blocksItr.hasNext()) {
-          BlockInfo block = blocksItr.next();
+          long blockId = blocksItr.next();
+          Block b = new Block(blockId);
+          BlockInfo block;
+          if (b.getECPolicyId() < 0) {
+            block = new BlockInfoContiguous(b);
+          } else {
+            block = new BlockInfoStriped(b);
+          }
           MisReplicationResult res = processMisReplicatedBlock(block);
           switch (res) {
           case UNDER_REPLICATED:
@@ -4282,7 +4348,7 @@ public class BlockManager implements BlockStatsMXBean {
     return false;
   }
 
-  public int getActiveBlockCount() {
+  public long getActiveBlockCount() {
     return blocksMap.size();
   }
 
@@ -4300,7 +4366,7 @@ public class BlockManager implements BlockStatsMXBean {
     return blocksMap.getStorages(block);
   }
 
-  public int getTotalBlocks() {
+  public long getTotalBlocks() {
     return blocksMap.size();
   }
 
@@ -4553,10 +4619,6 @@ public class BlockManager implements BlockStatsMXBean {
     blocksMap.removeBlock(block);
     // If block is removed from blocksMap remove it from corruptReplicasMap
     corruptReplicas.removeFromCorruptReplicasMap(block);
-  }
-
-  public int getCapacity() {
-    return blocksMap.getCapacity();
   }
 
   /**

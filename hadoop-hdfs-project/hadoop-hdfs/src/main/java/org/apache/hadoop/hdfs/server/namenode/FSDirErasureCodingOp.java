@@ -206,7 +206,6 @@ final class FSDirErasureCodingOp {
       fsd.writeUnlock();
     }
     if (xAttrs != null) {
-      fsn.getEditLog().logRemoveXAttrs(src, xAttrs, logRetryCache);
     } else {
       throw new NoECPolicySetException(
           "No erasure coding policy explicitly set on " + src);
@@ -228,7 +227,6 @@ final class FSDirErasureCodingOp {
     Preconditions.checkNotNull(policy);
     ErasureCodingPolicy retPolicy =
         fsn.getErasureCodingPolicyManager().addPolicy(policy);
-    fsn.getEditLog().logAddErasureCodingPolicy(policy, logRetryCache);
     return retPolicy;
   }
 
@@ -245,7 +243,6 @@ final class FSDirErasureCodingOp {
       String ecPolicyName, final boolean logRetryCache) throws IOException {
     Preconditions.checkNotNull(ecPolicyName);
     fsn.getErasureCodingPolicyManager().removePolicy(ecPolicyName);
-    fsn.getEditLog().logRemoveErasureCodingPolicy(ecPolicyName, logRetryCache);
   }
 
   /**
@@ -262,10 +259,6 @@ final class FSDirErasureCodingOp {
     Preconditions.checkNotNull(ecPolicyName);
     boolean success =
         fsn.getErasureCodingPolicyManager().enablePolicy(ecPolicyName);
-    if (success) {
-      fsn.getEditLog().logEnableErasureCodingPolicy(ecPolicyName,
-          logRetryCache);
-    }
     return success;
   }
 
@@ -283,10 +276,6 @@ final class FSDirErasureCodingOp {
     Preconditions.checkNotNull(ecPolicyName);
     boolean success =
         fsn.getErasureCodingPolicyManager().disablePolicy(ecPolicyName);
-    if (success) {
-      fsn.getEditLog().logDisableErasureCodingPolicy(ecPolicyName,
-          logRetryCache);
-    }
     return success;
   }
 

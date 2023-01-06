@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
+import java.util.concurrent.CompletableFuture;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -45,6 +46,8 @@ import org.apache.hadoop.hdfs.util.Diff;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.util.ChunkedArrayList;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.hdfs.db.*;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -59,20 +62,37 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   public static final Logger LOG = LoggerFactory.getLogger(INode.class);
 
   /** parent is either an {@link INodeDirectory} or an {@link INodeReference}.*/
-  private INode parent = null;
+  long parent = -1L;
+  String parentName = null;  // full path
 
   INode(INode parent) {
-    this.parent = parent;
+    InitINode(parent);
+  }
+
+  INode(INode parent, String parentName) {
+    InitINode(parent);
+    this.parentName = parentName;
+  }
+
+  public void InitINode(INode parent) {
+    if (parent != null) {
+      this.parent = parent.getId();
+    }    
   }
 
   /** Get inode id */
   public abstract long getId();
 
+  public abstract void setId(Long id);
+
   /**
    * Check whether this is the root inode.
    */
   final boolean isRoot() {
-    return getLocalNameBytes().length == 0;
+    if (getParentId() == 0) {
+      return true;
+    }
+    return getLocalNameBytes() == null;
   }
 
   /** Get the {@link PermissionStatus} */
@@ -232,10 +252,11 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     }
     // if parent is a reference node, parent must be a renamed node. We can 
     // stop the check at the reference node.
+    INode parent = getParent();
     if (parent != null && parent.isReference()) {
       return true;
     }
-    final INodeDirectory parentDir = getParent();
+    final INodeDirectory parentDir = parent.asDirectory();
     if (parentDir == null) { // root
       return true;
     }
@@ -252,9 +273,17 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
   
   /** @return true if the given inode is an ancestor directory of this inode. */
   public final boolean isAncestorDirectory(final INodeDirectory dir) {
-    for(INodeDirectory p = getParent(); p != null; p = p.getParent()) {
-      if (p == dir) {
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<Long> parents = DatabaseINode.getParentIds(getId());
+      if (parents.contains(dir.getId())) {
         return true;
+      }
+    } else {
+      for(INodeDirectory p = getParent(); p != null; p = p.getParent()) {
+        if (p == dir) {
+          return true;
+        }
       }
     }
     return false;
@@ -471,6 +500,7 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    * Check and add namespace/storagespace/storagetype consumed to itself and the ancestors.
    */
   public void addSpaceConsumed(QuotaCounts counts) {
+    INode parent = getParent();
     if (parent != null) {
       parent.addSpaceConsumed(counts);
     }
@@ -560,6 +590,13 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return getLocalNameBytes();
   }
 
+  public final boolean isKeyCached() {
+    if (isFile()) {
+      return asFile().isNameCached();
+    }
+    return asDirectory().isNameCached();
+  }
+
   /**
    * Set local file name
    */
@@ -570,32 +607,56 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     if (isRoot()) {
       return Path.SEPARATOR;
     }
-    // compute size of needed bytes for the path
-    int idx = 0;
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      // add component + delimiter (if not tail component)
-      idx += inode.getLocalNameBytes().length + (inode != this ? 1 : 0);
-    }
-    byte[] path = new byte[idx];
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      if (inode != this) {
-        path[--idx] = Path.SEPARATOR_CHAR;
+
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<String> names = DatabaseINode.getPathComponents(getId());
+      String fullname = "";
+      for (int i = 0; i < names.size(); ++i) {
+        fullname += names.get(i);
+        if (i + 1 != names.size()) {
+          fullname += Path.SEPARATOR; 
+        }
       }
-      byte[] name = inode.getLocalNameBytes();
-      idx -= name.length;
-      System.arraycopy(name, 0, path, idx, name.length);
+      return fullname;
+    } else {
+      // compute size of needed bytes for the path
+      int idx = 0;
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        // add component + delimiter (if not tail component)
+        idx += inode.getLocalNameBytes().length + (inode != this ? 1 : 0);
+      }
+      byte[] path = new byte[idx];
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        if (inode != this) {
+          path[--idx] = Path.SEPARATOR_CHAR;
+        }
+        byte[] name = inode.getLocalNameBytes();
+        idx -= name.length;
+        System.arraycopy(name, 0, path, idx, name.length);
+      }
+      return DFSUtil.bytes2String(path);
     }
-    return DFSUtil.bytes2String(path);
   }
 
   public byte[][] getPathComponents() {
-    int n = 0;
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      n++;
-    }
-    byte[][] components = new byte[n][];
-    for (INode inode = this; inode != null; inode = inode.getParent()) {
-      components[--n] = inode.getLocalNameBytes();
+    byte[][] components = null;
+    String env = System.getenv("DATABASE");
+    if (env.equals("VOLT") || env.equals("POSTGRES")) {
+      List<String> names = DatabaseINode.getPathComponents(getId());
+      components = new byte[names.size()][];
+      for (int i = 0; i < names.size(); ++i) {
+        components[i] = DFSUtil.string2Bytes(names.get(i));
+      }
+    } else {
+      int n = 0;
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        n++;
+      }
+      components = new byte[n][];
+      for (INode inode = this; inode != null; inode = inode.getParent()) {
+        components[--n] = inode.getLocalNameBytes();
+      }
     }
     return components;
   }
@@ -632,10 +693,49 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
     return toString() + "(" + getObjectString() + "), " + getParentString();
   }
 
+  public final long getParentId() {
+    if (parent == -1L) {
+      parent = DatabaseINode.getParent(getId()); 
+    }
+    return parent;
+  }
+
+  public final String getParentName() {
+    if (parentName == null) {
+      parentName = DatabaseINode.getParentName(getId()); 
+    }
+    return parentName;
+  }
+
+
   /** @return the parent directory */
   public final INodeDirectory getParent() {
-    return parent == null? null
-        : parent.isReference()? getParentReference().getParent(): parent.asDirectory();
+    long id = getParentId(); 
+  
+    if (id == DatabaseINode.LONG_NULL) {
+      return null;
+    } else {
+      INode dir = INodeKeyedObjects.getCache().getIfPresent(getParentName()); 
+      if (dir == null) {
+        dir = new INodeDirectory(id);
+        DatabaseINode.LoadINode node = new DatabaseINode().loadINode(id);
+        byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
+        dir
+          .asDirectory()
+          .InitINodeDirectory(
+              node.parent,
+              node.id,
+              name,
+              node.permission,
+              node.modificationTime,
+              node.accessTime,
+              node.header,
+              node.parentName);
+
+        INodeKeyedObjects.getCache().put(dir.getPath(), dir.asDirectory());
+      }
+      return dir.asDirectory();
+    }
   }
 
   /**
@@ -643,17 +743,34 @@ public abstract class INode implements INodeAttributes, Diff.Element<byte[]> {
    *         otherwise, return null.
    */
   public INodeReference getParentReference() {
+    INode parent = getParent();
     return parent == null || !parent.isReference()? null: (INodeReference)parent;
   }
 
   /** Set parent directory */
   public final void setParent(INodeDirectory parent) {
-    this.parent = parent;
+    if (parent == null) {
+      this.parent = DatabaseINode.LONG_NULL;
+    } else {
+      this.parent = parent.getId();
+    }
+  }
+
+  public final void setParent(long parentId) {
+    this.parent = parentId;
+  }
+
+  public final void setParentName(String parentName) {
+    this.parentName = parentName;
   }
 
   /** Set container. */
   public final void setParentReference(INodeReference parent) {
-    this.parent = parent;
+    if (parent == null) {
+      this.parent = DatabaseINode.LONG_NULL;
+    } else {
+      this.parent = parent.getId();
+    }
   }
 
   /** Clear references to other objects. */

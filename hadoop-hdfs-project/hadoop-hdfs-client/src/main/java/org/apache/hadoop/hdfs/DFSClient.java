@@ -280,6 +280,10 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
     this(nameNodeUri, conf, null);
   }
 
+  public DFSClient createDfsClient(URI nameNodeUri, Configuration conf) throws IOException {
+    return new DFSClient(nameNodeUri, conf, null);
+  }
+
   /**
    * Same as this(nameNodeUri, null, conf, stats);
    * @see #DFSClient(URI, ClientProtocol, Configuration, FileSystem.Statistics)

@@ -92,6 +92,7 @@ public class Client implements AutoCloseable {
 
   private static final ThreadLocal<Integer> callId = new ThreadLocal<Integer>();
   private static final ThreadLocal<Integer> retryCount = new ThreadLocal<Integer>();
+  private static final ThreadLocal<String> clientAddress = new ThreadLocal<String>();
   private static final ThreadLocal<Object> EXTERNAL_CALL_HANDLER
       = new ThreadLocal<>();
   private static final ThreadLocal<AsyncGet<? extends Writable, IOException>>
@@ -121,6 +122,10 @@ public class Client implements AutoCloseable {
     callId.set(cid);
     retryCount.set(rc);
     EXTERNAL_CALL_HANDLER.set(externalHandler);
+  }
+
+  public static void setClientAddress(String s) {
+    clientAddress.set(s);
   }
 
   private ConcurrentMap<ConnectionId, Connection> connections =
@@ -469,7 +474,7 @@ public class Client implements AutoCloseable {
         RpcRequestHeaderProto pingHeader = ProtoUtil
             .makeRpcRequestHeader(RpcKind.RPC_PROTOCOL_BUFFER,
                 OperationProto.RPC_FINAL_PACKET, PING_CALL_ID,
-                RpcConstants.INVALID_RETRY_COUNT, clientId);
+                RpcConstants.INVALID_RETRY_COUNT, clientId, clientAddress.get());
         pingHeader.writeDelimitedTo(buf);
         pingRequest = buf.toByteArray();
       }
@@ -997,7 +1002,7 @@ public class Client implements AutoCloseable {
       RpcRequestHeaderProto connectionContextHeader = ProtoUtil
           .makeRpcRequestHeader(RpcKind.RPC_PROTOCOL_BUFFER,
               OperationProto.RPC_FINAL_PACKET, CONNECTION_CONTEXT_CALL_ID,
-              RpcConstants.INVALID_RETRY_COUNT, clientId);
+              RpcConstants.INVALID_RETRY_COUNT, clientId, clientAddress.get());
       // do not flush.  the context and first ipc call request must be sent
       // together to avoid possibility of broken pipes upon authz failure.
       // see writeConnectionHeader
@@ -1108,7 +1113,7 @@ public class Client implements AutoCloseable {
       // Items '1' and '2' are prepared here. 
       RpcRequestHeaderProto header = ProtoUtil.makeRpcRequestHeader(
           call.rpcKind, OperationProto.RPC_FINAL_PACKET, call.id, call.retry,
-          clientId);
+          clientId, clientAddress.get());
 
       final ResponseBuffer buf = new ResponseBuffer();
       header.writeDelimitedTo(buf);
