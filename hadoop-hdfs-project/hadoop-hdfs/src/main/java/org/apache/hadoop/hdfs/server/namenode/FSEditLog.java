@@ -43,6 +43,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.CacheDirectiveInfo;
 import org.apache.hadoop.hdfs.protocol.CachePoolInfo;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
+import org.apache.hadoop.hdfs.protocolPB.PBHelperClient;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
@@ -76,6 +77,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveCachePoolOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveXAttrOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOldOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameSnapshotOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenewDelegationTokenOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RollingUpgradeFinalizeOp;
@@ -86,6 +88,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV1Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV2Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetOwnerOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaByStorageTypeOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetReplicationOp;
@@ -114,6 +117,29 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
+
+import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildAclEntries;
+import static org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode.Saver.buildXAttrs;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.ipc.RPC;
+import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.LoaderContext;
+import org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf.SaverContext;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FileSummary;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.FilesUnderConstructionSection.FileUnderConstructionEntry;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeDirectorySection;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.AclFeatureProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrCompactProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.XAttrFeatureProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeEntryProto;
+import org.apache.hadoop.hdfs.server.namenode.FsImageProto.INodeSection.QuotaByStorageTypeFeatureProto;
+
+import com.google.protobuf.ByteString;
 
 /**
  * FSEditLog maintains a log of the namespace modifications.
@@ -788,11 +814,72 @@ public class FSEditLog implements LogsPurgeable {
     FileUnderConstructionFeature uc = file.getFileUnderConstructionFeature();
     assert uc != null;
     AppendOp op = AppendOp.getInstance(cache.get()).setPath(path)
-        .setClientName(uc.getClientName())
-        .setClientMachine(uc.getClientMachine())
+        .setClientName(uc.getClientName(file.getId()))
+        .setClientMachine(uc.getClientMachine(file.getId()))
         .setNewBlock(newBlock);
     logRpcIds(op, toLogRpcIds);
     logEdit(op);
+  }
+
+  public void remoteLogOpenFile(INodeFile newNode, String nameNodeAddress) {
+    INodeSection.INodeFile.Builder b = INodeSection.INodeFile.newBuilder()
+      .setAccessTime(newNode.getAccessTime())
+      .setModificationTime(newNode.getModificationTime())
+      .setPermission(newNode.getPermissionLong())
+      .setPreferredBlockSize(newNode.getPreferredBlockSize())
+      .setStoragePolicyID(newNode.getLocalStoragePolicyID())
+      .setBlockType(PBHelperClient.convert(newNode.getBlockType()));
+
+    if (newNode.isStriped()) {
+      b.setErasureCodingPolicyID(newNode.getErasureCodingPolicyID());
+    } else {
+      b.setReplication(newNode.getFileReplication());
+    }
+
+    AclFeature acl = newNode.getAclFeature();
+    if (acl != null) {
+      b.setAcl(buildAclEntries(acl));
+    }
+
+    XAttrFeature xAttrFeature = newNode.getXAttrFeature();
+    if (xAttrFeature != null) {
+      b.setXAttrs(buildXAttrs(xAttrFeature));
+    }
+
+    BlockInfo[] blocks = newNode.getBlocks();
+    if (blocks != null) {
+      for (Block block : blocks) {
+        b.addBlocks(PBHelperClient.convert(block));
+      }
+    }
+
+    FileUnderConstructionFeature uc = newNode.getFileUnderConstructionFeature();
+    if (uc != null) {
+      long id = newNode.getId();
+      INodeSection.FileUnderConstructionFeature f =
+        INodeSection.FileUnderConstructionFeature
+        .newBuilder().setClientName(uc.getClientName(id))
+        .setClientMachine(uc.getClientMachine(id)).build();
+      b.setFileUC(f);
+    }
+   
+    try {
+      INodeSection.INode r = INodeSection.INode.newBuilder()
+          .setId(newNode.getId())
+          .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
+          .setType(INodeSection.INode.Type.FILE).setFile(b)
+          .setParent(newNode.getParentId())
+          .setParentName(newNode.getParentName())
+          .build();
+
+      byte[] data = r.toByteArray();
+      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+        new InetSocketAddress(nameNodeAddress, 10087), new Configuration());
+      proxy.logEdit(data);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   /** 
@@ -801,7 +888,6 @@ public class FSEditLog implements LogsPurgeable {
    */
   public void logOpenFile(String path, INodeFile newNode, boolean overwrite,
       boolean toLogRpcIds) {
-    Preconditions.checkArgument(newNode.isUnderConstruction());
     PermissionStatus permissions = newNode.getPermissionStatus();
     AddOp op = AddOp.getInstance(cache.get())
       .setInodeId(newNode.getId())
@@ -812,12 +898,14 @@ public class FSEditLog implements LogsPurgeable {
       .setBlockSize(newNode.getPreferredBlockSize())
       .setBlocks(newNode.getBlocks())
       .setPermissionStatus(permissions)
-      .setClientName(newNode.getFileUnderConstructionFeature().getClientName())
-      .setClientMachine(
-          newNode.getFileUnderConstructionFeature().getClientMachine())
       .setOverwrite(overwrite)
       .setStoragePolicyId(newNode.getLocalStoragePolicyID())
       .setErasureCodingPolicyId(newNode.getErasureCodingPolicyID());
+    if (newNode.isUnderConstruction()) {
+      op.setClientName(newNode.getFileUnderConstructionFeature().getClientName(newNode.getId()))
+        .setClientMachine(
+          newNode.getFileUnderConstructionFeature().getClientMachine(newNode.getId()));
+    }
 
     AclFeature f = newNode.getAclFeature();
     if (f != null) {
@@ -868,7 +956,43 @@ public class FSEditLog implements LogsPurgeable {
     logRpcIds(op, toLogRpcIds);
     logEdit(op);
   }
-  
+
+  public void remoteLogMkDir(INodeDirectory newNode, String nameNodeAddress) {
+    INodeSection.INodeDirectory.Builder b = INodeSection.INodeDirectory
+      .newBuilder()
+      .setModificationTime(newNode.getModificationTime())
+      .setPermission(newNode.getPermissionLong());
+
+    AclFeature f = newNode.getAclFeature();
+    if (f != null) {
+      b.setAcl(buildAclEntries(f));
+    }
+
+    XAttrFeature xAttrFeature = newNode.getXAttrFeature();
+    if (xAttrFeature != null) {
+      b.setXAttrs(buildXAttrs(xAttrFeature));
+    }
+
+    try {
+      INodeSection.INode r = INodeSection.INode.newBuilder()
+        .setId(newNode.getId())
+        .setName(ByteString.copyFrom(newNode.getLocalNameBytes()))
+        .setType(INodeSection.INode.Type.DIRECTORY).setDirectory(b)
+        .setParent(newNode.getParentId())
+        .setParentName(newNode.getParentName())
+        .build();
+
+      byte[] data = r.toByteArray();
+
+      FSEditLogProtocol proxy = (FSEditLogProtocol) RPC.getProxy(
+        FSEditLogProtocol.class, FSEditLogProtocol.versionID,
+        new InetSocketAddress(nameNodeAddress, 10087), new Configuration());
+      proxy.logEdit(data);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   /** 
    * Add create directory record to edit log
    */
@@ -876,18 +1000,18 @@ public class FSEditLog implements LogsPurgeable {
     PermissionStatus permissions = newNode.getPermissionStatus();
     MkdirOp op = MkdirOp.getInstance(cache.get())
       .setInodeId(newNode.getId())
-      .setPath(path)
-      .setTimestamp(newNode.getModificationTime())
-      .setPermissionStatus(permissions);
+      .setPath(path)	
+      .setTimestamp(newNode.getModificationTime())	
+      .setPermissionStatus(permissions);	
 
-    AclFeature f = newNode.getAclFeature();
-    if (f != null) {
-      op.setAclEntries(AclStorage.readINodeLogicalAcl(newNode));
-    }
+    AclFeature f = newNode.getAclFeature();	
+    if (f != null) {	
+      op.setAclEntries(AclStorage.readINodeLogicalAcl(newNode));	
+    }	
 
-    XAttrFeature x = newNode.getXAttrFeature();
-    if (x != null) {
-      op.setXAttrs(x.getXAttrs());
+    XAttrFeature x = newNode.getXAttrFeature();	
+    if (x != null) {	
+      op.setXAttrs(x.getXAttrs());	
     }
     logEdit(op);
   }
@@ -918,6 +1042,23 @@ public class FSEditLog implements LogsPurgeable {
       .setSource(src)
       .setDestination(dst)
       .setTimestamp(timestamp)
+      .setOptions(options);
+    logRpcIds(op, toLogRpcIds);
+    logEdit(op);
+  }
+
+  /** 
+   * Add rename record to edit log (multi-partition request).
+   *
+   * The destination should be the file name, not the destination directory.
+   */
+  void logRenameMP(String src, String dst, long timestamp, boolean toLogRpcIds,
+    String start, String end, Options.Rename... options) {
+    RenameMPOp op = RenameMPOp.getInstance(cache.get())
+      .setSource(src)
+      .setDestination(dst)
+      .setTimestamp(timestamp)
+      .setOffset(start, end)
       .setOptions(options);
     logRpcIds(op, toLogRpcIds);
     logEdit(op);
@@ -972,6 +1113,15 @@ public class FSEditLog implements LogsPurgeable {
     logEdit(op);
   }
 
+  /**  Add set permissions (multi-partition request) record to edit log */
+  void logSetPermissionsMP(String src, FsPermission permissions, String start, String end) {
+    SetPermissionsMPOp op = SetPermissionsMPOp.getInstance(cache.get())
+      .setSource(src)
+      .setPermissions(permissions)
+      .setOffset(start, end);
+    logEdit(op);
+  }
+
   /**  Add set owner record to edit log */
   void logSetOwner(String src, String username, String groupname) {
     SetOwnerOp op = SetOwnerOp.getInstance(cache.get())
@@ -996,8 +1146,9 @@ public class FSEditLog implements LogsPurgeable {
   /** 
    * Add delete file record to edit log
    */
-  void logDelete(String src, long timestamp, boolean toLogRpcIds) {
+  void logDelete(String src, long inodeId, long timestamp, boolean toLogRpcIds) {
     DeleteOp op = DeleteOp.getInstance(cache.get())
+      .setInodeId(inodeId)
       .setPath(src)
       .setTimestamp(timestamp);
     logRpcIds(op, toLogRpcIds);
@@ -1146,7 +1297,7 @@ public class FSEditLog implements LogsPurgeable {
   void logDisallowSnapshot(String path) {
     DisallowSnapshotOp op = DisallowSnapshotOp.getInstance(cache.get())
         .setSnapshotRoot(path);
-    logEdit(op);
+    // logEdit(op);
   }
 
   /**

@@ -188,7 +188,7 @@ final class FSDirAppendOp {
     file.toUnderConstruction(leaseHolder, clientMachine);
 
     fsn.getLeaseManager().addLease(
-        file.getFileUnderConstructionFeature().getClientName(), file.getId());
+        file.getFileUnderConstructionFeature().getClientName(file.getId()), file.getId(), file.getParentName(), file.getLocalName());
 
     LocatedBlock ret = null;
     if (!newBlock) {
@@ -212,15 +212,6 @@ final class FSDirAppendOp {
       }
     }
 
-    if (writeToEditLog) {
-      final String path = iip.getPath();
-      if (NameNodeLayoutVersion.supports(Feature.APPEND_NEW_BLOCK,
-          fsn.getEffectiveLayoutVersion())) {
-        fsn.getEditLog().logAppendFile(path, file, newBlock, logRetryCache);
-      } else {
-        fsn.getEditLog().logOpenFile(path, file, false, logRetryCache);
-      }
-    }
     return ret;
   }
 

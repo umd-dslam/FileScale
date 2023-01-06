@@ -59,6 +59,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockStoragePolicySuite;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo.UpdatedReplicationInfo;
 import org.apache.hadoop.hdfs.server.namenode.sps.StoragePolicySatisfyManager;
+import org.apache.hadoop.hdfs.nnproxy.server.mount.MountsManager;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.util.ByteArray;
 import org.apache.hadoop.hdfs.util.EnumCounters;
 import org.apache.hadoop.hdfs.util.ReadOnlyList;
@@ -94,6 +96,14 @@ import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.CRYPTO_XA
 import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.SECURITY_XATTR_UNREADABLE_BY_SUPERUSER;
 import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.XATTR_SATISFY_STORAGE_POLICY;
 import static org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot.CURRENT_STATE_ID;
+import org.apache.hadoop.hdfs.db.*;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
+import org.apache.hadoop.hdfs.cuckoofilter4j.*;
+import org.apache.hadoop.hdfs.cuckoofilter4j.Utils.Algorithm;
+import com.google.common.hash.Funnels;
+import java.nio.charset.Charset;
+import org.apache.commons.pool2.impl.GenericObjectPool;
 
 /**
  * Both FSDirectory and FSNamesystem manage the state of the namespace.
@@ -107,18 +117,19 @@ public class FSDirectory implements Closeable {
   static final Logger LOG = LoggerFactory.getLogger(FSDirectory.class);
 
   private static INodeDirectory createRoot(FSNamesystem namesystem) {
-    final INodeDirectory r = new INodeDirectory(
-        INodeId.ROOT_INODE_ID,
-        INodeDirectory.ROOT_NAME,
-        namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)),
-        0L);
-    r.addDirectoryWithQuotaFeature(
-        new DirectoryWithQuotaFeature.Builder().
-            nameSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_NAMESPACE_QUOTA).
-            storageSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_STORAGE_SPACE_QUOTA).
-            build());
-    r.addSnapshottableFeature();
-    r.setSnapshotQuota(0);
+    INodeDirectory r = new INodeDirectory(INodeId.ROOT_INODE_ID, INodeDirectory.ROOT_NAME,
+      namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), 0L, "");
+    r.setParent(0L);
+    INodeKeyedObjects.getCache().put(r.getPath(), r);
+
+    // TODO: enable later
+    // r.addDirectoryWithQuotaFeature(
+    //     new DirectoryWithQuotaFeature.Builder().
+    //         nameSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_NAMESPACE_QUOTA).
+    //         storageSpaceQuota(DirectoryWithQuotaFeature.DEFAULT_STORAGE_SPACE_QUOTA).
+    //         build());
+    // r.addSnapshottableFeature();
+    // r.setSnapshotQuota(0);
     return r;
   }
 
@@ -150,6 +161,11 @@ public class FSDirectory implements Closeable {
         .isdir(true)
         .build();
 
+  public final static HdfsFileStatus DOT_NORMAL_STATUS =
+      new HdfsFileStatus.Builder().build();
+
+  private static FSDirectory instance;
+
   INodeDirectory rootDir;
   private final FSNamesystem namesystem;
   private volatile boolean skipQuotaCheck = false; //skip while consuming edits
@@ -163,6 +179,7 @@ public class FSDirectory implements Closeable {
   private int quotaInitThreads;
 
   private final int inodeXAttrsLimit; //inode xattrs max limit
+  private boolean localNN = true;
 
   // A set of directories that have been protected using the
   // dfs.namenode.protected.directories setting. These directories cannot
@@ -200,6 +217,7 @@ public class FSDirectory implements Closeable {
   private final String supergroup;
   private final INodeId inodeId;
 
+  private MountsManager mountsManager = null;
   private final FSEditLog editLog;
 
   private HdfsFileStatus[] reservedStatuses;
@@ -209,6 +227,28 @@ public class FSDirectory implements Closeable {
   // A HashSet of principals of users for whom the external attribute provider
   // will be bypassed
   private HashSet<String> usersToBypassExtAttrProvider = null;
+
+  private GenericObjectPool<CuckooFilter<CharSequence>> pool;
+
+  // FIXME(gangliao): singleton pattern for Database
+  // may cause problem for HDFS Federation
+  // https://hortonworks.com/blog/an-introduction-to-hdfs-federation/
+  public static FSDirectory getInstance(FSNamesystem ns, Configuration conf) {
+    if (instance == null) {
+      try {
+        instance = new FSDirectory(ns, conf);
+      } catch (IOException ex) {
+        System.out.println(ex.toString());
+      }
+    }
+    return instance;
+  }
+
+  // Preconditions ensure getInstance(ns, conf) will be invoked first in FSNameSystem 
+  public static FSDirectory getInstance() {
+    Preconditions.checkArgument(instance != null);
+    return instance;
+  }
 
   public void setINodeAttributeProvider(INodeAttributeProvider provider) {
     attributeProvider = provider;
@@ -271,7 +311,13 @@ public class FSDirectory implements Closeable {
     this.dirLock = new ReentrantReadWriteLock(true); // fair
     this.inodeId = new INodeId();
     rootDir = createRoot(ns);
-    inodeMap = INodeMap.newInstance(rootDir);
+    try {
+      // FIXME: DatabaseINode.getLastInodeId()
+      this.inodeId.skipTo(16385);
+    } catch(IllegalStateException ise) {
+      throw new IOException(ise);
+    }
+    inodeMap = new INodeMap();
     this.isPermissionEnabled = conf.getBoolean(
       DFSConfigKeys.DFS_PERMISSIONS_ENABLED_KEY,
       DFSConfigKeys.DFS_PERMISSIONS_ENABLED_DEFAULT);
@@ -363,6 +409,7 @@ public class FSDirectory implements Closeable {
     nameCache = new NameCache<ByteArray>(threshold);
     namesystem = ns;
     this.editLog = ns.getEditLog();
+    // this.editLog.logMkDir("/", rootDir);
     ezManager = new EncryptionZoneManager(this, conf);
 
     this.quotaInitThreads = conf.getInt(
@@ -370,6 +417,76 @@ public class FSDirectory implements Closeable {
         DFSConfigKeys.DFS_NAMENODE_QUOTA_INIT_THREADS_DEFAULT);
 
     initUsersToBypassExtProvider(conf);
+
+    String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+    if (enableNNProxy != null) {
+      if (Boolean.parseBoolean(enableNNProxy)) {
+        String NNProxyQuorum = System.getenv("NNPROXY_ZK_QUORUM");
+        String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+        if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
+          // initialize a mount manager
+          mountsManager = new MountsManager();
+          mountsManager.init(new HdfsConfiguration());
+          mountsManager.start();
+          try {
+            mountsManager.waitUntilInstalled();
+          } catch (Exception ex) {
+            throw new RuntimeException(ex); 
+          }
+          localNN = false;
+        }
+      }
+    }
+
+    // initFilterPool();
+  }
+
+  public boolean isLocalNN() {
+    return localNN;
+  }
+
+  public CuckooFilter<CharSequence> borrowFilter() {
+    CuckooFilter<CharSequence> filter = null;
+    try {
+      filter = pool.borrowObject();
+    } catch (Exception e) {
+      System.err.println("Failed to borrow a filter object : " + e.getMessage());
+      e.printStackTrace();
+      System.exit(-1);
+    }
+    return filter;
+  }
+
+  public void returnFilter(CuckooFilter<CharSequence> filter) {
+    // make sure the object is returned to the pool
+    if (null != filter) {
+      pool.returnObject(filter);
+    }
+  }
+
+  // A helper method to initialize the pool using the config and object-factory.
+  private void initFilterPool() {
+    try {
+      // We use the GenericObjectPool implementation of Object Pool as this suffices for most needs.
+      // When we create the object pool, we need to pass the Object Factory class that would be
+      // responsible for creating the objects.
+      // Also pass the config to the pool while creation.
+      pool = new GenericObjectPool<CuckooFilter<CharSequence>>(new CuckooFilterFactory());
+      String num = System.getenv("FILESCALE_FILTER_NUMBER");
+      if (num == null) {
+        pool.setMaxTotal(100000);
+      } else {
+        pool.setMaxTotal(Integer.parseInt(num));
+      }
+
+      pool.setMinIdle(1000);
+      pool.setMaxIdle(100000);
+      pool.setBlockWhenExhausted(false);
+      pool.preparePool();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(-1);
+    }
   }
 
   private void initUsersToBypassExtProvider(Configuration conf) {
@@ -457,6 +574,10 @@ public class FSDirectory implements Closeable {
         .path(RAW)
         .build();
     reservedStatuses = new HdfsFileStatus[] {inodes, raw};
+  }
+
+  public MountsManager getMountsManager() {
+    return mountsManager;
   }
 
   FSNamesystem getFSNamesystem() {
@@ -673,7 +794,12 @@ public class FSDirectory implements Closeable {
       }
     }
     components = resolveComponents(components, this);
-    INodesInPath iip = INodesInPath.resolve(rootDir, components, isRaw);
+    INodesInPath iip;
+    if (isCreate) {
+      iip = INodesInPath.resolve(rootDir, components, isRaw, true);
+    } else {
+      iip = INodesInPath.resolve(rootDir, components, isRaw, false);
+    }
     // verify all ancestors are dirs and traversable.  note that only
     // methods that create new namespace items have the signature to throw
     // PNDE
@@ -698,7 +824,9 @@ public class FSDirectory implements Closeable {
     if (fileId == HdfsConstants.GRANDFATHER_INODE_ID) {
       iip = resolvePath(pc, src, DirOp.WRITE);
     } else {
-      INode inode = getInode(fileId);
+      byte[][] paths = INode.getPathComponents(src);
+      INode inode = getInode(DFSUtil.byteArray2PathString(paths, 0, paths.length - 1),
+        DFSUtil.bytes2String(paths[paths.length - 1]));
       if (inode == null) {
         iip = INodesInPath.fromComponents(INode.getPathComponents(src));
       } else {
@@ -1115,7 +1243,7 @@ public class FSDirectory implements Closeable {
     cacheName(child);
     writeLock();
     try {
-      return addLastINode(existing, child, modes, true);
+      return addLastINode(existing, child, child.getLocalName(), modes, true);
     } finally {
       writeUnlock();
     }
@@ -1264,7 +1392,7 @@ public class FSDirectory implements Closeable {
    * @return an INodesInPath instance containing the new INode
    */
   @VisibleForTesting
-  public INodesInPath addLastINode(INodesInPath existing, INode inode,
+  public INodesInPath addLastINode(INodesInPath existing, INode inode, String name,
       FsPermission modes, boolean checkQuota) throws QuotaExceededException {
     assert existing.getLastINode() != null &&
         existing.getLastINode().isDirectory();
@@ -1291,33 +1419,34 @@ public class FSDirectory implements Closeable {
     if (checkQuota) {
       final String parentPath = existing.getPath();
       verifyMaxComponentLength(inode.getLocalNameBytes(), parentPath);
-      verifyMaxDirItems(parent, parentPath);
+      // verifyMaxDirItems(parent, parentPath);
     }
     // always verify inode name
     verifyINodeName(inode.getLocalNameBytes());
 
-    final QuotaCounts counts = inode.computeQuotaUsage(getBlockStoragePolicySuite());
-    updateCount(existing, pos, counts, checkQuota);
+    // final QuotaCounts counts = inode.computeQuotaUsage(getBlockStoragePolicySuite());
+    // updateCount(existing, pos, counts, checkQuota);
 
-    boolean isRename = (inode.getParent() != null);
-    final boolean added = parent.addChild(inode, true,
-        existing.getLatestSnapshotId());
+    // boolean isRename = (inode.getParent() != null);
+
+    final boolean added = parent.addChild(inode, name, true,
+        existing.getLatestSnapshotId(), existing.getPath());
     if (!added) {
-      updateCountNoQuotaCheck(existing, pos, counts.negation());
+      // updateCountNoQuotaCheck(existing, pos, counts.negation());
       return null;
     } else {
-      if (!isRename) {
-        copyINodeDefaultAcl(inode, modes);
-      }
-      addToInodeMap(inode);
+      // if (!isRename) {
+      //   copyINodeDefaultAcl(inode, modes);
+      // }
+      // addToInodeMap(inode);
     }
     return INodesInPath.append(existing, inode, inode.getLocalNameBytes());
   }
 
-  INodesInPath addLastINodeNoQuotaCheck(INodesInPath existing, INode i) {
+  INodesInPath addLastINodeNoQuotaCheck(INodesInPath existing, INode i, String name) {
     try {
       // All callers do not have create modes to pass.
-      return addLastINode(existing, i, null, false);
+      return addLastINode(existing, i, name, null, false);
     } catch (QuotaExceededException e) {
       NameNode.LOG.warn("FSDirectory.addChildNoQuotaCheck - unexpected", e);
     }
@@ -1478,23 +1607,17 @@ public class FSDirectory implements Closeable {
       }
     }
   }
-  
-  /**
-   * Get the inode from inodeMap based on its inode id.
-   * @param id The given id
-   * @return The inode associated with the given id
-   */
-  public INode getInode(long id) {
-    readLock();
-    try {
-      return inodeMap.get(id);
-    } finally {
-      readUnlock();
-    }
+
+  public INode getInode(String parentName, String childName) {
+    return inodeMap.get(parentName, childName);
+  }
+
+  public boolean findInode(INodeFile file) {
+    return inodeMap.find(file);
   }
   
   @VisibleForTesting
-  int getInodeMapSize() {
+  long getInodeMapSize() {
     return inodeMap.size();
   }
 
@@ -1555,17 +1678,13 @@ public class FSDirectory implements Closeable {
    * snapshot.
    */
   public static byte[][] getPathComponents(INode inode) {
-    List<byte[]> components = new ArrayList<byte[]>();
-    components.add(0, inode.getLocalNameBytes());
-    while(inode.getParent() != null) {
-      components.add(0, inode.getParent().getLocalNameBytes());
-      inode = inode.getParent();
-    }
-    return components.toArray(new byte[components.size()][]);
+    return inode.getPathComponents();
   }
 
   /** Check if a given inode name is reserved */
   public static boolean isReservedName(INode inode) {
+    if (inode.getLocalNameBytes() == null)
+      return false;
     return CHECK_RESERVED_FILE_NAMES
             && Arrays.equals(inode.getLocalNameBytes(), DOT_RESERVED);
   }
@@ -1640,9 +1759,9 @@ public class FSDirectory implements Closeable {
       /* This is not a /.reserved/ path so do nothing. */
     } else if (Arrays.equals(DOT_INODES, pathComponents[2])) {
       /* It's a /.reserved/.inodes path. */
-      if (nComponents > 3) {
-        pathComponents = resolveDotInodesPath(pathComponents, fsd);
-      }
+      // if (nComponents > 3) {
+      //   pathComponents = resolveDotInodesPath(pathComponents, fsd);
+      // }
     } else if (Arrays.equals(RAW, pathComponents[2])) {
       /* It's /.reserved/raw so strip off the /.reserved/raw prefix. */
       if (nComponents == 3) {
@@ -1674,7 +1793,7 @@ public class FSDirectory implements Closeable {
     if (id == INodeId.ROOT_INODE_ID && pathComponents.length == 4) {
       return new byte[][]{INodeDirectory.ROOT_NAME};
     }
-    INode inode = fsd.getInode(id);
+    INode inode = null;
     if (inode == null) {
       throw new FileNotFoundException(
           "File for given inode path does not exist: " +

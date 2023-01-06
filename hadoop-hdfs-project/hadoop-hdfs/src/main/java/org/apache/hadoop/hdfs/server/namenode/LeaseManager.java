@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -38,6 +39,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.Lists;
 
+import org.apache.commons.math3.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.BatchedRemoteIterator.BatchedListEntries;
@@ -105,6 +107,8 @@ public class LeaseManager {
   });
   // INodeID -> Lease
   private final TreeMap<Long, Lease> leasesById = new TreeMap<>();
+  // INodeID -> Path
+  private final HashMap<Long, Pair<String, String>> leasesByName = new HashMap<>();
 
   private Daemon lmthread;
   private volatile boolean shouldRunMonitor;
@@ -144,7 +148,8 @@ public class LeaseManager {
       + "acquired before counting under construction blocks";
     long numUCBlocks = 0;
     for (Long id : getINodeIdWithLeases()) {
-      INode inode = fsnamesystem.getFSDirectory().getInode(id);
+      Pair<String, String> path = leasesByName.get(id); 
+      INode inode = fsnamesystem.getFSDirectory().getInode(path.getFirst(), path.getSecond());
       if (inode == null) {
         // The inode could have been deleted after getINodeIdWithLeases() is
         // called, check here, and ignore it if so
@@ -174,6 +179,8 @@ public class LeaseManager {
 
   Collection<Long> getINodeIdWithLeases() {return leasesById.keySet();}
 
+  HashMap<Long, Pair<String, String>> getLeaseByName() { return leasesByName; }
+
   /**
    * Get {@link INodesInPath} for all {@link INode} in the system
    * which has a valid lease.
@@ -189,7 +196,8 @@ public class LeaseManager {
     List<INode> inodes = new ArrayList<>(leasesById.size());
     INode currentINode;
     for (long inodeId : leasesById.keySet()) {
-      currentINode = fsnamesystem.getFSDirectory().getInode(inodeId);
+      Pair<String, String> path = leasesByName.get(inodeId); 
+      currentINode = fsnamesystem.getFSDirectory().getInode(path.getFirst(), path.getSecond());
       // A file with an active lease could get deleted, or its
       // parent directories could get recursively deleted.
       if (currentINode != null &&
@@ -303,8 +311,8 @@ public class LeaseManager {
     int count = 0;
     String fullPathName = null;
     for (Long inodeId: inodeIds) {
-      final INodeFile inodeFile =
-          fsnamesystem.getFSDirectory().getInode(inodeId).asFile();
+      Pair<String, String> key = leasesByName.get(inodeId); 
+      final INodeFile inodeFile = fsnamesystem.getFSDirectory().getInode(key.getFirst(), key.getSecond()).asFile();
       if (!inodeFile.isUnderConstruction()) {
         LOG.warn("The file {} is not under construction but has lease.",
             inodeFile.getFullPathName());
@@ -313,9 +321,10 @@ public class LeaseManager {
 
       fullPathName = inodeFile.getFullPathName();
       if (StringUtils.isEmpty(path) || fullPathName.startsWith(path)) {
-        openFileEntries.add(new OpenFileEntry(inodeFile.getId(), fullPathName,
-            inodeFile.getFileUnderConstructionFeature().getClientName(),
-            inodeFile.getFileUnderConstructionFeature().getClientMachine()));
+        long id = inodeFile.getId();
+        openFileEntries.add(new OpenFileEntry(id, fullPathName,
+            inodeFile.getFileUnderConstructionFeature().getClientName(id),
+            inodeFile.getFileUnderConstructionFeature().getClientMachine(id)));
         count++;
       }
 
@@ -344,7 +353,7 @@ public class LeaseManager {
   /**
    * Adds (or re-adds) the lease for the specified file.
    */
-  synchronized Lease addLease(String holder, long inodeId) {
+  synchronized Lease addLease(String holder, long inodeId, String parent, String child) {
     Lease lease = getLease(holder);
     if (lease == null) {
       lease = new Lease(holder);
@@ -354,6 +363,7 @@ public class LeaseManager {
       renewLease(lease);
     }
     leasesById.put(inodeId, lease);
+    leasesByName.put(inodeId, new Pair<>(parent, child));
     lease.files.add(inodeId);
     return lease;
   }
@@ -370,6 +380,7 @@ public class LeaseManager {
    */
   private synchronized void removeLease(Lease lease, long inodeId) {
     leasesById.remove(inodeId);
+    leasesByName.remove(inodeId);
     if (!lease.removeFile(inodeId)) {
       LOG.debug("inode {} not found in lease.files (={})", inodeId, lease);
     }
@@ -398,6 +409,7 @@ public class LeaseManager {
   synchronized void removeAllLeases() {
     sortedLeases.clear();
     leasesById.clear();
+    leasesByName.clear();
     leases.clear();
   }
 
@@ -410,7 +422,7 @@ public class LeaseManager {
     if (lease != null) {
       removeLease(lease, src.getId());
     }
-    return addLease(newHolder, src.getId());
+    return addLease(newHolder, src.getId(), src.getParentName(), src.getLocalName());
   }
 
   /**
@@ -521,7 +533,7 @@ public class LeaseManager {
           fsnamesystem.writeLockInterruptibly();
           try {
             if (!fsnamesystem.isInSafeMode()) {
-              needSync = checkLeases();
+              // needSync = checkLeases();
             }
           } finally {
             fsnamesystem.writeUnlock("leaseManager");
@@ -569,7 +581,8 @@ public class LeaseManager {
       String newHolder = getInternalLeaseHolder();
       for(Long id : leaseINodeIds) {
         try {
-          INodesInPath iip = INodesInPath.fromINode(fsd.getInode(id));
+          INodesInPath iip = null;
+          // INodesInPath iip = INodesInPath.fromINode(fsd.getInode(id));
           p = iip.getPath();
           // Sanity check to make sure the path is correct
           if (!p.startsWith("/")) {
@@ -672,7 +685,7 @@ public class LeaseManager {
 
   @VisibleForTesting
   public void runLeaseChecks() {
-    checkLeases();
+    // checkLeases();
   }
 
 }

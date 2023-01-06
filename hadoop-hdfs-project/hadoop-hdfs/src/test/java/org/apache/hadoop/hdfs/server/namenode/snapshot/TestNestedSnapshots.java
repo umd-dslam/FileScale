@@ -275,7 +275,7 @@ public class TestNestedSnapshots {
     final PermissionStatus perm = PermissionStatus.createImmutable(
         "user", "group", FsPermission.createImmutable((short)0));
     final INodeDirectory snapshottable = new INodeDirectory(0,
-        DFSUtil.string2Bytes("foo"), perm, 0L);
+        DFSUtil.string2Bytes("foo"), perm, 0L, null);
     snapshottable.addSnapshottableFeature();
     final Snapshot[] snapshots = {
       new Snapshot(1, "s1", snapshottable),

@@ -127,7 +127,7 @@ public class TestGetBlockLocations {
     final INodeFile file = new INodeFile(
         MOCK_INODE_ID, FILE_NAME.getBytes(StandardCharsets.UTF_8),
         perm, 1, 1, new BlockInfo[] {}, (short) 1,
-        DFS_BLOCK_SIZE_DEFAULT);
+        DFS_BLOCK_SIZE_DEFAULT, null);
     fsn.getFSDirectory().addINode(iip, file, null);
     return fsn;
   }

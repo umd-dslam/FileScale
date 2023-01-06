@@ -19,33 +19,74 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
 
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
+
+import java.util.concurrent.CompletableFuture;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Feature for under-construction file.
  */
 @InterfaceAudience.Private
 public class FileUnderConstructionFeature implements INode.Feature {
-  private String clientName; // lease holder
-  private final String clientMachine;
+  private String clientName;
+  private String clientMachine;
 
-  public FileUnderConstructionFeature(final String clientName, final String clientMachine) {
+  public FileUnderConstructionFeature() {} 
+
+  public FileUnderConstructionFeature(final long id, final String clientName, final String clientMachine) {
     this.clientName = clientName;
     this.clientMachine = clientMachine;
   }
 
-  public String getClientName() {
-    return clientName;
+  public void updateFileUnderConstruction(final long id) {
+    CompletableFuture.runAsync(() -> {
+      DatabaseINode.insertUc(id, clientName, clientMachine);
+    }, Database.getInstance().getExecutorService());
   }
 
-  void setClientName(String clientName) {
+  public String getClientName(final long id) {
+    if (this.clientName == null) {
+      this.clientName = DatabaseINode.getUcClientName(id);
+    }
+    return this.clientName;
+  }
+
+  public void setClientName(final long id, String clientName) {
     this.clientName = clientName;
   }
 
-  public String getClientMachine() {
-    return clientMachine;
+  public String getClientMachine(final long id) {
+    if (this.clientMachine == null) {
+      this.clientMachine = DatabaseINode.getUcClientMachine(id);
+    }
+    return this.clientMachine;
+  }
+
+  public void setClientMachine(final long id, String clientMachine) {
+    this.clientMachine = clientMachine;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if ((o == null) || (o.getClass() != this.getClass())) {
+      return false;
+    }
+    FileUnderConstructionFeature other = (FileUnderConstructionFeature) o;
+    return new EqualsBuilder()
+        .append(clientName, other.clientName)
+        .append(clientMachine, other.clientMachine)
+        .isEquals();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(this.clientName).append(this.clientMachine).toHashCode();
   }
 
   /**
@@ -55,7 +96,7 @@ public class FileUnderConstructionFeature implements INode.Feature {
    *          The length of the last block reported from client
    * @throws IOException
    */
-  void updateLengthOfLastBlock(INodeFile f, long lastBlockLength)
+  static void updateLengthOfLastBlock(INodeFile f, long lastBlockLength)
       throws IOException {
     BlockInfo lastBlock = f.getLastBlock();
     assert (lastBlock != null) : "The last block for path "
@@ -71,7 +112,7 @@ public class FileUnderConstructionFeature implements INode.Feature {
    * in a snapshot, we should delete the last block if it's under construction
    * and its size is 0.
    */
-  void cleanZeroSizeBlock(final INodeFile f,
+  static void cleanZeroSizeBlock(final INodeFile f,
       final BlocksMapUpdateInfo collectedBlocks) {
     final BlockInfo[] blocks = f.getBlocks();
     if (blocks != null && blocks.length > 0

@@ -28,6 +28,7 @@ import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode.ReclaimContext;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.util.ChunkedArrayList;
+import org.apache.hadoop.hdfs.db.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -192,7 +193,7 @@ class FSDirDeleteOp {
     if (filesRemoved < 0) {
       return null;
     }
-    fsd.getEditLog().logDelete(iip.getPath(), mtime, logRetryCache);
+    fsd.getEditLog().logDelete(iip.getPath(), iip.getLastINode().getId(), mtime, logRetryCache);
     incrDeletedFileCount(filesRemoved);
 
     fsn.removeLeasesAndINodes(removedUCFiles, removedINodes, true);
@@ -264,6 +265,9 @@ class FSDirDeleteOp {
     } else {
       targetNode.cleanSubtree(reclaimContext, CURRENT_STATE_ID, latestSnapshot);
     }
+
+    INodeKeyedObjects.getRemoveSet().add(targetNode.getPath());
+    INodeKeyedObjects.getCache().invalidate(targetNode.getPath());
 
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "

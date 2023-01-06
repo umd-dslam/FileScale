@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import static org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceededException;
 import static org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
+import org.apache.hadoop.hdfs.DFSUtil;
 
 class FSDirRenameOp {
   @Deprecated
@@ -657,7 +658,7 @@ class FSDirRenameOp {
         return false;
       } else {
         // update the quota count if necessary
-        fsd.updateCountForDelete(srcChild, srcIIP);
+        // fsd.updateCountForDelete(srcChild, srcIIP);
         srcIIP = INodesInPath.replace(srcIIP, srcIIP.length() - 1, null);
         return true;
       }
@@ -679,14 +680,14 @@ class FSDirRenameOp {
       final byte[] dstChildName = dstIIP.getLastLocalName();
       final INode toDst;
       if (withCount == null) {
-        srcChild.setLocalName(dstChildName);
+        // srcChild.setLocalName(dstChildName);
         toDst = srcChild;
       } else {
-        withCount.getReferredINode().setLocalName(dstChildName);
+        // withCount.getReferredINode().setLocalName(dstChildName);
         toDst = new INodeReference.DstReference(dstParent.asDirectory(),
             withCount, dstIIP.getLatestSnapshotId());
       }
-      return fsd.addLastINodeNoQuotaCheck(dstParentIIP, toDst);
+      return fsd.addLastINodeNoQuotaCheck(dstParentIIP, toDst, DFSUtil.bytes2String(dstChildName));
     }
 
     void updateMtimeAndLease(long timestamp) {
@@ -700,17 +701,18 @@ class FSDirRenameOp {
       final INode oldSrcChild = srcChild;
       // put it back
       if (withCount == null) {
-        srcChild.setLocalName(srcChildName);
+        // srcChild.setLocalName(srcChildName);
       } else if (!srcChildIsReference) { // src must be in snapshot
         // the withCount node will no longer be used thus no need to update
         // its reference number here
         srcChild = withCount.getReferredINode();
-        srcChild.setLocalName(srcChildName);
+        // srcChild.setLocalName(srcChildName);
       } else {
         withCount.removeReference(oldSrcChild.asReference());
         srcChild = new INodeReference.DstReference(srcParent, withCount,
             srcRefDstSnapshot);
-        withCount.getReferredINode().setLocalName(srcChildName);
+        // FIXME(gangliao)
+        // withCount.getReferredINode().setLocalName(srcChildName);
       }
 
       if (isSrcInSnapshot) {
@@ -718,7 +720,7 @@ class FSDirRenameOp {
       } else {
         // srcParent is not an INodeDirectoryWithSnapshot, we only need to add
         // the srcChild back
-        fsd.addLastINodeNoQuotaCheck(srcParentIIP, srcChild);
+        fsd.addLastINodeNoQuotaCheck(srcParentIIP, srcChild, DFSUtil.bytes2String(srcChildName));
       }
     }
 
@@ -728,7 +730,7 @@ class FSDirRenameOp {
       if (dstParent.isWithSnapshot()) {
         dstParent.undoRename4DstParent(bsps, oldDstChild, dstIIP.getLatestSnapshotId());
       } else {
-        fsd.addLastINodeNoQuotaCheck(dstParentIIP, oldDstChild);
+        fsd.addLastINodeNoQuotaCheck(dstParentIIP, oldDstChild, oldDstChild.getLocalName());
       }
       if (oldDstChild != null && oldDstChild.isReference()) {
         final INodeReference removedDstRef = oldDstChild.asReference();

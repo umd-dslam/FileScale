@@ -82,6 +82,11 @@ public interface INodeFileAttributes extends INodeAttributes {
     }
 
     @Override
+    public String getPath() {
+      return null;
+    }
+
+    @Override
     public boolean isStriped() {
       return HeaderFormat.isStriped(header);
     }

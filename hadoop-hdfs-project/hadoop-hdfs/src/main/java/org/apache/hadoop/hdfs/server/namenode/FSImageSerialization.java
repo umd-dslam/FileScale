@@ -69,7 +69,11 @@ public class FSImageSerialization {
 
   // Static-only class
   private FSImageSerialization() {}
-  
+
+  static Long[] sblk;
+  static {
+    sblk = new Long[3];
+  }
   /**
    * In order to reduce allocation, we reuse some static objects. However, the methods
    * in this class should be thread-safe since image-saving is multithreaded, so 
@@ -114,6 +118,15 @@ public class FSImageSerialization {
     }
   }
 
+  private static void readFields(DataInput in) throws IOException {
+    sblk[0] = in.readLong();  // bid
+    sblk[1] = in.readLong();  // num
+    sblk[2] = in.readLong();  // stamp
+    if (sblk[1] < 0) {
+        throw new IOException("Unexpected block size: " + sblk[1]);
+    }
+  }
+
   // Helper function that reads in an INodeUnderConstruction
   // from the input stream
   //
@@ -132,16 +145,15 @@ public class FSImageSerialization {
 
     final BlockInfoContiguous[] blocksContiguous =
         new BlockInfoContiguous[numBlocks];
-    Block blk = new Block();
     int i = 0;
     for (; i < numBlocks - 1; i++) {
-      blk.readFields(in);
-      blocksContiguous[i] = new BlockInfoContiguous(blk, blockReplication);
+      readFields(in);
+      blocksContiguous[i] = new BlockInfoContiguous(sblk[0], sblk[1], sblk[2], blockReplication);
     }
     // last block is UNDER_CONSTRUCTION
     if(numBlocks > 0) {
-      blk.readFields(in);
-      blocksContiguous[i] = new BlockInfoContiguous(blk, blockReplication);
+      readFields(in);
+      blocksContiguous[i] = new BlockInfoContiguous(sblk[0], sblk[1], sblk[2], blockReplication);
       blocksContiguous[i].convertToBlockUnderConstruction(
           BlockUCState.UNDER_CONSTRUCTION, null);
     }
@@ -158,7 +170,7 @@ public class FSImageSerialization {
     // Images in the pre-protobuf format will not have the lazyPersist flag,
     // so it is safe to pass false always.
     INodeFile file = new INodeFile(inodeId, name, perm, modificationTime,
-        modificationTime, blocksContiguous, blockReplication, preferredBlockSize);
+        modificationTime, blocksContiguous, blockReplication, preferredBlockSize, null);
     file.toUnderConstruction(clientName, clientMachine);
     return file;
   }
@@ -178,8 +190,9 @@ public class FSImageSerialization {
     cons.getPermissionStatus().write(out);
 
     FileUnderConstructionFeature uc = cons.getFileUnderConstructionFeature();
-    writeString(uc.getClientName(), out);
-    writeString(uc.getClientMachine(), out);
+    long id = cons.getId();
+    writeString(uc.getClientName(id), out);
+    writeString(uc.getClientMachine(id), out);
 
     out.writeInt(0); //  do not store locations of last block
   }
@@ -206,8 +219,9 @@ public class FSImageSerialization {
       if (file.isUnderConstruction()) {
         out.writeBoolean(true);
         final FileUnderConstructionFeature uc = file.getFileUnderConstructionFeature();
-        writeString(uc.getClientName(), out);
-        writeString(uc.getClientMachine(), out);
+        long id = file.getId();
+        writeString(uc.getClientName(id), out);
+        writeString(uc.getClientMachine(id), out);
       } else {
         out.writeBoolean(false);
       }

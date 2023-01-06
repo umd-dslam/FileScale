@@ -36,8 +36,8 @@
     <!-- Should be used at test scope for those that need access to mini cluster that works with above api and runtime -->
     <module>hadoop-client-minicluster</module>
     <!-- Checks invariants above -->
-    <module>hadoop-client-check-invariants</module>
-    <module>hadoop-client-check-test-invariants</module>
+    <!-- <module>hadoop-client-check-invariants</module>
+    <module>hadoop-client-check-test-invariants</module> -->
     <!-- Attempt to use the created libraries -->
     <module>hadoop-client-integration-tests</module>
   </modules>

@@ -156,6 +156,9 @@ class FSDirStatAndListingOp {
       final INodesInPath iip = fsd.resolvePath(pc, src, DirOp.READ);
       src = iip.getPath();
       final INodeFile inode = INodeFile.valueOf(iip.getLastINode(), src);
+      if (iip.getLastINode() == null) {
+        iip.setLastINode(inode);
+      }
       if (fsd.isPermissionEnabled()) {
         fsd.checkPathAccess(pc, iip, FsAction.READ);
         fsd.checkUnreadableBySuperuser(pc, iip);
@@ -428,7 +431,7 @@ class FSDirStatAndListingOp {
 
     if (node.isFile()) {
       final INodeFile fileNode = node.asFile();
-      size = fileNode.computeFileSize(snapshot);
+      // size = fileNode.computeFileSize(snapshot);
       replication = fileNode.getFileReplication(snapshot);
       blocksize = fileNode.getPreferredBlockSize();
       if (isEncrypted) {
@@ -450,8 +453,8 @@ class FSDirStatAndListingOp {
       isSnapShottable = node.asDirectory().isSnapshottable();
     }
 
-    int childrenNum = node.isDirectory() ?
-        node.asDirectory().getChildrenNum(snapshot) : 0;
+    // FIXME: hardcode: childrenNum
+    int childrenNum = node.isDirectory() ? 4 : 0;
 
     EnumSet<HdfsFileStatus.Flags> flags =
         EnumSet.noneOf(HdfsFileStatus.Flags.class);
@@ -469,6 +472,7 @@ class FSDirStatAndListingOp {
     if(isSnapShottable){
       flags.add(HdfsFileStatus.Flags.SNAPSHOT_ENABLED);
     }
+
     return createFileStatus(
         size,
         node.isDirectory(),

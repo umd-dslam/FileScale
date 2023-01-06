@@ -22,9 +22,13 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.ErasureCodingPolicyManager;
 import org.apache.hadoop.hdfs.util.StripedBlockUtil;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
+import org.apache.hadoop.hdfs.db.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -42,34 +46,32 @@ import java.util.NoSuchElementException;
  */
 @InterfaceAudience.Private
 public class BlockInfoStriped extends BlockInfo {
-  private final ErasureCodingPolicy ecPolicy;
-  /**
-   * Always the same size with storage. Record the block index for each entry
-   * TODO: actually this is only necessary for over-replicated block. Thus can
-   * be further optimized to save memory usage.
-   */
-  private byte[] indices;
+  public BlockInfoStriped(Block blk) {
+    super(blk);
+  } 
 
   public BlockInfoStriped(Block blk, ErasureCodingPolicy ecPolicy) {
     super(blk, (short) (ecPolicy.getNumDataUnits() + ecPolicy.getNumParityUnits()));
-    indices = new byte[ecPolicy.getNumDataUnits() + ecPolicy.getNumParityUnits()];
-    initIndices();
-    this.ecPolicy = ecPolicy;
+    DatabaseDatablock.setECPolicyId(blk.getBlockId(), ecPolicy.getId());
   }
 
   public short getTotalBlockNum() {
+    ErasureCodingPolicy ecPolicy = getErasureCodingPolicy();
     return (short) (ecPolicy.getNumDataUnits() + ecPolicy.getNumParityUnits());
   }
 
   public short getDataBlockNum() {
+    ErasureCodingPolicy ecPolicy = getErasureCodingPolicy();
     return (short) ecPolicy.getNumDataUnits();
   }
 
   public short getParityBlockNum() {
+    ErasureCodingPolicy ecPolicy = getErasureCodingPolicy();
     return (short) ecPolicy.getNumParityUnits();
   }
 
   public int getCellSize() {
+    ErasureCodingPolicy ecPolicy = getErasureCodingPolicy();
     return ecPolicy.getCellSize();
   }
 
@@ -81,7 +83,7 @@ public class BlockInfoStriped extends BlockInfo {
   public short getRealDataBlockNum() {
     if (isComplete() || getBlockUCState() == BlockUCState.COMMITTED) {
       return (short) Math.min(getDataBlockNum(),
-          (getNumBytes() - 1) / ecPolicy.getCellSize() + 1);
+          (getNumBytes() - 1) / getCellSize() + 1);
     } else {
       return getDataBlockNum();
     }
@@ -92,13 +94,7 @@ public class BlockInfoStriped extends BlockInfo {
   }
 
   public ErasureCodingPolicy getErasureCodingPolicy() {
-    return ecPolicy;
-  }
-
-  private void initIndices() {
-    for (int i = 0; i < indices.length; i++) {
-      indices[i] = -1;
-    }
+    return ErasureCodingPolicyManager.getInstance().getByID(getECPolicyId());
   }
 
   private int findSlot() {
@@ -108,8 +104,6 @@ public class BlockInfoStriped extends BlockInfo {
         return i;
       }
     }
-    // need to expand the storage size
-    ensureCapacity(i + 1, true);
     return i;
   }
 
@@ -124,23 +118,33 @@ public class BlockInfoStriped extends BlockInfo {
     int blockIndex = BlockIdManager.getBlockIndex(reportedBlock);
     int index = blockIndex;
     DatanodeStorageInfo old = getStorageInfo(index);
-    if (old != null && !old.equals(storage)) { // over replicated
-      // check if the storage has been stored
-      int i = findStorageInfo(storage);
-      if (i == -1) {
-        index = findSlot();
+
+    boolean update = true;
+    if (old != null) {
+      if (!old.equals(storage)) {
+        // check if the storage has been stored
+        int i = findStorageInfo(storage);
+        if (i == -1) {
+          index = findSlot();
+        } else {
+          return true;
+        }
       } else {
-        return true;
+        // over replicated
+        update = false;
       }
     }
-    addStorage(storage, index, blockIndex);
+
+    addStorage(storage, index, blockIndex, update);
     return true;
   }
 
   private void addStorage(DatanodeStorageInfo storage, int index,
-      int blockIndex) {
+      int blockIndex, boolean update) {
     setStorageInfo(index, storage);
-    indices[index] = (byte) blockIndex;
+    if (update) {
+      DatabaseDatablock.addStorage(getBlockId(), index, blockIndex);
+    }
   }
 
   private int findStorageInfoFromEnd(DatanodeStorageInfo storage) {
@@ -156,7 +160,7 @@ public class BlockInfoStriped extends BlockInfo {
 
   byte getStorageBlockIndex(DatanodeStorageInfo storage) {
     int i = this.findStorageInfo(storage);
-    return i == -1 ? -1 : indices[i];
+    return i == -1 ? -1 : DatabaseDatablock.getStorageBlockIndex(getBlockId(), i);
   }
 
   /**
@@ -169,9 +173,9 @@ public class BlockInfoStriped extends BlockInfo {
     if (index < 0) {
       return null;
     } else {
-      Block block = new Block(this);
-      block.setBlockId(this.getBlockId() + index);
-      return block;
+      long blkId = this.getBlockId();
+      Long[] res = DatabaseDatablock.getNumBytesAndStamp(blkId);
+      return new Block(blkId + index, res[0], res[1]);
     }
   }
 
@@ -183,23 +187,8 @@ public class BlockInfoStriped extends BlockInfo {
     }
     // set the entry to null
     setStorageInfo(dnIndex, null);
-    indices[dnIndex] = -1;
+    DatabaseDatablock.setStorageBlockIndex(getBlockId(), dnIndex, (byte) -1);
     return true;
-  }
-
-  private void ensureCapacity(int totalSize, boolean keepOld) {
-    if (getCapacity() < totalSize) {
-      DatanodeStorageInfo[] old = storages;
-      byte[] oldIndices = indices;
-      storages = new DatanodeStorageInfo[totalSize];
-      indices = new byte[totalSize];
-      initIndices();
-
-      if (keepOld) {
-        System.arraycopy(old, 0, storages, 0, old.length);
-        System.arraycopy(oldIndices, 0, indices, 0, oldIndices.length);
-      }
-    }
   }
 
   public long spaceConsumed() {
@@ -207,9 +196,8 @@ public class BlockInfoStriped extends BlockInfo {
     // be the total of data blocks and parity blocks because
     // `getNumBytes` is the total of actual data block size.
     return StripedBlockUtil.spaceConsumedByStripedBlock(getNumBytes(),
-        ecPolicy.getNumDataUnits(), ecPolicy.getNumParityUnits(),
-        ecPolicy.getCellSize());
-    }
+        getDataBlockNum(), getParityBlockNum(), getCellSize());
+  }
 
   @Override
   public final boolean isStriped() {
@@ -223,7 +211,6 @@ public class BlockInfoStriped extends BlockInfo {
 
   @Override
   public int numNodes() {
-    assert this.storages != null : "BlockInfo is not initialized";
     int num = 0;
     for (int idx = getCapacity()-1; idx >= 0; idx--) {
       if (getStorageInfo(idx) != null) {
@@ -278,13 +265,13 @@ public class BlockInfoStriped extends BlockInfo {
       public Iterator<StorageAndBlockIndex> iterator() {
         return new Iterator<StorageAndBlockIndex>() {
           private int index = 0;
-
+          private List<DatanodeStorageInfo> storages = BlockManager.getInstance().getBlockStorages(getBlockId());
           @Override
           public boolean hasNext() {
-            while (index < getCapacity() && getStorageInfo(index) == null) {
+            while (index < storages.size() && storages.get(index) == null) {
               index++;
             }
-            return index < getCapacity();
+            return index < storages.size();
           }
 
           @Override
@@ -293,7 +280,7 @@ public class BlockInfoStriped extends BlockInfo {
               throw new NoSuchElementException();
             }
             int i = index++;
-            return new StorageAndBlockIndex(storages[i], indices[i]);
+            return new StorageAndBlockIndex(storages.get(i), DatabaseDatablock.getStorageBlockIndex(getBlockId(), i));
           }
 
           @Override

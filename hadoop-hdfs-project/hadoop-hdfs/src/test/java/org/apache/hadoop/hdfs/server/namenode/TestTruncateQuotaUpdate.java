@@ -146,7 +146,7 @@ public class TestTruncateQuotaUpdate {
     return new INodeFile(
         ++nextMockINodeId, new byte[0], perm, 0, 0,
         blocks.toArray(new BlockInfo[blocks.size()]), replication,
-        BLOCKSIZE);
+        BLOCKSIZE, null);
   }
 
   private BlockInfo newBlock(long size, short replication) {

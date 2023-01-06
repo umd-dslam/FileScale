@@ -18,10 +18,15 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.db.*;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.snapshot.DirectoryWithSnapshotFeature;
@@ -132,12 +137,14 @@ public class INodesInPath {
    */
   static INodesInPath resolve(final INodeDirectory startingDir,
       final byte[][] components) {
-    return resolve(startingDir, components, false);
+    return resolve(startingDir, components, false, false);
   }
 
   static INodesInPath resolve(final INodeDirectory startingDir,
-      byte[][] components, final boolean isRaw) {
+      byte[][] components, final boolean isRaw, boolean isCreate) {
     Preconditions.checkArgument(startingDir.compareTo(components[0]) == 0);
+    // we keeps a root reference in memory but we still need to borrow
+    // root dir again since it had been returned to pool before.
 
     INode curNode = startingDir;
     int count = 0;
@@ -145,7 +152,6 @@ public class INodesInPath {
     INode[] inodes = new INode[components.length];
     boolean isSnapshot = false;
     int snapshotId = CURRENT_STATE_ID;
-
     while (count < components.length && curNode != null) {
       final boolean lastComp = (count == components.length - 1);
       inodes[inodeNum++] = curNode;
@@ -221,8 +227,21 @@ public class INodesInPath {
         inodes = Arrays.copyOf(inodes, components.length);
       } else {
         // normal case, and also for resolving file/dir under snapshot root
-        curNode = dir.getChild(childName,
-            isSnapshot ? snapshotId : CURRENT_STATE_ID);
+        if (isCreate && count == components.length - 1) {
+          String path = null;
+          String parentName = dir.getPath();
+          if (parentName.equals("/")) {
+            path = parentName + childName;
+          } else {
+            path = parentName + "/" + childName;
+          }
+          curNode = INodeKeyedObjects.getCache().getIfPresent(path);
+          if (curNode == null) {
+            break;
+          }
+        } else {
+          curNode = dir.getChild(childName, isSnapshot ? snapshotId : CURRENT_STATE_ID);
+        }
       }
     }
     return new INodesInPath(inodes, components, isRaw, isSnapshot, snapshotId);
@@ -339,6 +358,10 @@ public class INodesInPath {
   /** @return the last inode. */
   public INode getLastINode() {
     return getINode(-1);
+  }
+
+  public void setLastINode(INode inode) {
+    inodes[inodes.length - 1] = inode; 
   }
 
   byte[] getLastLocalName() {

@@ -58,13 +58,28 @@ if [ "$(uname -s)" = "Linux" ]; then
   fi
 fi
 
+# build hadoop's dev environment
 docker build -t "hadoop-build-${USER_ID}" - <<UserSpecificDocker
 FROM hadoop-build
 RUN groupadd --non-unique -g ${GROUP_ID} ${USER_NAME}
 RUN useradd -g ${GROUP_ID} -u ${USER_ID} -k /root -m ${USER_NAME}
 RUN echo "${USER_NAME} ALL=NOPASSWD: ALL" > "/etc/sudoers.d/hadoop-build-${USER_ID}"
 ENV HOME /home/${USER_NAME}
+RUN sudo apt-get update && sudo apt-get install -y postgresql-client wget net-tools vim ssh
+RUN sudo mkdir -p /home/${USER_NAME}/java 
+RUN sudo wget https://jdbc.postgresql.org/download/postgresql-42.2.5.jar -P /home/${USER_NAME}/java
 
+RUN sudo wget https://github.com/DSL-UMD/hadoop/releases/download/voltdb-8.4.2/voltdb-ent-8.4.2.tar.gz -P /home/${USER_NAME}/voltadb
+RUN cd /home/${USER_NAME}/voltadb && tar -xzf voltdb-ent-8.4.2.tar.gz
+RUN ln -s /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/bin/sqlcmd /usr/local/bin/sqlcmd 
+RUN rm -rf /home/${USER_NAME}/voltadb/voltdb-ent-8.4.2.tar.gz 
+
+ENV CLASSPATH $CLASSPATH:/home/${USER_NAME}/java/postgresql-42.2.5.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdb-8.4.2.jar:/home/${USER_NAME}/voltadb/voltdb-ent-8.4.2/voltdb/voltdbclient-8.4.2.jar
+ENV PATH $PATH:/opt/cmake/bin:/opt/protobuf/bin:/bin
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
+ENV HADOOP_HOME /home/${USER_NAME}/hadoop/hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/
+ENV HADOOP_HDFS_HOME /home/${USER_NAME}/hadoop/hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/ 
+ENV HADOOP_CONF_DIR /home/${USER_NAME}/hadoop/hadoop-dist/target/hadoop-3.3.0-SNAPSHOT/etc/hadoop/
 UserSpecificDocker
 
 #If this env varible is empty, docker will be started
@@ -76,8 +91,11 @@ DOCKER_INTERACTIVE_RUN=${DOCKER_INTERACTIVE_RUN-"-i -t"}
 # system.  And this also is a significant speedup in subsequent
 # builds because the dependencies are downloaded only once.
 docker run --rm=true $DOCKER_INTERACTIVE_RUN \
+  -d --net=host \
   -v "${PWD}:/home/${USER_NAME}/hadoop${V_OPTS:-}" \
   -w "/home/${USER_NAME}/hadoop" \
   -v "${HOME}/.m2:/home/${USER_NAME}/.m2${V_OPTS:-}" \
   -u "${USER_NAME}" \
-  "hadoop-build-${USER_ID}" "$@"
+  --name hadoop-dev \
+  "hadoop-build-${USER_ID}"
+

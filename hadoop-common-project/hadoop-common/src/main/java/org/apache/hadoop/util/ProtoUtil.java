@@ -164,11 +164,13 @@ public abstract class ProtoUtil {
  
   public static RpcRequestHeaderProto makeRpcRequestHeader(RPC.RpcKind rpcKind,
       RpcRequestHeaderProto.OperationProto operation, int callId,
-      int retryCount, byte[] uuid) {
+      int retryCount, byte[] uuid, String clientAddress) {
     RpcRequestHeaderProto.Builder result = RpcRequestHeaderProto.newBuilder();
     result.setRpcKind(convert(rpcKind)).setRpcOp(operation).setCallId(callId)
         .setRetryCount(retryCount).setClientId(ByteString.copyFrom(uuid));
-
+    if (clientAddress != null) {
+      result.setClientAddress(clientAddress);
+    }
     // Add tracing info if we are currently tracing.
     Span span = Tracer.getCurrentSpan();
     if (span != null) {

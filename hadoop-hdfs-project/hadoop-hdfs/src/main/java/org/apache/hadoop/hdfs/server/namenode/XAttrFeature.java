@@ -23,46 +23,54 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.XAttrHelper;
+import org.apache.hadoop.hdfs.db.*;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.base.Preconditions;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Feature for extended attributes.
  */
 @InterfaceAudience.Private
 public class XAttrFeature implements INode.Feature {
-  static final int PACK_THRESHOLD = 1024;
+  private long id;
 
-  /** The packed bytes for small size XAttrs. */
-  private byte[] attrs;
+  public XAttrFeature(long id) { this.id = id; }
 
-  /**
-   * List to store large size XAttrs.
-   * Typically XAttr value size is small, so this
-   * list is null usually.
-   */
-  private ImmutableList<XAttr> xAttrs;
+  public XAttrFeature(long id, List<XAttr> xAttrs) {
+    createXAttrFeature(id, xAttrs);
+    this.id = id;
+  }
 
-  public XAttrFeature(List<XAttr> xAttrs) {
+  public static void createXAttrFeature(long id, List<XAttr> xAttrs) {
+    Preconditions.checkState(!isFileXAttr(id), "Duplicated XAttrFeature");
+    List<Long> ids = new ArrayList<Long>();
     if (xAttrs != null && !xAttrs.isEmpty()) {
-      List<XAttr> toPack = new ArrayList<XAttr>();
-      ImmutableList.Builder<XAttr> b = null;
+      List<Integer> ns = new ArrayList<Integer>();
+      List<String> namevals = new ArrayList<String>();
       for (XAttr attr : xAttrs) {
-        if (attr.getValue() == null ||
-            attr.getValue().length <= PACK_THRESHOLD) {
-          toPack.add(attr);
-        } else {
-          if (b == null) {
-            b = ImmutableList.builder();
-          }
-          b.add(attr);
-        }
+        ns.add(attr.getNameSpace().ordinal());
+        namevals.add(attr.getName());
+        namevals.add(XAttr.bytes2String(attr.getValue()));
       }
-      this.attrs = XAttrFormat.toBytes(toPack);
-      if (b != null) {
-        this.xAttrs = b.build();
-      }
+      CompletableFuture.runAsync(() -> {
+        DatabaseINode.insertXAttrs(id, ns, namevals);
+      }, Database.getInstance().getExecutorService());
     }
+  }
+
+  public long getId() {
+    return this.id;
+  }
+
+  public Boolean isFileXAttr() {
+    return isFileXAttr(id);
+  }
+
+  public static Boolean isFileXAttr(long id) {
+    return DatabaseINode.checkXAttrExistence(id);
   }
 
   /**
@@ -70,18 +78,17 @@ public class XAttrFeature implements INode.Feature {
    * @return the XAttrs
    */
   public List<XAttr> getXAttrs() {
-    if (xAttrs == null) {
-      return XAttrFormat.toXAttrs(attrs);
-    } else {
-      if (attrs == null) {
-        return xAttrs;
-      } else {
-        List<XAttr> result = new ArrayList<>();
-        result.addAll(XAttrFormat.toXAttrs(attrs));
-        result.addAll(xAttrs);
-        return result;
-      }
+    return getXAttrs(id);
+  }
+
+  public static List<XAttr> getXAttrs(long id) {
+    List<XAttr> xattrs = new ArrayList<XAttr>();
+    List<DatabaseINode.XAttrInfo> xinfo = new DatabaseINode().getXAttrs(id);
+    for (int i = 0; i < xinfo.size(); ++i) {
+      xattrs.add(new XAttr(XAttr.NameSpace.values()[xinfo.get(i).getNameSpace()],
+        xinfo.get(i).getName(), XAttr.string2Bytes(xinfo.get(i).getValue())));
     }
+    return xattrs;
   }
 
   /**
@@ -90,14 +97,17 @@ public class XAttrFeature implements INode.Feature {
    * @return the XAttr
    */
   public XAttr getXAttr(String prefixedName) {
-    XAttr attr = XAttrFormat.getXAttr(attrs, prefixedName);
-    if (attr == null && xAttrs != null) {
-      XAttr toFind = XAttrHelper.buildXAttr(prefixedName);
-      for (XAttr a : xAttrs) {
-        if (a.equalsIgnoreValue(toFind)) {
-          attr = a;
-          break;
-        }
+    return getXAttr(id, prefixedName);
+  }
+
+  public static XAttr getXAttr(long id, String prefixedName) {
+    XAttr attr = null;
+    XAttr toFind = XAttrHelper.buildXAttr(prefixedName);
+    List<XAttr> xAttrs = getXAttrs(id);
+    for (XAttr a : xAttrs) {
+      if (a.equalsIgnoreValue(toFind)) {
+        attr = a;
+        break;
       }
     }
     return attr;

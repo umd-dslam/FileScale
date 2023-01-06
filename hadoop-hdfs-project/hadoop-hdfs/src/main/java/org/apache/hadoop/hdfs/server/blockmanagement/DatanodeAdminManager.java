@@ -694,7 +694,7 @@ public class DatanodeAdminManager {
         }
 
         long bcId = block.getBlockCollectionId();
-        if (bcId == INodeId.INVALID_INODE_ID) {
+        if (bcId == 0) {
           // Orphan block, will be invalidated eventually. Skip.
           continue;
         }
@@ -744,7 +744,7 @@ public class DatanodeAdminManager {
         // Update various counts
         lowRedundancyBlocks++;
         if (bc.isUnderConstruction()) {
-          INode ucFile = namesystem.getFSDirectory().getInode(bc.getId());
+          INode ucFile = null;
           if (!(ucFile instanceof  INodeFile) ||
               !ucFile.asFile().isUnderConstruction()) {
             LOG.warn("File {} is not under construction. Skipping add to " +

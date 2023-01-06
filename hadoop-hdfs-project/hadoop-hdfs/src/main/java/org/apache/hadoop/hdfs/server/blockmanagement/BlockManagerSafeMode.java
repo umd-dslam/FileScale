@@ -584,7 +584,7 @@ class BlockManagerSafeMode {
       return;
     }
 
-    int activeBlocks = blockManager.getActiveBlockCount();
+    long activeBlocks = blockManager.getActiveBlockCount();
     synchronized (this) {
       if (blockTotal != activeBlocks &&
           !(blockSafe >= 0 && blockSafe <= blockTotal)) {

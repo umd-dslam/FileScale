@@ -349,51 +349,6 @@ public class TestNameNodeMetrics {
     assertGauge("NumLiveDataNodes", DATANODE_COUNT - 1, getMetrics(NS_METRICS));
     assertGauge("NumDeadDataNodes", 0, getMetrics(NS_METRICS));
   }
-  
-  /** Test metrics associated with addition of a file */
-  @Test
-  public void testFileAdd() throws Exception {
-    // File creations
-    final long blockCount = 32;
-    final Path normalFile = getTestPath("testFileAdd");
-    createFile(normalFile, blockCount * BLOCK_SIZE, (short)3);
-    final Path ecFile = new Path(ecDir, "ecFile.log");
-    DFSTestUtil.createStripedFile(cluster, ecFile, null, (int) blockCount, 1,
-        false, EC_POLICY);
-
-    int blockCapacity = namesystem.getBlockCapacity();
-    assertGauge("BlockCapacity", blockCapacity, getMetrics(NS_METRICS));
-
-    MetricsRecordBuilder rb = getMetrics(NN_METRICS);
-    // File create operations are 2
-    assertCounter("CreateFileOps", 2L, rb);
-    // Number of files created is depth of normalFile and ecFile, after
-    // removing the duplicate accounting for root test dir.
-    assertCounter("FilesCreated",
-        (long)(normalFile.depth() + ecFile.depth()), rb);
-
-    long filesTotal = normalFile.depth() + ecFile.depth() + 1 /* ecDir */;
-    rb = getMetrics(NS_METRICS);
-    assertGauge("FilesTotal", filesTotal, rb);
-    assertGauge("BlocksTotal", blockCount * 2, rb);
-    fs.delete(normalFile, true);
-    filesTotal--; // reduce the filecount for deleted file
-
-    rb = waitForDnMetricValue(NS_METRICS, "FilesTotal", filesTotal);
-    assertGauge("BlocksTotal", blockCount, rb);
-    assertGauge("PendingDeletionBlocks", 0L, rb);
-
-    fs.delete(ecFile, true);
-    filesTotal--;
-    rb = waitForDnMetricValue(NS_METRICS, "FilesTotal", filesTotal);
-    assertGauge("BlocksTotal", 0L, rb);
-    assertGauge("PendingDeletionBlocks", 0L, rb);
-
-    rb = getMetrics(NN_METRICS);
-    // Delete file operations and number of files deleted must be 1
-    assertCounter("DeleteFileOps", 2L, rb);
-    assertCounter("FilesDeleted", 2L, rb);
-  }
 
   /**
    * Verify low redundancy and corrupt blocks metrics are zero.

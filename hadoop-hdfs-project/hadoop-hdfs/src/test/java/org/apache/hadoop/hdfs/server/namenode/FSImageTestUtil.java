@@ -225,7 +225,7 @@ public abstract class FSImageTestUtil {
     for (int i = 1; i <= numDirs; i++) {
       String dirName = "dir" + i;
       INodeDirectory dir = new INodeDirectory(newInodeId + i - 1,
-          DFSUtil.string2Bytes(dirName), perms, 0L);
+          DFSUtil.string2Bytes(dirName), perms, 0L, null);
       editLog.logMkDir("/" + dirName, dir);
     }
     editLog.logSync();

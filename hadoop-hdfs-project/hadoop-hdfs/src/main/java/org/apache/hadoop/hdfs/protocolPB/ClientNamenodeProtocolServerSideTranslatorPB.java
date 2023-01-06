@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.protocolPB;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -187,6 +188,8 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.UnsetS
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.UnsetStoragePolicyResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Rename2RequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Rename2ResponseProto;
+import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.ListRequestProto;
+import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.ListResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RenameRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RenameResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RenameSnapshotRequestProto;
@@ -650,6 +653,17 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
     try {
       boolean result = server.rename(req.getSrc(), req.getDst());
       return RenameResponseProto.newBuilder().setResult(result).build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
+  public ListResponseProto ls(RpcController controller,
+      ListRequestProto req) throws ServiceException {
+    try {
+      List<String> result = server.ls(req.getSrc());
+      return ListResponseProto.newBuilder().addAllResult(result).build();
     } catch (IOException e) {
       throw new ServiceException(e);
     }

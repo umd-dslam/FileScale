@@ -34,7 +34,7 @@ public class INodeSymlink extends INodeWithAdditionalFields {
 
   INodeSymlink(long id, byte[] name, PermissionStatus permissions,
       long mtime, long atime, String symlink) {
-    super(id, name, permissions, mtime, atime);
+    super(id, name, permissions, mtime, atime, 0L, null);
     this.symlink = DFSUtil.string2Bytes(symlink);
   }
   

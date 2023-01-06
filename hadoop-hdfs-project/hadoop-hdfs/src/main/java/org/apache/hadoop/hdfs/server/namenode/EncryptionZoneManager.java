@@ -360,7 +360,7 @@ public class EncryptionZoneManager {
    */
   String getFullPathName(Long nodeId) {
     assert dir.hasReadLock();
-    INode inode = dir.getInode(nodeId);
+    INode inode = null;
     if (inode == null) {
       return null;
     }
@@ -629,7 +629,7 @@ public class EncryptionZoneManager {
       throws UnresolvedLinkException, AccessControlException,
       ParentNotDirectoryException {
     assert dir.hasReadLock();
-    INode inode = dir.getInode(zoneId);
+    INode inode = null;
     if (inode == null) {
       return false;
     }

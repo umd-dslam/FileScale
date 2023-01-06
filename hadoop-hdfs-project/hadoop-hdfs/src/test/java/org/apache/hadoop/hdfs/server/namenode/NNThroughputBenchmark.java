@@ -22,9 +22,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.net.InetAddress;
 
 import com.google.common.base.Preconditions;
 
@@ -87,6 +90,9 @@ import org.apache.hadoop.util.VersionInfo;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 
+import org.apache.hadoop.hdfs.db.*;
+import org.apache.hadoop.hdfs.nnproxy.server.mount.MountsManager;
+
 /**
  * Main class for a series of name-node benchmarks.
  * 
@@ -109,10 +115,14 @@ public class NNThroughputBenchmark implements Tool {
   private static final String GENERAL_OPTIONS_USAGE =
       "[-keepResults] | [-logLevel L] | [-UGCacheRefreshCount G]";
 
+  private static MountsManager mountsManager;
+  boolean local = true;
+
   static Configuration config;
   static NameNode nameNode;
   static NamenodeProtocol nameNodeProto;
   static ClientProtocol clientProto;
+  static HashMap<String, ClientProtocol> nnProtos;
   static DatanodeProtocol dataNodeProto;
   static RefreshUserMappingsProtocol refreshUserMappingsProto;
   static String bpid = null;
@@ -138,6 +148,27 @@ public class NNThroughputBenchmark implements Tool {
     config.set(DFSConfigKeys.DFS_HOSTS, "${hadoop.tmp.dir}/dfs/hosts/include");
     File includeFile = new File(config.get(DFSConfigKeys.DFS_HOSTS, "include"));
     new FileOutputStream(includeFile).close();
+
+    String enableNNProxy = System.getenv("ENABLE_NN_PROXY");
+    if (enableNNProxy != null) {
+      if (Boolean.parseBoolean(enableNNProxy)) {
+        String NNProxyQuorum = System.getenv("NNPROXY_ZK_QUORUM");
+        String NNProxyMountTablePath = System.getenv("NNPROXY_MOUNT_TABLE_ZKPATH");
+        if (NNProxyQuorum != null && NNProxyMountTablePath != null) {
+          // initialize a mount manager
+          mountsManager = new MountsManager();
+          mountsManager.init(new HdfsConfiguration());
+          mountsManager.start();
+          try {
+            mountsManager.waitUntilInstalled();
+          } catch (Exception ex) {
+            throw new RuntimeException(ex); 
+          }
+          local = false;
+          nnProtos = new HashMap<String, ClientProtocol>();
+        }
+      }
+    }
   }
 
   void close() {
@@ -267,7 +298,11 @@ public class NNThroughputBenchmark implements Tool {
         while(isInProgress()) {
           // try {Thread.sleep(500);} catch (InterruptedException e) {}
         }
-        elapsedTime = Time.now() - start;
+        long end = Time.now();
+        elapsedTime = end - start;
+        LOG.info("Start Time: " + start);
+        LOG.info("End Time: " + end); 
+        LOG.info("Elapsed Time: " + elapsedTime);
         for(StatsDaemon d : daemons) {
           incrementStats(d.localNumOpsExecuted, d.localCumulativeTime);
           // System.out.println(d.toString() + ": ops Exec = " + d.localNumOpsExecuted);
@@ -403,7 +438,11 @@ public class NNThroughputBenchmark implements Tool {
       localCumulativeTime = 0;
       arg1 = statsOp.getExecutionArgument(daemonId);
       try {
-        benchmarkOne();
+        if (statsOp.getOpName() == "open") {
+          benchmarkTwo();
+        } else {
+          benchmarkOne();
+        }
       } catch(IOException ex) {
         LOG.error("StatsDaemon " + daemonId + " failed: \n" 
             + StringUtils.stringifyException(ex));
@@ -417,6 +456,17 @@ public class NNThroughputBenchmark implements Tool {
 
     void benchmarkOne() throws IOException {
       for(int idx = 0; idx < opsPerThread; idx++) {
+        if((localNumOpsExecuted+1) % statsOp.ugcRefreshCount == 0)
+          refreshUserMappingsProto.refreshUserToGroupsMappings();
+        long stat = statsOp.executeOp(daemonId, idx, arg1);
+        localNumOpsExecuted++;
+        localCumulativeTime += stat;
+      }
+    }
+
+    // For Cache Layer Testing
+    void benchmarkTwo() throws IOException {
+      for(int idx = opsPerThread - 1; idx >= 0; idx--) {
         if((localNumOpsExecuted+1) % statsOp.ugcRefreshCount == 0)
           refreshUserMappingsProto.refreshUserToGroupsMappings();
         long stat = statsOp.executeOp(daemonId, idx, arg1);
@@ -556,14 +606,22 @@ public class NNThroughputBenchmark implements Tool {
       clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
           false);
       // int generatedFileIdx = 0;
+      InetAddress inetAddress = InetAddress.getLocalHost();
+      int ipcode = inetAddress.getHostAddress().hashCode();
+      LOG.info("Current host address: " + inetAddress.getHostAddress() + ", HashCode: " + ipcode);
       LOG.info("Generate " + numOpsRequired + " intputs for " + getOpName());
       fileNames = new String[numThreads][];
+      String filename = null;
       for(int idx=0; idx < numThreads; idx++) {
         int threadOps = opsPerThread[idx];
         fileNames[idx] = new String[threadOps];
-        for(int jdx=0; jdx < threadOps; jdx++)
-          fileNames[idx][jdx] = nameGenerator.
-                                  getNextFileName("ThroughputBench");
+        for(int jdx=0; jdx < threadOps; jdx++) {
+          filename = nameGenerator.getNextFileName("ThroughputBench");
+          if (!local) {
+            filename += String.valueOf(ipcode);
+          }
+          fileNames[idx][jdx] = filename;
+        }
       }
     }
 
@@ -586,16 +644,23 @@ public class NNThroughputBenchmark implements Tool {
     @Override
     long executeOp(int daemonId, int inputIdx, String clientName) 
     throws IOException {
+      ClientProtocol cp = null;
+      if (local) {
+        cp = clientProto;
+      } else {
+        cp = nnProtos.get(mountsManager.resolve(fileNames[daemonId][inputIdx]));
+      }
+
       long start = Time.now();
       // dummyActionNoSynch(fileIdx);
-      clientProto.create(fileNames[daemonId][inputIdx],
+      cp.create(fileNames[daemonId][inputIdx],
           FsPermission.getDefault(), clientName,
           new EnumSetWritable<CreateFlag>(EnumSet
               .of(CreateFlag.CREATE, CreateFlag.OVERWRITE)), true,
           replication, BLOCK_SIZE, CryptoProtocolVersion.supported(), null);
       long end = Time.now();
       for (boolean written = !closeUponCreate; !written;
-        written = clientProto.complete(fileNames[daemonId][inputIdx],
+        written = cp.complete(fileNames[daemonId][inputIdx],
             clientName, null, HdfsConstants.GRANDFATHER_INODE_ID)) {
       };
       return end-start;
@@ -759,12 +824,9 @@ public class NNThroughputBenchmark implements Tool {
       }
       // use the same files for open
       super.generateInputs(opsPerThread);
-      if(clientProto.getFileInfo(opCreate.getBaseDir()) != null
-          && clientProto.getFileInfo(getBaseDir()) == null) {
-        clientProto.rename(opCreate.getBaseDir(), getBaseDir());
-      }
-      if(clientProto.getFileInfo(getBaseDir()) == null) {
-        throw new IOException(getBaseDir() + " does not exist.");
+
+      if(clientProto.getFileInfo(opCreate.getBaseDir()) == null) {
+        throw new IOException(opCreate.getBaseDir() + " does not exist.");
       }
     }
 
@@ -774,8 +836,18 @@ public class NNThroughputBenchmark implements Tool {
     @Override
     long executeOp(int daemonId, int inputIdx, String ignore) 
     throws IOException {
+      String fname = fileNames[daemonId][inputIdx];
+      fname = fname.replace("open", "create");
+
+      ClientProtocol cp = null;
+      if (local) {
+        cp = clientProto;
+      } else {
+        cp = nnProtos.get(mountsManager.resolve(fname));
+      }
+
       long start = Time.now();
-      clientProto.getBlockLocations(fileNames[daemonId][inputIdx], 0L, BLOCK_SIZE);
+      cp.getBlockLocations(fname, 0L, BLOCK_SIZE);
       long end = Time.now();
       return end-start;
     }
@@ -805,7 +877,9 @@ public class NNThroughputBenchmark implements Tool {
     long executeOp(int daemonId, int inputIdx, String ignore) 
     throws IOException {
       long start = Time.now();
-      clientProto.delete(fileNames[daemonId][inputIdx], false);
+      String fname = fileNames[daemonId][inputIdx];
+      fname = fname.replace("delete", "create");
+      clientProto.delete(fname, false);
       long end = Time.now();
       return end-start;
     }
@@ -840,6 +914,38 @@ public class NNThroughputBenchmark implements Tool {
       return end-start;
     }
   }
+
+  /**
+   * Chmod file statistics.
+   * 
+   * Measure how many chmod calls the name-node can handle per second.
+   */
+   class ChmodFileStats extends OpenFileStats {
+    // Operation types
+    static final String OP_CHMOD_NAME = "chmod";
+    static final String OP_CHMOD_USAGE = 
+      "-op " + OP_CHMOD_NAME + OP_USAGE_ARGS;
+
+    ChmodFileStats(List<String> args) {
+      super(args);
+    }
+    
+    @Override
+    String getOpName() {
+      return OP_CHMOD_NAME;
+    }
+
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      String srcname = fileNames[daemonId][inputIdx];
+      srcname = srcname.replace("chmod", "create");
+      long start = Time.now();
+      clientProto.setPermission(srcname, new FsPermission(755));
+      long end = Time.now();
+      return end-start;
+    }
+   }
 
   /**
    * Rename file statistics.
@@ -878,11 +984,205 @@ public class NNThroughputBenchmark implements Tool {
     @Override
     long executeOp(int daemonId, int inputIdx, String ignore) 
     throws IOException {
+      String srcname = fileNames[daemonId][inputIdx];
+      srcname = srcname.replace("rename", "create");
+      String dstname = destNames[daemonId][inputIdx];
+      dstname = dstname.replace("rename", "create");
       long start = Time.now();
-      clientProto.rename(fileNames[daemonId][inputIdx],
-                      destNames[daemonId][inputIdx]);
+      clientProto.rename(srcname, dstname);
       long end = Time.now();
       return end-start;
+    }
+  }
+
+  /**
+   * chmod entire directory: /nnThroughputBenchmark/create.
+   */
+  class ChmodDirStats extends OperationStatsBase {
+    // Operation types
+    static final String OP_CHMOD_NAME = "chmodDir";
+    static final String OP_CHMOD_USAGE = "-op chmodDir";
+
+    ChmodDirStats(List<String> args) {
+      super();
+      parseArguments(args);
+      numOpsRequired = 1;
+      numThreads = 1;
+      keepResults = true;
+    }
+
+    @Override
+    String getOpName() {
+      return OP_CHMOD_NAME;
+    }
+
+    @Override
+    void parseArguments(List<String> args) {
+      boolean ignoreUnrelatedOptions = verifyOpArgument(args);
+      if(args.size() > 2 && !ignoreUnrelatedOptions)
+        printUsage();
+    }
+
+    @Override
+    void generateInputs(int[] opsPerThread) throws IOException {
+      // do nothing
+    }
+
+    /**
+     * Does not require the argument
+     */
+    @Override
+    String getExecutionArgument(int daemonId) {
+      return null;
+    }
+
+    /**
+     * chmod entire benchmark directory.
+     */
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
+          false);
+      long start = Time.now();
+      clientProto.setPermission(BASE_DIR_NAME + "/create", new FsPermission(755));
+      long end = Time.now();
+      return end-start;
+    }
+
+    @Override
+    void printResults() {
+      LOG.info("--- " + getOpName() + " inputs ---");
+      LOG.info("Chmod directory " + BASE_DIR_NAME + "/create");
+      printStats();
+    }
+  }
+
+
+  /**
+   * list the directory's direct children: /nnThroughputBenchmark/create/ThroughputBenchDir0.
+   */
+  class ListFileStats extends OperationStatsBase {
+    // Operation types
+    static final String OP_LIST_NAME = "ls";
+    static final String OP_LIST_USAGE = "-op ls";
+
+    ListFileStats(List<String> args) {
+      super();
+      parseArguments(args);
+      numOpsRequired = 1;
+      numThreads = 1;
+      keepResults = true;
+    }
+
+    @Override
+    String getOpName() {
+      return OP_LIST_NAME;
+    }
+
+    @Override
+    void parseArguments(List<String> args) {
+      boolean ignoreUnrelatedOptions = verifyOpArgument(args);
+      if(args.size() > 2 && !ignoreUnrelatedOptions)
+        printUsage();
+    }
+
+    @Override
+    void generateInputs(int[] opsPerThread) throws IOException {
+      // do nothing
+    }
+
+    /**
+     * Does not require the argument
+     */
+    @Override
+    String getExecutionArgument(int daemonId) {
+      return null;
+    }
+
+    /**
+     * Rename entire benchmark directory.
+     */
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
+          false);
+      long start = Time.now();
+      List<String> children = clientProto.ls(BASE_DIR_NAME + "/create/ThroughputBenchDir0");
+      long end = Time.now();
+      // LOG.info("children: " + children);
+      return end-start;
+    }
+
+    @Override
+    void printResults() {
+      LOG.info("--- " + getOpName() + " inputs ---");
+      LOG.info("ls directory " + BASE_DIR_NAME + "/create/ThroughputBenchDir0");
+      printStats();
+    }
+  }
+
+  /**
+   * Rename entire directory: /nnThroughputBenchmark/create.
+   */
+  class RenameDirStats extends OperationStatsBase {
+    // Operation types
+    static final String OP_RENAME_NAME = "renameDir";
+    static final String OP_RENAME_USAGE = "-op renameDir";
+
+    RenameDirStats(List<String> args) {
+      super();
+      parseArguments(args);
+      numOpsRequired = 1;
+      numThreads = 1;
+      keepResults = true;
+    }
+
+    @Override
+    String getOpName() {
+      return OP_RENAME_NAME;
+    }
+
+    @Override
+    void parseArguments(List<String> args) {
+      boolean ignoreUnrelatedOptions = verifyOpArgument(args);
+      if(args.size() > 2 && !ignoreUnrelatedOptions)
+        printUsage();
+    }
+
+    @Override
+    void generateInputs(int[] opsPerThread) throws IOException {
+      // do nothing
+    }
+
+    /**
+     * Does not require the argument
+     */
+    @Override
+    String getExecutionArgument(int daemonId) {
+      return null;
+    }
+
+    /**
+     * Rename entire benchmark directory.
+     */
+    @Override
+    long executeOp(int daemonId, int inputIdx, String ignore) 
+    throws IOException {
+      clientProto.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE,
+          false);
+      long start = Time.now();
+      clientProto.rename(BASE_DIR_NAME + "/create", BASE_DIR_NAME + "/rename");
+      long end = Time.now();
+      return end-start;
+    }
+
+    @Override
+    void printResults() {
+      LOG.info("--- " + getOpName() + " inputs ---");
+      LOG.info("Rename directory " + BASE_DIR_NAME + "/create");
+      printStats();
     }
   }
 
@@ -1143,7 +1443,7 @@ public class NNThroughputBenchmark implements Tool {
         clientProto.create(fileName, FsPermission.getDefault(), clientName,
             new EnumSetWritable<CreateFlag>(EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE)), true, replication,
             BLOCK_SIZE, CryptoProtocolVersion.supported(), null);
-        ExtendedBlock lastBlock = addBlocks(fileName, clientName);
+        ExtendedBlock lastBlock = addBlocks(fileName, clientName, idx);
         clientProto.complete(fileName, clientName, lastBlock, HdfsConstants.GRANDFATHER_INODE_ID);
       }
       // prepare block reports
@@ -1152,7 +1452,7 @@ public class NNThroughputBenchmark implements Tool {
       }
     }
 
-    private ExtendedBlock addBlocks(String fileName, String clientName)
+    private ExtendedBlock addBlocks(String fileName, String clientName, int dnIdx)
     throws IOException {
       ExtendedBlock prevBlock = null;
       for(int jdx = 0; jdx < blocksPerFile; jdx++) {
@@ -1160,7 +1460,6 @@ public class NNThroughputBenchmark implements Tool {
             prevBlock, null, HdfsConstants.GRANDFATHER_INODE_ID, null);
         prevBlock = loc.getBlock();
         for(DatanodeInfo dnInfo : loc.getLocations()) {
-          int dnIdx = dnInfo.getXferPort() - 1;
           datanodes[dnIdx].addBlock(loc.getBlock().getLocalBlock());
           ReceivedDeletedBlockInfo[] rdBlocks = { new ReceivedDeletedBlockInfo(
               loc.getBlock().getLocalBlock(),
@@ -1413,9 +1712,13 @@ public class NNThroughputBenchmark implements Tool {
         + " | \n\t" + DeleteFileStats.OP_DELETE_USAGE
         + " | \n\t" + FileStatusStats.OP_FILE_STATUS_USAGE
         + " | \n\t" + RenameFileStats.OP_RENAME_USAGE
+        + " | \n\t" + ChmodFileStats.OP_CHMOD_USAGE
         + " | \n\t" + BlockReportStats.OP_BLOCK_REPORT_USAGE
         + " | \n\t" + ReplicationStats.OP_REPLICATION_USAGE
         + " | \n\t" + CleanAllStats.OP_CLEAN_USAGE
+        + " | \n\t" + RenameDirStats.OP_RENAME_USAGE
+        + " | \n\t" + ChmodDirStats.OP_CHMOD_USAGE 
+        + " | \n\t" + ListFileStats.OP_LIST_USAGE
         + " | \n\t" + GENERAL_OPTIONS_USAGE
     );
     System.err.println();
@@ -1481,6 +1784,10 @@ public class NNThroughputBenchmark implements Tool {
         opStat = new RenameFileStats(args);
         ops.add(opStat);
       }
+      if (runAll || ChmodFileStats.OP_CHMOD_NAME.equals(type)) {
+        opStat = new ChmodFileStats(args);
+        ops.add(opStat);
+      }
       if(runAll || BlockReportStats.OP_BLOCK_REPORT_NAME.equals(type)) {
         opStat = new BlockReportStats(args);
         ops.add(opStat);
@@ -1493,6 +1800,18 @@ public class NNThroughputBenchmark implements Tool {
           opStat = new ReplicationStats(args);
           ops.add(opStat);
         }
+      }
+      if(runAll || RenameDirStats.OP_RENAME_NAME.equals(type)) {
+        opStat = new RenameDirStats(args);
+        ops.add(opStat);
+      }
+      if(runAll || ListFileStats.OP_LIST_NAME.equals(type)) {
+        opStat = new ListFileStats(args);
+        ops.add(opStat);
+      }
+      if(runAll || ChmodDirStats.OP_CHMOD_NAME.equals(type)) {
+        opStat = new ChmodDirStats(args);
+        ops.add(opStat);
       }
       if(runAll || CleanAllStats.OP_CLEAN_NAME.equals(type)) {
         opStat = new CleanAllStats(args);
@@ -1516,21 +1835,39 @@ public class NNThroughputBenchmark implements Tool {
       } else {
         DistributedFileSystem dfs = (DistributedFileSystem)
             FileSystem.get(getConf());
-        nameNodeProto = DFSTestUtil.getNamenodeProtocolProxy(config, nnUri,
+        URI nnRealUri = URI.create("hdfs://localhost:9000");
+        nameNodeProto = DFSTestUtil.getNamenodeProtocolProxy(config, nnRealUri,
             UserGroupInformation.getCurrentUser());
         clientProto = dfs.getClient().getNamenode();
         dataNodeProto = new DatanodeProtocolClientSideTranslatorPB(
-            DFSUtilClient.getNNAddress(nnUri), config);
+            DFSUtilClient.getNNAddress(nnRealUri), config);
         refreshUserMappingsProto =
-            DFSTestUtil.getRefreshUserMappingsProtocolProxy(config, nnUri);
+            DFSTestUtil.getRefreshUserMappingsProtocolProxy(config, nnRealUri);
         getBlockPoolId(dfs);
+
+        // init multiple client protos according to the mount table
+        String[] nnUrls = null;
+        if (!local) {
+          nnUrls = mountsManager.getNNUrls();
+          for (String url : nnUrls) {
+            URI nameNodeUri = URI.create(url);
+            ClientProtocol cp = dfs.getClient().createDfsClient(nameNodeUri, getConf()).getNamenode();
+            cp.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_LEAVE, false);
+            nnProtos.put(url, cp);
+          }
+        }
       }
       // run each benchmark
+      long beforeUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
       for(OperationStatsBase op : ops) {
         LOG.info("Starting benchmark: " + op.getOpName());
         op.benchmark();
         op.cleanUp();
       }
+      long afterUsedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+      long actualUsedMem = afterUsedMem - beforeUsedMem;
+      LOG.info("Memory Used: " + actualUsedMem); 
+
       // print statistics
       for(OperationStatsBase op : ops) {
         LOG.info("");

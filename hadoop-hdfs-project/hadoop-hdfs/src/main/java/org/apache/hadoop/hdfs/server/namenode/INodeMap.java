@@ -1,141 +1,122 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.Iterator;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.db.*;
+import org.apache.hadoop.hdfs.cuckoofilter4j.*;
 
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.permission.PermissionStatus;
-import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockStoragePolicySuite;
-import org.apache.hadoop.util.GSet;
-import org.apache.hadoop.util.LightWeightGSet;
-
-import com.google.common.base.Preconditions;
-
-/**
- * Storing all the {@link INode}s and maintaining the mapping between INode ID
- * and INode.  
- */
+/** Storing all the {@link INode}s and maintaining the mapping between INode ID and INode. */
 public class INodeMap {
-  
-  static INodeMap newInstance(INodeDirectory rootDir) {
-    // Compute the map capacity by allocating 1% of total memory
-    int capacity = LightWeightGSet.computeCapacity(1, "INodeMap");
-    GSet<INode, INodeWithAdditionalFields> map =
-        new LightWeightGSet<>(capacity);
-    map.put(rootDir);
-    return new INodeMap(map);
-  }
+  public INodeMap() {}
 
-  /** Synchronized by external lock. */
-  private final GSet<INode, INodeWithAdditionalFields> map;
-  
-  public Iterator<INodeWithAdditionalFields> getMapIterator() {
-    return map.iterator();
-  }
-
-  private INodeMap(GSet<INode, INodeWithAdditionalFields> map) {
-    Preconditions.checkArgument(map != null);
-    this.map = map;
-  }
-  
   /**
-   * Add an {@link INode} into the {@link INode} map. Replace the old value if 
-   * necessary. 
+   * Add an {@link INode} into the {@link INode} map. Replace the old value if necessary.
+   *
    * @param inode The {@link INode} to be added to the map.
    */
   public final void put(INode inode) {
-    if (inode instanceof INodeWithAdditionalFields) {
-      map.put((INodeWithAdditionalFields)inode);
-    }
+    // already in inodes table
   }
-  
+
   /**
    * Remove a {@link INode} from the map.
+   *
    * @param inode The {@link INode} to be removed.
    */
   public final void remove(INode inode) {
-    map.remove(inode);
+    // TODO: double check where to delete inode from inodes table
   }
-  
-  /**
-   * @return The size of the map.
-   */
-  public int size() {
-    return map.size();
-  }
-  
-  /**
-   * Get the {@link INode} with the given id from the map.
-   * @param id ID of the {@link INode}.
-   * @return The {@link INode} in the map with the given id. Return null if no 
-   *         such {@link INode} in the map.
-   */
-  public INode get(long id) {
-    INode inode = new INodeWithAdditionalFields(id, null, new PermissionStatus(
-        "", "", new FsPermission((short) 0)), 0, 0) {
-      
-      @Override
-      void recordModification(int latestSnapshotId) {
-      }
-      
-      @Override
-      public void destroyAndCollectBlocks(ReclaimContext reclaimContext) {
-        // Nothing to do
-      }
 
-      @Override
-      public QuotaCounts computeQuotaUsage(
-          BlockStoragePolicySuite bsps, byte blockStoragePolicyId,
-          boolean useCache, int lastSnapshotId) {
+  /** @return The size of the map. */
+  public long size() {
+    return DatabaseINode.getINodesNum();
+  }
+
+
+  public INode get(String parentName, String childName) {
+    String path = null;
+    if (parentName.equals("/")) {
+      path = parentName + childName;
+    } else {
+      path = parentName + "/" + childName;
+    }
+    INode inode = INodeKeyedObjects.getCache().getIfPresent(path);
+    if (inode == null) {
+      INodeDirectory parent = INodeKeyedObjects.getCache().getIfPresent(parentName).asDirectory();
+      if (!parent.getCurrentChildrenList2().contains(childName)) {
         return null;
       }
-
-      @Override
-      public ContentSummaryComputationContext computeContentSummary(
-          int snapshotId, ContentSummaryComputationContext summary) {
-        return null;
+      // if (!parent.getFilter().mightContain(String.valueOf(parent.getId()) + childName)) {
+      //   return null;
+      // }
+      DatabaseINode.LoadINode node = new DatabaseINode().loadINode(parent.getId(), childName);
+      if (node == null) return null;
+      byte[] name = (node.name != null && node.name.length() > 0) ? DFSUtil.string2Bytes(node.name) : null;
+      if (node.header != 0L) {
+        inode = new INodeFile(node.id);
+        inode.asFile().setNumBlocks();
+        inode
+            .asFile()
+            .InitINodeFile(
+                node.parent,
+                node.id,
+                name,
+                node.permission,
+                node.modificationTime,
+                node.accessTime,
+                node.header,
+                node.parentName);
+      } else {
+        inode = new INodeDirectory(node.id);
+        inode
+            .asDirectory()
+            .InitINodeDirectory(
+                node.parent,
+                node.id,
+                name,
+                node.permission,
+                node.modificationTime,
+                node.accessTime,
+                node.header,
+                node.parentName);
+        inode.asDirectory().resetCurrentChildrenList();
       }
-      
-      @Override
-      public void cleanSubtree(
-          ReclaimContext reclaimContext, int snapshotId, int priorSnapshotId) {
-      }
-
-      @Override
-      public byte getStoragePolicyID(){
-        return HdfsConstants.BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
-      }
-
-      @Override
-      public byte getLocalStoragePolicyID() {
-        return HdfsConstants.BLOCK_STORAGE_POLICY_ID_UNSPECIFIED;
-      }
-    };
-      
-    return map.get(inode);
+      INodeKeyedObjects.getCache().put(path, inode);
+    }
+    return inode;
   }
-  
-  /**
-   * Clear the {@link #map}
-   */
-  public void clear() {
-    map.clear();
+
+
+  public boolean find(INodeFile file) {
+    if (INodeKeyedObjects.getCache().getIfPresent(file.getPath()) != null) {
+      return true;
+    }
+
+    INodeDirectory parent = file.getParent();
+    if (parent.getCurrentChildrenList2().contains(file.getLocalName())) {
+      return true;
+    }
+    // if (parent.getFilter().mightContain(String.valueOf(parent.getId()) + file.getLocalName())) {
+    //   return true;
+    // }
+
+    return false;
   }
+
+  public void clear() {}
 }

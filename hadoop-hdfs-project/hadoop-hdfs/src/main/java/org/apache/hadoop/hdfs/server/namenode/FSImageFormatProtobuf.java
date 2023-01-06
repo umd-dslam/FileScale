@@ -75,6 +75,8 @@ import org.apache.hadoop.util.Time;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.CodedOutputStream;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hdfs.db.*;
 
 /**
  * Utility class to read / write fsimage in protobuf format.
@@ -319,36 +321,20 @@ public final class FSImageFormatProtobuf {
     }
 
     private void loadStringTableSection(InputStream in) throws IOException {
-      StringTableSection s = StringTableSection.parseDelimitedFrom(in);
+      // StringTableSection s = StringTableSection.parseDelimitedFrom(in);
+      DatabaseNDExtraInfo db = new DatabaseNDExtraInfo();
+      Pair<Integer, Integer> s = db.getStringTableSummary();
       ctx.stringTable =
-          SerialNumberManager.newStringTable(s.getNumEntry(), s.getMaskBits());
-      for (int i = 0; i < s.getNumEntry(); ++i) {
-        StringTableSection.Entry e = StringTableSection.Entry
-            .parseDelimitedFrom(in);
-        ctx.stringTable.put(e.getId(), e.getStr());
+          SerialNumberManager.newStringTable(s.getLeft(), s.getRight());
+      List<Pair<Integer, String>> st = db.getStringTable(s.getLeft());
+      for (int i = 0; i < st.size(); ++i) {
+        ctx.stringTable.put(st.get(i).getLeft(), st.get(i).getRight());
       }
     }
 
     private void loadSecretManagerSection(InputStream in, StartupProgress prog,
         Step currentStep) throws IOException {
-      SecretManagerSection s = SecretManagerSection.parseDelimitedFrom(in);
-      int numKeys = s.getNumKeys(), numTokens = s.getNumTokens();
-      ArrayList<SecretManagerSection.DelegationKey> keys = Lists
-          .newArrayListWithCapacity(numKeys);
-      ArrayList<SecretManagerSection.PersistToken> tokens = Lists
-          .newArrayListWithCapacity(numTokens);
-
-      for (int i = 0; i < numKeys; ++i)
-        keys.add(SecretManagerSection.DelegationKey.parseDelimitedFrom(in));
-
-      prog.setTotal(Phase.LOADING_FSIMAGE, currentStep, numTokens);
-      Counter counter = prog.getCounter(Phase.LOADING_FSIMAGE, currentStep);
-      for (int i = 0; i < numTokens; ++i) {
-        tokens.add(SecretManagerSection.PersistToken.parseDelimitedFrom(in));
-        counter.increment();
-      }
-
-      fsn.loadSecretManagerState(s, keys, tokens);
+      fsn.loadSecretManagerState();
     }
 
     private void loadCacheManagerSection(InputStream in, StartupProgress prog,
@@ -373,14 +359,14 @@ public final class FSImageFormatProtobuf {
 
     private void loadErasureCodingSection(InputStream in)
         throws IOException {
-      ErasureCodingSection s = ErasureCodingSection.parseDelimitedFrom(in);
-      List<ErasureCodingPolicyInfo> ecPolicies = Lists
-          .newArrayListWithCapacity(s.getPoliciesCount());
-      for (int i = 0; i < s.getPoliciesCount(); ++i) {
-        ecPolicies.add(PBHelperClient.convertErasureCodingPolicyInfo(
-            s.getPolicies(i)));
-      }
-      fsn.getErasureCodingPolicyManager().loadPolicies(ecPolicies, conf);
+      // ErasureCodingSection s = ErasureCodingSection.parseDelimitedFrom(in);
+      // List<ErasureCodingPolicyInfo> ecPolicies = Lists
+      //     .newArrayListWithCapacity(s.getPoliciesCount());
+      // for (int i = 0; i < s.getPoliciesCount(); ++i) {
+      //   ecPolicies.add(PBHelperClient.convertErasureCodingPolicyInfo(
+      //       s.getPolicies(i)));
+      // }
+      // fsn.getErasureCodingPolicyManager().loadPolicies(ecPolicies, conf);
     }
   }
 
@@ -541,7 +527,7 @@ public final class FSImageFormatProtobuf {
       prog.beginStep(Phase.SAVING_CHECKPOINT, step);
       // Count number of non-fatal errors when saving inodes and snapshots.
       long numErrors = saveInodes(b);
-      numErrors += saveSnapshots(b);
+      // numErrors += saveSnapshots(b);
       prog.endStep(Phase.SAVING_CHECKPOINT, step);
 
       step = new Step(StepType.DELEGATION_TOKENS, filePath);
@@ -570,16 +556,7 @@ public final class FSImageFormatProtobuf {
     private void saveSecretManagerSection(FileSummary.Builder summary)
         throws IOException {
       final FSNamesystem fsn = context.getSourceNamesystem();
-      DelegationTokenSecretManager.SecretManagerState state = fsn
-          .saveSecretManagerState();
-      state.section.writeDelimitedTo(sectionOutputStream);
-      for (SecretManagerSection.DelegationKey k : state.keys)
-        k.writeDelimitedTo(sectionOutputStream);
-
-      for (SecretManagerSection.PersistToken t : state.tokens)
-        t.writeDelimitedTo(sectionOutputStream);
-
-      commitSection(summary, SectionName.SECRET_MANAGER);
+      fsn.saveSecretManagerState();
     }
 
     private void saveCacheManagerSection(FileSummary.Builder summary)
@@ -599,19 +576,19 @@ public final class FSImageFormatProtobuf {
 
     private void saveErasureCodingSection(
         FileSummary.Builder summary) throws IOException {
-      final FSNamesystem fsn = context.getSourceNamesystem();
-      ErasureCodingPolicyInfo[] ecPolicies =
-          fsn.getErasureCodingPolicyManager().getPersistedPolicies();
-      ArrayList<ErasureCodingPolicyProto> ecPolicyProtoes =
-          new ArrayList<ErasureCodingPolicyProto>();
-      for (ErasureCodingPolicyInfo p : ecPolicies) {
-        ecPolicyProtoes.add(PBHelperClient.convertErasureCodingPolicy(p));
-      }
+      // final FSNamesystem fsn = context.getSourceNamesystem();
+      // ErasureCodingPolicyInfo[] ecPolicies =
+      //     fsn.getErasureCodingPolicyManager().getPersistedPolicies();
+      // ArrayList<ErasureCodingPolicyProto> ecPolicyProtoes =
+      //     new ArrayList<ErasureCodingPolicyProto>();
+      // for (ErasureCodingPolicyInfo p : ecPolicies) {
+      //   ecPolicyProtoes.add(PBHelperClient.convertErasureCodingPolicy(p));
+      // }
 
-      ErasureCodingSection section = ErasureCodingSection.newBuilder().
-          addAllPolicies(ecPolicyProtoes).build();
-      section.writeDelimitedTo(sectionOutputStream);
-      commitSection(summary, SectionName.ERASURE_CODING);
+      // ErasureCodingSection section = ErasureCodingSection.newBuilder().
+      //     addAllPolicies(ecPolicyProtoes).build();
+      // section.writeDelimitedTo(sectionOutputStream);
+      // commitSection(summary, SectionName.ERASURE_CODING);
     }
 
     private void saveNameSystemSection(FileSummary.Builder summary)
@@ -644,20 +621,15 @@ public final class FSImageFormatProtobuf {
 
     private void saveStringTableSection(FileSummary.Builder summary)
         throws IOException {
-      OutputStream out = sectionOutputStream;
-
-      SerialNumberManager.StringTable stringTable =
-          SerialNumberManager.getStringTable();
-      StringTableSection.Builder b = StringTableSection.newBuilder()
-          .setNumEntry(stringTable.size())
-          .setMaskBits(stringTable.getMaskBits());
-      b.build().writeDelimitedTo(out);
+      SerialNumberManager.StringTable stringTable = SerialNumberManager.getStringTable();
+      DatabaseNDExtraInfo.setStringTableSummary(stringTable.size(), stringTable.getMaskBits());
+      List<Integer> idlst = new ArrayList<>();
+      List<String> strlst = new ArrayList<>();
       for (Entry<Integer, String> e : stringTable) {
-        StringTableSection.Entry.Builder eb = StringTableSection.Entry
-            .newBuilder().setId(e.getKey()).setStr(e.getValue());
-        eb.build().writeDelimitedTo(out);
+        idlst.add(e.getKey());
+        strlst.add(e.getValue());
       }
-      commitSection(summary, SectionName.STRING_TABLE);
+      DatabaseNDExtraInfo.setStringTable(idlst.toArray(new Integer[idlst.size()]), strlst.toArray(new String[strlst.size()]));
     }
   }
 

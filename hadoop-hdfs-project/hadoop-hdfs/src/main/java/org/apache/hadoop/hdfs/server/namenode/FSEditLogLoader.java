@@ -78,6 +78,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveCachePoolOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RemoveXAttrOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOldOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenameSnapshotOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RenewDelegationTokenOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.RollingUpgradeOp;
@@ -87,6 +88,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetGenstampV2Op;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetNSQuotaOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetOwnerOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsOp;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetPermissionsMPOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetQuotaOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetReplicationOp;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.SetStoragePolicyOp;
@@ -404,7 +406,7 @@ public class FSEditLogLoader {
             addCloseOp.storagePolicyId, addCloseOp.erasureCodingPolicyId);
         assert newFile != null;
         iip = INodesInPath.replace(iip, iip.length() - 1, newFile);
-        fsNamesys.leaseManager.addLease(addCloseOp.clientName, newFile.getId());
+        fsNamesys.leaseManager.addLease(addCloseOp.clientName, newFile.getId(), newFile.getParentName(), newFile.getLocalName());
 
         // add the op into retry cache if necessary
         if (toAddRetryCache) {
@@ -628,6 +630,16 @@ public class FSEditLogLoader {
           setPermissionsOp.permissions);
       break;
     }
+    case OP_SET_PERMISSIONS_MP: {
+      // TODO: locate the command log and parse it and execute all txns
+      SetPermissionsMPOp setPermissionsMPOp = (SetPermissionsMPOp)op;
+      final String src =
+          renameReservedPathsOnUpgrade(setPermissionsMPOp.src, logVersion);
+      final INodesInPath iip = fsDir.getINodesInPath(src, DirOp.WRITE);
+      FSDirAttrOp.unprotectedSetPermission(fsDir, iip,
+          setPermissionsMPOp.permissions);
+      break;
+    }
     case OP_SET_OWNER: {
       SetOwnerOp setOwnerOp = (SetOwnerOp)op;
       final String src = renameReservedPathsOnUpgrade(
@@ -712,6 +724,19 @@ public class FSEditLogLoader {
       
       if (toAddRetryCache) {
         fsNamesys.addCacheEntry(renameOp.rpcClientId, renameOp.rpcCallId);
+      }
+      break;
+    }
+    case OP_RENAME_MP: {
+      // TODO: parse the command log and exec all txns.
+      RenameMPOp renameMPOp = (RenameMPOp)op;
+      FSDirRenameOp.renameForEditLog(fsDir,
+          renameReservedPathsOnUpgrade(renameMPOp.src, logVersion),
+          renameReservedPathsOnUpgrade(renameMPOp.dst, logVersion),
+          renameMPOp.timestamp, renameMPOp.options);
+      
+      if (toAddRetryCache) {
+        fsNamesys.addCacheEntry(renameMPOp.rpcClientId, renameMPOp.rpcCallId);
       }
       break;
     }

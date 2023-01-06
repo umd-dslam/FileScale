@@ -1,0 +1,111 @@
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 10 -keepResults -logLevel INFO
+2018-12-21 00:24:07,275 INFO namenode.NNThroughputBenchmark: Starting benchmark: open
+2018-12-21 00:24:07,423 INFO namenode.NNThroughputBenchmark: Generate 10 intputs for create
+2018-12-21 00:24:07,423 ERROR namenode.NNThroughputBenchmark: Log level = ERROR
+2018-12-21 00:24:07,518 INFO namenode.NNThroughputBenchmark: Starting 10 create(s).
+2018-12-21 00:24:07,700 INFO namenode.NNThroughputBenchmark: Created 10 files.
+2018-12-21 00:24:07,703 INFO namenode.NNThroughputBenchmark: Generate 10 intputs for open
+2018-12-21 00:24:07,749 ERROR namenode.NNThroughputBenchmark: Log level = INFO
+2018-12-21 00:24:07,749 INFO namenode.NNThroughputBenchmark: Starting 10 open(s).
+2018-12-21 00:24:07,795 INFO namenode.NNThroughputBenchmark: Memory Used: 3531984
+2018-12-21 00:24:07,795 INFO namenode.NNThroughputBenchmark:
+2018-12-21 00:24:07,795 INFO namenode.NNThroughputBenchmark: --- open inputs ---
+2018-12-21 00:24:07,795 INFO namenode.NNThroughputBenchmark: nrFiles = 10
+2018-12-21 00:24:07,795 INFO namenode.NNThroughputBenchmark: nrThreads = 1
+2018-12-21 00:24:07,796 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2018-12-21 00:24:07,796 INFO namenode.NNThroughputBenchmark: --- open stats  ---
+2018-12-21 00:24:07,796 INFO namenode.NNThroughputBenchmark: # operations: 10
+2018-12-21 00:24:07,796 INFO namenode.NNThroughputBenchmark: Elapsed Time: 44
+2018-12-21 00:24:07,796 INFO namenode.NNThroughputBenchmark:  Ops per sec: 227.27272727272728
+2018-12-21 00:24:07,796 INFO namenode.NNThroughputBenchmark: Average Time: 4
+
+
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 100 -keepResults -logLevel INFO
+
+2018-12-21 00:47:34,674 INFO namenode.NNThroughputBenchmark: Starting benchmark: open
+2018-12-21 00:47:34,762 INFO namenode.NNThroughputBenchmark: Generate 100 intputs for create
+2018-12-21 00:47:34,763 ERROR namenode.NNThroughputBenchmark: Log level = ERROR
+2018-12-21 00:47:34,863 INFO namenode.NNThroughputBenchmark: Starting 100 create(s).
+2018-12-21 00:47:35,388 INFO namenode.NNThroughputBenchmark: Created 100 files.
+2018-12-21 00:47:35,390 INFO namenode.NNThroughputBenchmark: Generate 100 intputs for open
+2018-12-21 00:47:35,416 ERROR namenode.NNThroughputBenchmark: Log level = INFO
+2018-12-21 00:47:35,416 INFO namenode.NNThroughputBenchmark: Starting 100 open(s).
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: Memory Used: 4264640
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark:
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: --- open inputs ---
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: nrFiles = 100
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: nrThreads = 1
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: --- open stats  ---
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: # operations: 100
+2018-12-21 00:47:35,525 INFO namenode.NNThroughputBenchmark: Elapsed Time: 108
+2018-12-21 00:47:35,526 INFO namenode.NNThroughputBenchmark:  Ops per sec: 925.925925925926
+2018-12-21 00:47:35,526 INFO namenode.NNThroughputBenchmark: Average Time: 1
+
+
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 1000 -keepResults -logLevel INFO
+
+2018-12-21 00:50:17,893 INFO namenode.NNThroughputBenchmark: Starting benchmark: open
+2018-12-21 00:50:17,999 INFO namenode.NNThroughputBenchmark: Generate 1000 intputs for create
+2018-12-21 00:50:18,000 ERROR namenode.NNThroughputBenchmark: Log level = ERROR
+2018-12-21 00:50:18,126 INFO namenode.NNThroughputBenchmark: Starting 1000 create(s).
+2018-12-21 00:50:21,653 INFO namenode.NNThroughputBenchmark: Created 1000 files.
+2018-12-21 00:50:21,654 INFO namenode.NNThroughputBenchmark: Generate 1000 intputs for open
+2018-12-21 00:50:21,685 ERROR namenode.NNThroughputBenchmark: Log level = INFO
+2018-12-21 00:50:21,685 INFO namenode.NNThroughputBenchmark: Starting 1000 open(s).
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: Memory Used: 15046824
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark:
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: --- open inputs ---
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: nrFiles = 1000
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: nrThreads = 1
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: --- open stats  ---
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: # operations: 1000
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: Elapsed Time: 540
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark:  Ops per sec: 1851.851851851852
+2018-12-21 00:50:22,229 INFO namenode.NNThroughputBenchmark: Average Time: 0
+
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 10000 -keepResults -logLevel INFO
+
+2018-12-21 00:53:05,977 INFO namenode.NNThroughputBenchmark: Starting benchmark: open
+2018-12-21 00:53:06,069 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for create
+2018-12-21 00:53:06,078 ERROR namenode.NNThroughputBenchmark: Log level = ERROR
+2018-12-21 00:53:06,207 INFO namenode.NNThroughputBenchmark: Starting 10000 create(s).
+2018-12-21 00:53:26,226 INFO namenode.NNThroughputBenchmark: Created 10000 files.
+2018-12-21 00:53:26,228 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for open
+2018-12-21 00:53:26,301 ERROR namenode.NNThroughputBenchmark: Log level = INFO
+2018-12-21 00:53:26,301 INFO namenode.NNThroughputBenchmark: Starting 10000 open(s).
+2018-12-21 00:53:29,333 INFO namenode.NNThroughputBenchmark: Memory Used: 76606912
+2018-12-21 00:53:29,333 INFO namenode.NNThroughputBenchmark:
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: --- open inputs ---
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: nrFiles = 10000
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: nrThreads = 1
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: --- open stats  ---
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: # operations: 10000
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: Elapsed Time: 3031
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark:  Ops per sec: 3299.241174529858
+2018-12-21 00:53:29,334 INFO namenode.NNThroughputBenchmark: Average Time: 0
+
+
+
+./bin/hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://${IP}:9000 -op open -threads 1 -files 100000 -keepResults -logLevel INFO
+2018-12-21 00:54:53,857 INFO namenode.NNThroughputBenchmark: Starting benchmark: open
+2018-12-21 00:54:53,967 INFO namenode.NNThroughputBenchmark: Generate 100000 intputs for create
+2018-12-21 00:54:54,101 ERROR namenode.NNThroughputBenchmark: Log level = ERROR
+2018-12-21 00:54:54,175 INFO namenode.NNThroughputBenchmark: Starting 100000 create(s).
+2018-12-21 00:57:46,865 INFO namenode.NNThroughputBenchmark: Created 100000 files.
+2018-12-21 00:57:46,867 INFO namenode.NNThroughputBenchmark: Generate 100000 intputs for open
+2018-12-21 00:57:47,170 ERROR namenode.NNThroughputBenchmark: Log level = INFO
+2018-12-21 00:57:47,171 INFO namenode.NNThroughputBenchmark: Starting 100000 open(s).
+2018-12-21 00:58:07,371 INFO namenode.NNThroughputBenchmark: Memory Used: 145431280
+2018-12-21 00:58:07,371 INFO namenode.NNThroughputBenchmark:
+2018-12-21 00:58:07,372 INFO namenode.NNThroughputBenchmark: --- open inputs ---
+2018-12-21 00:58:07,372 INFO namenode.NNThroughputBenchmark: nrFiles = 100000
+2018-12-21 00:58:07,372 INFO namenode.NNThroughputBenchmark: nrThreads = 1
+2018-12-21 00:58:07,372 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2018-12-21 00:58:07,372 INFO namenode.NNThroughputBenchmark: --- open stats  ---
+2018-12-21 00:58:07,372 INFO namenode.NNThroughputBenchmark: # operations: 100000
+2018-12-21 00:58:07,373 INFO namenode.NNThroughputBenchmark: Elapsed Time: 20197
+2018-12-21 00:58:07,373 INFO namenode.NNThroughputBenchmark:  Ops per sec: 4951.230380749616
+2018-12-21 00:58:07,373 INFO namenode.NNThroughputBenchmark: Average Time: 0

@@ -390,7 +390,7 @@ public class ReencryptionHandler implements Runnable {
 
     traverser.readLock();
     try {
-      zoneNode = dir.getInode(zoneId);
+      zoneNode = null;
       // start re-encrypting the zone from the beginning
       if (zoneNode == null) {
         LOG.info("Directory with id {} removed during re-encrypt, skipping",
